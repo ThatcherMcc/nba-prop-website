@@ -1,0 +1,287 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.player_data": {
+      "name": "player_data",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "player_name": {
+          "name": "player_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "game_date": {
+          "name": "game_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "opponent": {
+          "name": "opponent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg": {
+          "name": "fg",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fga": {
+          "name": "fga",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg_pct": {
+          "name": "fg_pct",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg3": {
+          "name": "fg3",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg3a": {
+          "name": "fg3a",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg3_pct": {
+          "name": "fg3_pct",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg2": {
+          "name": "fg2",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg2a": {
+          "name": "fg2a",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg2_pct": {
+          "name": "fg2_pct",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "efg_pct": {
+          "name": "efg_pct",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ft": {
+          "name": "ft",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fta": {
+          "name": "fta",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ft_pct": {
+          "name": "ft_pct",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "orb": {
+          "name": "orb",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "drb": {
+          "name": "drb",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trb": {
+          "name": "trb",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ast": {
+          "name": "ast",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stl": {
+          "name": "stl",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "blk": {
+          "name": "blk",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tov": {
+          "name": "tov",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pts": {
+          "name": "pts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pra": {
+          "name": "pra",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pr": {
+          "name": "pr",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pa": {
+          "name": "pa",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ra": {
+          "name": "ra",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sb": {
+          "name": "sb",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_game_data": {
+          "name": "idx_game_data",
+          "columns": [
+            {
+              "expression": "game_date",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "date_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_player_name": {
+          "name": "idx_player_name",
+          "columns": [
+            {
+              "expression": "player_name",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_player_opponent": {
+          "name": "idx_player_opponent",
+          "columns": [
+            {
+              "expression": "player_name",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            },
+            {
+              "expression": "opponent",
+              "asc": true,
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "player_data_player_name_game_date_opponent_key": {
+          "columns": [
+            "player_name",
+            "game_date",
+            "opponent"
+          ],
+          "nullsNotDistinct": false,
+          "name": "player_data_player_name_game_date_opponent_key"
+        }
+      },
+      "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {}
+  }
+}
