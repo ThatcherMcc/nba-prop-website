@@ -12,10 +12,10 @@ export const playerData = pgTable("player_data", {
 	fga: integer(),
 	fgPct: real("fg_pct"),
 	fg3: integer(),
-	fg3A: integer("fg3a"),
+	fg3a: integer(),
 	fg3Pct: real("fg3_pct"),
 	fg2: integer(),
-	fg2A: integer("fg2a"),
+	fg2a: integer(),
 	fg2Pct: real("fg2_pct"), 
 	efgPct: real("efg_pct"),
 	ft: integer(),
@@ -66,17 +66,17 @@ export type PlayerGameLog = typeof playerData.$inferSelect;
 export const PLAYER_STAT_NAMES: string[] = [
   "fg",
   "fga",
-  "fg_pct",
+  "fgPct",
   "fg3",
   "fg3a",
-  "fg3_pct",
+  "fg3Pct",
   "fg2",
   "fg2a",
-  "fg2_pct",
-  "efg_pct",
+  "fg2Pct",
+  "efgPct",
   "ft",
   "fta",
-  "ft_pct",
+  "ftPct",
   "orb",
   "drb",
   "trb",
@@ -95,17 +95,17 @@ export const PLAYER_STAT_NAMES: string[] = [
 export type PLAYER_STAT_TYPE =
   | "fg"
   | "fga"
-  | "fg_pct"
+  | "fgPct"
   | "fg3"
   | "fg3a"
-  | "fg3_pct"
+  | "fg3Pct"
   | "fg2"
   | "fg2a"
-  | "fg2_pct"
-  | "efg_pct"
+  | "fg2Pct"
+  | "efgPct"
   | "ft"
   | "fta"
-  | "ft_pct"
+  | "ftPct"
   | "orb"
   | "drb"
   | "trb"

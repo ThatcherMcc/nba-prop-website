@@ -5,10 +5,6 @@ interface PlayerCardProps {
   hitRate: string;
 }
 
-const ACCENT_COLOR_LINE = "#FFC72C"; // Vibrant Gold for the target line
-const COLOR_HIT = "#66BB6A"; // Clean Green
-const COLOR_MISS = "#EF5350"; // Clear Red
-
 export default function PlayerCard({ playerName, stat, propLine, hitRate }: PlayerCardProps) {
   const isHighHit = parseFloat(hitRate) >= 60;
   const isLowHit = parseFloat(hitRate) <= 40;
