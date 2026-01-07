@@ -1,126 +1,116 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   ReferenceLine,
   Cell,
+  CartesianGrid
 } from "recharts";
-import { PlayerGameLog } from "@/db/schema";
-import { PLAYER_STAT_TYPE } from "@/db/schema";
+import { PlayerGameLog, PLAYER_STAT_TYPE } from "@/db/schema";
 
 interface ChartProps {
   data: PlayerGameLog[];
   statKey: PLAYER_STAT_TYPE;
   propLine: number;
 }
-type ChartDataPoint = PlayerGameLog & {
-  value: number;
-  fillColor: string;
-  gameDate: string;
+
+// Design Constants
+const COLORS = {
+  OVER: "#4ade80",
+  UNDER: "#fbbf24",
+  PUSH: "#94a3b8",
+  GRID: "rgba(255, 255, 255, 0.05)",
+  TEXT: "#94a3b8" 
 };
 
-export default function PlayerChartDisplay({
-  data,
-  statKey,
-  propLine,
-}: ChartProps) {
-  /**
-   * Formats the player data for charting,
-   * Filters out null rows
-   * Fetchs individual stat
-   * Returns:
-   *   the row data,
-   *   adds value of the stat,
-   *   changes date value to date
-   *   adds fill color key
-   */
-  const formattedData = data
-    .filter((game) => game.gameDate !== null)
-    .map((game) => {
-      // Get the stat value, defaulting to 0 if null
-      const statValue = (game[statKey] as number) ?? 0;
-
-      return {
-        ...game,
-        value: statValue,
-        gameDate: new Date(game.gameDate as string).toLocaleDateString(
-          "en-US",
-          {
-            month: "2-digit",
-            day: "2-digit",
-          }
-        ),
-
-        fillColor:
-          statValue > propLine
-            ? "#68dfdfff"
-            : statValue < propLine
-            ? "#eeb436ff"
-            : "#767f86ff",
-      };
-    });
+export default function PlayerChartDisplay({ data, statKey, propLine }: ChartProps) {
+  
+  // 1. Memoize formatting to prevent unnecessary recalculations
+  const formattedData = useMemo(() => {
+    return data
+      .filter((game) => game.gameDate !== null)
+      .map((game) => {
+        const statValue = (game[statKey] as number) ?? 0;
+        return {
+          ...game,
+          value: statValue,
+          displayDate: new Date(game.gameDate as string).toLocaleDateString("en-US", {
+            month: "numeric",
+            day: "numeric",
+          }),
+          fillColor:
+            statValue > propLine ? COLORS.OVER : 
+            statValue < propLine ? COLORS.UNDER : COLORS.PUSH,
+        };
+      });
+  }, [data, statKey, propLine]);
 
   return (
-    <div className="p-2 flex flex-col bg-[#2a2a2a] rounded-xl shadow-xl/40 h-full">
-      {/** STAT CHART */}
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={formattedData}
-          margin={{ top: 40, right: 30, left: 10, bottom: 20 }}
-        >
+    <div className="p-4 bg-[#1e1e1e] border border-white/5 rounded-2xl shadow-2xl h-[450px] w-full">
+      <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">
+        Last {data.length} Games: {statKey.toUpperCase()}
+      </h3>
+      
+      <ResponsiveContainer width="100%" height="90%">
+        <BarChart data={formattedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          {/* Subtle horizontal grid lines only */}
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.GRID} />
+          
           <XAxis
-            dataKey="gameDate"
-            angle={-45}
-            textAnchor="end"
-            interval={0}
-            stroke="#ffffffff"
-            tick={{ fill: "#ffffffff", fontSize: 12 }}
+            dataKey="displayDate"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: COLORS.TEXT, fontSize: 10 }}
+            interval={Math.floor(formattedData.length / 10)} 
+            dy={10}
           />
+          
           <YAxis
-            dataKey="value"
-            stroke="#ffffffff"
-            tick={{ fill: "#ffffffff" }}
-            type="number"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: COLORS.TEXT, fontSize: 12 }}
           />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "#ffffffff",
-              border: "1px solid #ffffffff",
-              color: "s#ffffffff",
-            }}
-            labelStyle={{ color: "#ffffffff" }}
-          />
-          <Legend wrapperStyle={{ paddingTop: "20px" }} />
 
-          <Bar
-            dataKey="value"
-            name={statKey.toUpperCase()}
-            fill="#888"
-            isAnimationActive={false}
+          <Tooltip
+            cursor={{ fill: "rgba(255,255,255,0.05)" }}
+            contentStyle={{
+              backgroundColor: "#111827",
+              border: "1px solid #374151",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#fff"
+            }}
+            itemStyle={{ fontWeight: "bold" }}
+          />
+
+          <Bar 
+            dataKey="value" 
+            radius={[4, 4, 0, 0]} 
+            barSize={Math.min(32, Math.max(4, 800 / formattedData.length))}
           >
-            {formattedData.map((entry: ChartDataPoint, index: number) => (
-              <Cell key={`cell-${index}`} fill={entry.fillColor} />
+            {formattedData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.fillColor} fillOpacity={0.9} className="hover:opacity-100 transition-opacity" />
             ))}
           </Bar>
 
           <ReferenceLine
             y={propLine}
-            stroke="#ffffffff"
+            stroke="#fff"
             strokeDasharray="5 5"
-            strokeWidth={2}
+            strokeWidth={1}
             label={{
-              value: `Prop Line: ${propLine}`,
-              position: "top",
-              fill: "#ffffffff",
-              fontSize: 14,
+              value: `LINE: ${propLine}`,
+              position: "right",
+              fill: "#fff",
+              fontSize: 10,
+              fontWeight: "bold",
             }}
-            className=""
           />
         </BarChart>
       </ResponsiveContainer>

@@ -110,88 +110,94 @@ export default function PlayerSearch() {
   }, [playerName]);
 
   return (
-    <div className="p-[40px] mx-auto my-0 bg-[#1e1e1e] min-h-screen text-[#f0f0f0]">
-      {/** TOP HEADER */}
-      <div className="flex items-center gap-10 border-b-2 border-gray-700 pb-6">
-        {/** LOGO/TITLE */}
-        <h1 className="text-4xl">🏀 NBA Prop Analyzer</h1>
-
-        {/** SEARCH BAR CONTAINER */}
-        <div className="flex-1 flex items-center">
-          <input
-            type="text"
-            list="player-suggestions"
-            placeholder="Select Player Name"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            className="px-4 py-2 border border-gray-600 rounded-md bg-[#2a2a2a] text-gray-100 text-base w-full"
-          />
-        </div>
-
-        {/** NAME DATA TO DISPLAY IN INPUTS*/}
-        <datalist id="player-suggestions">
-          {ALL_PLAYER_NAMES.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
-      </div>
-
-      {/** STAT AND PROP LINE INPUTS */}
-      {loading && <p style={{ color: "#007bff" }}>Loading Data...</p>}
-
-      {/** PLAYER EXISTS, DISPLAY STAT & PROP INPUTS */}
-      {playerFound && !loading && (
-        <div className="flex gap-8 mt-6">
-          {/** FLEX LEFT: STAT & INPUT SELECTIONS */}
-          <div className="flex flex-col gap-4 flex-none w-1/3 pt-10">
-            <Image src="/LebronPic.png" width={400} height={400} alt="" />
-            <div className="flex flex-row gap-2">
-              <div className="flex flex-row items-center gap-2">
-                <h1 className="text-3xl">STAT :</h1>
-                <select
-                  value={selectedStat}
-                  onChange={(e) =>
-                    setSelectedStat(e.target.value as PLAYER_STAT_TYPE)
-                  }
-                  disabled={playerData.length === 0}
-                  className="no-scrollbaroverflow-hidden flex-1 px-4 py-2 border border-gray-600 rounded-md bg-[#2a2a2a] text-gray-100 text-base cursor-pointer disabled:opacity-50"
-                >
-                  {PLAYER_STAT_NAMES.map((stat) => (
-                    <option key={stat} value={stat}>
-                      {stat.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Prop Line Input */}
-              <div className="flex flex-row items-center gap-2">
-                <h1 className="text-3xl">LINE :</h1>
-                <input
-                  type="number"
-                  placeholder="Set Prop Line (e.g., 20.5)"
-                  value={propLineInput}
-                  onChange={handlePropLineChange}
-                  disabled={playerData.length === 0}
-                  className="flex-1 px-4 py-2 border border-gray-600 rounded-md bg-[#2a2a2a] text-gray-100 text-base disabled:opacity-50"
-                />
-              </div>
-            </div>
-            {playerData.length > 0 && numericPropLine !== null && (
-              <PlayerCard
-                playerName={playerName}
-                stat={selectedStat.toUpperCase()}
-                propLine={propLine}
-                hitRate={hitRate}
-              />
-            )}
+    <div className="min-h-screen bg-[#09090b] text-zinc-100 selection:bg-blue-500/30">
+      {/* TOP NAV BAR */}
+      <nav className="border-b border-white/10 bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <h1 className="text-xl font-black tracking-tighter flex items-center gap-2">
+            <span className="bg-blue-600 p-1.5 rounded-lg">🏀</span>
+            PROP<span className="text-blue-500">ANALYZER</span>
+          </h1>
+  
+          <div className="flex-1 max-w-xl mx-10 relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">🔍</span>
+            <input
+              type="text"
+              list="player-suggestions"
+              placeholder="Search NBA Players (e.g. LeBron James)"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-11 pr-5 py-3 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm font-medium placeholder:text-zinc-600 shadow-inner"
+            />
           </div>
-
-          {/* FLEX RIGHT: PLAYER CARD & CHART */}
-          {playerData.length > 0 && numericPropLine !== null && (
-            <div className="flex flex-col gap-8 flex-1">
-              {/* BOTTOM: PLAYER CHART */}
-              <div className="min-h-[400px]">
+        </div>
+      </nav>
+  
+      <main className="max-w-7xl mx-auto p-6">
+        {loading && (
+          <div className="flex items-center gap-3 text-blue-400 font-medium animate-pulse">
+            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+            Analyzing database...
+          </div>
+        )}
+  
+        {playerFound && !loading && (
+          <div className="grid grid-cols-12 gap-8 mt-4">
+            
+            {/* LEFT COLUMN: PLAYER PROFILE */}
+            <div className="col-span-12 lg:col-span-4 space-y-6">
+              <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="aspect-square bg-gradient-to-b from-blue-600/20 to-transparent relative">
+                  <Image 
+                    src="/LebronPic.png" 
+                    fill 
+                    className="object-contain p-4" 
+                    alt={playerName} 
+                  />
+                </div>
+                
+                <div className="p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Select Stat</label>
+                      <select
+                        value={selectedStat}
+                        onChange={(e) => setSelectedStat(e.target.value as PLAYER_STAT_TYPE)}
+                        className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      >
+                        {PLAYER_STAT_NAMES.map((stat) => (
+                          <option key={stat} value={stat}>{stat.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </div>
+  
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Line</label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        value={propLineInput}
+                        onChange={handlePropLineChange}
+                        className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {playerData.length > 0 && (
+                <PlayerCard
+                  playerName={playerName}
+                  stat={selectedStat.toUpperCase()}
+                  propLine={propLine}
+                  hitRate={hitRate}
+                />
+              )}
+            </div>
+  
+            {/* RIGHT COLUMN: CHART */}
+            <div className="col-span-12 lg:col-span-8">
+              <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 shadow-2xl h-full min-h-[500px]">
                 <PlayerChartDisplay
                   data={playerData}
                   statKey={selectedStat}
@@ -199,16 +205,22 @@ export default function PlayerSearch() {
                 />
               </div>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* PLAYER FOUND, BUT THERES NO DATA */}
-      {playerFound && !loading && playerData.length === 0 && (
-        <p style={{ color: "#ffc107", marginTop: "20px" }}>
-          No recent game log data found for **{playerName}**.
-        </p>
-      )}
+  
+          </div>
+        )}
+  
+        {playerFound && !loading && playerData.length === 0 && (
+          <div className="mt-10 p-8 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-amber-500 text-center">
+            No recent game data found for <span className="font-bold">{playerName}</span>.
+          </div>
+        )}
+      </main>
+      
+      <datalist id="player-suggestions">
+        {ALL_PLAYER_NAMES.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
     </div>
   );
 }

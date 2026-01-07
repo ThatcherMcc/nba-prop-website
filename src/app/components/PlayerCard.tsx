@@ -9,66 +9,44 @@ const ACCENT_COLOR_LINE = "#FFC72C"; // Vibrant Gold for the target line
 const COLOR_HIT = "#66BB6A"; // Clean Green
 const COLOR_MISS = "#EF5350"; // Clear Red
 
-export default function PlayerCard({
-  playerName,
-  stat,
-  propLine,
-  hitRate,
-}: PlayerCardProps) {
-  const hitRateColor =
-    parseFloat(hitRate) >= 60
-      ? COLOR_HIT
-      : parseFloat(hitRate) <= 40
-      ? COLOR_MISS
-      : "#FFA726";
+export default function PlayerCard({ playerName, stat, propLine, hitRate }: PlayerCardProps) {
+  const isHighHit = parseFloat(hitRate) >= 60;
+  const isLowHit = parseFloat(hitRate) <= 40;
 
   return (
-    <div className="py-5 px-10 rounded-xl bg-[#2a2a2a] mb-[30px] text-[#f0f0f0] shadow-2xl shadow-black/40">
-      <div className="grid grid-cols-3 gap-[30px]">
-        {/* 1. Prop Line (Target) */}
-        <div style={{ textAlign: "center" }}>
-          <p className="text-md m-0 text-[#aaa]">TARGET LINE</p>
-          <p
-            style={{
-              fontSize: "3.5rem",
-              fontWeight: "900",
-              color: ACCENT_COLOR_LINE,
-              margin: "5px 0 0 0",
-            }}
-          >
-            {propLine}
-          </p>
+    <div className="relative overflow-hidden rounded-2xl bg-zinc-900/50 border border-white/10 p-6 backdrop-blur-md shadow-2xl ring-1 ring-inset ring-white/5">
+      {/* Dynamic Glow: Changes based on performance */}
+      <div className={`absolute -right-16 -top-16 h-40 w-40 rounded-full blur-[80px] opacity-20 transition-colors duration-500 ${isHighHit ? 'bg-emerald-500' : isLowHit ? 'bg-rose-500' : 'bg-blue-500'}`} />
+
+      <div className="flex flex-col gap-6 relative z-10">
+        <div className="flex justify-between items-end">
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Target Line</p>
+            <h2 className="text-5xl font-black text-white tracking-tighter">{propLine}</h2>
+          </div>
+          <div className="text-right space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Hit Rate</p>
+            <h2 className={`text-5xl font-black tracking-tighter ${isHighHit ? 'text-emerald-400' : isLowHit ? 'text-rose-400' : 'text-amber-400'}`}>
+              {hitRate}%
+            </h2>
+          </div>
         </div>
 
-        {/* 2. Hit Rate */}
-        <div style={{ textAlign: "center" }}>
-          <p className="text-md m-0 text-[#aaa]">HIT RATE</p>
-          <p
-            style={{
-              fontSize: "3.5rem",
-              fontWeight: "900",
-              color: hitRateColor,
-              margin: "5px 0 0 0",
-            }}
-          >
-            {hitRate}%
-          </p>
-        </div>
+        <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-        {/* 3. ML Prediction / Prop Edge (Placeholder) */}
-        <div style={{ textAlign: "center" }}>
-          <p className="text-md m-0 text-[#aaa]">ANALYTICS EDGE</p>
-          <p
-            style={{
-              fontSize: "3.5rem",
-              fontWeight: "900",
-              color: "#ccc",
-              margin: "5px 0 0 0",
-              opacity: 0.6,
-            }}
-          >
-            N/A
-          </p>
+        <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+            <p className="text-[9px] uppercase text-zinc-500 font-bold tracking-widest mb-1">Status</p>
+            <p className={`text-sm font-bold ${isHighHit ? 'text-emerald-400' : 'text-zinc-300'}`}>
+              {isHighHit ? '🔥 ON FIRE' : '🧊 STRETCH'}
+            </p>
+          </div>
+          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
+            <p className="text-[9px] uppercase text-zinc-500 font-bold tracking-widest mb-1">Consistency</p>
+            <p className="text-sm font-bold text-zinc-300">
+              {parseFloat(hitRate) > 50 ? 'Reliable' : 'Volatile'}
+            </p>
+          </div>
         </div>
       </div>
     </div>
