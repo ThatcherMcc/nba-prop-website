@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -13,9 +13,9 @@
     "@vercel/postgres": "^0.10.0",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.6",
-    "next": "15.5.4",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
     "recharts": "^3.2.1",
     "sqlstring": "^2.3.3",
     "zod": "^4.1.11"
@@ -33,5 +33,10 @@
     "tailwindcss": "^4",
     "tsx": "^4.20.6",
     "typescript": "^5"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": ">=0.25.0"
+    }
   }
 }
