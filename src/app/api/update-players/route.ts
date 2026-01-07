@@ -17,7 +17,7 @@ export async function PUT(request: Request) {
 
   try {
     console.log("Starting to parse request body");
-    const players: PlayerProp[] = await request.json();
+    const players: PlayerGameLogs[] = await request.json();
     console.log("Players data:", JSON.stringify(players, null, 2));
     console.log("Number of players:", players?.length);
 
@@ -155,7 +155,7 @@ interface Gamelog {
   SB: number;
 }
 
-interface PlayerProp {
+interface PlayerGameLogs {
   name: string;
   gamelogs: Gamelog[];
 }
