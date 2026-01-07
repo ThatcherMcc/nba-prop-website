@@ -1,4 +1,4 @@
-import { pgTable, index, unique, serial, text, date, integer, real } from "drizzle-orm/pg-core"
+import { pgTable, index, unique, serial, text, date, integer, real, check, varchar } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -40,4 +40,19 @@ export const playerData = pgTable("player_data", {
 	index("idx_player_name").using("btree", table.playerName.asc().nullsLast().op("text_ops")),
 	index("idx_player_opponent").using("btree", table.playerName.asc().nullsLast().op("text_ops"), table.opponent.asc().nullsLast().op("text_ops")),
 	unique("player_data_player_name_game_date_opponent_key").on(table.playerName, table.gameDate, table.opponent),
+]);
+
+export const playerProps = pgTable("player_props", {
+	id: serial().primaryKey().notNull(),
+	playerName: varchar("player_name", { length: 100 }).notNull(),
+	gameDate: date("game_date").notNull(),
+	statType: varchar("stat_type", { length: 20 }),
+	ou: varchar({ length: 5 }),
+	fairOdds: integer("fair_odds"),
+	fairLine: integer("fair_line"),
+	bookOdds: integer("book_odds"),
+	bookLine: integer("book_line"),
+}, (table) => [
+	index("idx_player_date").using("btree", table.playerName.asc().nullsLast().op("date_ops"), table.gameDate.asc().nullsLast().op("date_ops")),
+	check("player_props_ou_check", sql`(ou)::text = ANY ((ARRAY['OVER'::character varying, 'UNDER'::character varying])::text[])`),
 ]);
