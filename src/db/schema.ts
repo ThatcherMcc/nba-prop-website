@@ -41,6 +41,18 @@ export const playerData = pgTable("player_data", {
 	unique("player_data_player_name_game_date_opponent_key").on(table.playerName, table.gameDate, table.opponent),
 ]);
 
+// One row per player (so we can store profile metadata like image URL).
+export const players = pgTable("players", {
+	id: serial().primaryKey().notNull(),
+	playerName: varchar("player_name", { length: 100 }).notNull(),
+	// Can be a public-path like "/LebronPic.png" or a remote URL.
+	// For now this will usually be null, and the UI will fall back to "/NotUnlocked.png".
+	profileImageUrl: text("profile_image_url"),
+}, (table) => [
+	unique("players_player_name_key").on(table.playerName),
+	index("idx_players_player_name").using("btree", table.playerName.asc().nullsLast().op("text_ops")),
+]);
+
 export const playerProps = pgTable("player_props", {
 	id: serial().primaryKey().notNull(),
 	playerName: varchar("player_name", { length: 100 }).notNull(),
@@ -61,6 +73,7 @@ export const playerProps = pgTable("player_props", {
   ),
 ]);
 
+export type Player = typeof players.$inferSelect;
 export type PlayerProp = typeof playerProps.$inferSelect;
 export type PlayerGameLog = typeof playerData.$inferSelect;
 export const PLAYER_STAT_NAMES: string[] = [
