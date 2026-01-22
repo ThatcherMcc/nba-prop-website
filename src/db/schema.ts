@@ -2,12 +2,13 @@ import { pgTable, index, unique, serial, text, date, integer, real, check, varch
 import { sql } from "drizzle-orm"
 
 
-export const playerData = pgTable("player_data", {
+export const playerData = pgTable("player_data_2026", {
 	id: serial().primaryKey().notNull(),
 	playerName: text("player_name"),
 	gameDate: date("game_date"),
 	location: text(),
 	opponent: text(),
+	mp: integer(),
 	fg: integer(),
 	fga: integer(),
 	fgPct: real("fg_pct"),

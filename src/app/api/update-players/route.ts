@@ -45,28 +45,48 @@ export async function PUT(request: Request) {
       for (const gamelog of gameLogs) {
         try {
           await sql`
-          INSERT INTO player_data (
-            player_name, game_date, location, opponent, fg, fga, fg_pct,
+          INSERT INTO player_data_2026 (
+            player_name, game_date, location, opponent, mp, fg, fga, fg_pct,
             fg3, fg3a, fg3_pct, fg2, fg2a, fg2_pct, efg_pct, ft, fta,
             ft_pct, orb, drb, trb, ast, stl, blk, tov, pts, pra, pr,
             pa, ra, sb
           )
           VALUES (
-            ${playerName}, ${gamelog.DATE}, 
-            ${gamelog.LOCATION}, ${gamelog.OPPONENT},
-            ${gamelog.FG || 0}, ${gamelog.FGA || 0}, ${gamelog.FG_PCT || 0}, 
-            ${gamelog.FG3 || 0}, ${gamelog.FG3A || 0}, ${gamelog.FG3_PCT || 0}, 
-            ${gamelog.FG2 || 0}, ${gamelog.FG2 || 0}, ${gamelog.FG2_PCT || 0}, 
-            ${gamelog.EFG_PCT || 0}, ${gamelog.FT || 0}, ${gamelog.FTA || 0},
-            ${gamelog.FT_PCT || 0}, ${gamelog.ORB || 0}, ${gamelog.DRB || 0}, 
-            ${gamelog.TRB || 0}, ${gamelog.AST || 0}, ${gamelog.STL || 0}, 
-            ${gamelog.BLK || 0}, ${gamelog.TOV || 0}, ${gamelog.PTS || 0}, 
-            ${gamelog.PRA || 0}, ${gamelog.PR || 0}, ${gamelog.PA || 0}, 
-            ${gamelog.RA || 0}, ${gamelog.SB || 0}
+            ${playerName}, 
+            ${gamelog.DATE}, 
+            ${gamelog.LOCATION}, 
+            ${gamelog.OPPONENT},
+            ${gamelog.MP || 0},  -- Use the calculated 'minutes' float from Python
+            ${Number(gamelog.FG) || 0}, 
+            ${Number(gamelog.FGA) || 0}, 
+            ${gamelog.FG_PCT || 0}, 
+            ${Number(gamelog.FG3) || 0}, 
+            ${Number(gamelog.FG3A) || 0}, 
+            ${gamelog.FG3_PCT || 0}, 
+            ${Number(gamelog.FG2) || 0}, 
+            ${Number(gamelog.FG2A) || 0}, 
+            ${gamelog.FG2_PCT || 0}, 
+            ${gamelog.EFG_PCT || 0}, 
+            ${Number(gamelog.FT) || 0}, 
+            ${Number(gamelog.FTA) || 0},
+            ${gamelog.FT_PCT || 0}, 
+            ${Number(gamelog.ORB) || 0}, 
+            ${Number(gamelog.DRB) || 0}, 
+            ${Number(gamelog.TRB) || 0}, 
+            ${Number(gamelog.AST) || 0}, 
+            ${Number(gamelog.STL) || 0}, 
+            ${Number(gamelog.BLK) || 0}, 
+            ${Number(gamelog.TOV) || 0}, 
+            ${Number(gamelog.PTS) || 0}, 
+            ${Number(gamelog.PRA) || 0}, 
+            ${Number(gamelog.PR) || 0}, 
+            ${Number(gamelog.PA) || 0}, 
+            ${Number(gamelog.RA) || 0}, 
+            ${Number(gamelog.SB) || 0}
           )
           ON CONFLICT (player_name, game_date, opponent) 
           DO UPDATE SET
-            location = EXCLUDED.location,
+            mp = EXCLUDED.mp,
             fg = EXCLUDED.fg,
             fga = EXCLUDED.fga,
             fg_pct = EXCLUDED.fg_pct,
@@ -127,6 +147,7 @@ interface Gamelog {
   DATE: string;
   LOCATION: "Home" | "Away";
   OPPONENT: string;
+  MP: string;
   FG: number;
   FGA: number;
   FG_PCT: number;
