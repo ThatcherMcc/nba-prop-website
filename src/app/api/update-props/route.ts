@@ -1,77 +1,25 @@
 import { NextResponse } from "next/server";
-import { db, playerProps } from "@/db";
-import { sql } from "drizzle-orm";
 
+/**
+ * Props API targets the current Neon schema: player_props uses
+ * player_id, game_id, market_id (FKs), not player_name/game_date/stat_type.
+ * Update this route to resolve names/dates to IDs and insert with the new shape
+ * when the backend is ready to call it.
+ */
 export async function PUT(request: Request) {
-  console.log("PUT request received");
-  
   const API_KEY = process.env.UPDATE_API_KEY;
   const authHeader = request.headers.get("authorization");
 
-  console.log("API_KEY exists:", !!API_KEY);
-  console.log("Auth header:", authHeader ? "present" : "missing");
-
   if (!authHeader || authHeader.split(" ")[1] !== API_KEY) {
-    console.log("Authorization failed");
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    const rawData = await request.json();
-  
-    if (!Array.isArray(rawData)) {
-      return NextResponse.json({ message: "Invalid format" }, { status: 400 });
-    }
-  
-    // 1. Map to your schema format
-    const allValues = rawData.map((prop) => ({
-      playerName: prop.player_name,
-      gameDate: prop.event_date,
-      statType: prop.stat_type,
-      ou: prop.ou,
-      fairOdds: prop.fair_odds,
-      fairLine: prop.fair_line,
-      bookOdds: prop.book_odds,
-      bookLine: prop.book_line,
-    }));
-  
-    // 2. DE-DUPLICATE the incoming array
-    // We use a Map to keep only the LAST occurrence of any duplicate row
-    const uniqueMap = new Map();
-    allValues.forEach(item => {
-      const key = `${item.playerName}-${item.gameDate}-${item.statType}`;
-      uniqueMap.set(key, item);
-    });
-    
-    const valuesToInsert = Array.from(uniqueMap.values());
-  
-    console.log(`Original: ${allValues.length}, Unique: ${valuesToInsert.length}`);
-  
-    // 3. Perform Batching (as we did before)
-    const BATCH_SIZE = 100;
-    for (let i = 0; i < valuesToInsert.length; i += BATCH_SIZE) {
-      const chunk = valuesToInsert.slice(i, i + BATCH_SIZE);
-      await db.insert(playerProps)
-        .values(chunk)
-        .onConflictDoUpdate({
-          target: [playerProps.playerName, playerProps.gameDate, playerProps.statType],
-          set: {
-            fairOdds: sql`excluded.fair_odds`,
-            fairLine: sql`excluded.fair_line`,
-            bookOdds: sql`excluded.book_odds`,
-            bookLine: sql`excluded.book_line`,
-            ou: sql`excluded.ou`
-          },
-        });
-    }
-
-    return NextResponse.json({ 
-      message: "Upsert successful", 
-      count: valuesToInsert.length 
-    });
-
-  } catch (error) {
-    console.error("Database error:", error);
-    return NextResponse.json({ message: "Error processing data" }, { status: 500 });
-  }
+  // New schema: player_props(player_id, game_id, market_id, over_under, fair_line, fair_odds, book_line, book_odds)
+  return NextResponse.json(
+    {
+      message:
+        "Endpoint not yet updated for new schema (player_id, game_id, market_id). See directives/infrastructure/neon_schema.md.",
+    },
+    { status: 501 }
+  );
 }

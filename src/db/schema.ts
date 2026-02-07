@@ -1,122 +1,172 @@
-import { pgTable, index, unique, serial, text, date, integer, real, check, varchar } from "drizzle-orm/pg-core"
-import { sql } from "drizzle-orm"
+import {
+  pgTable,
+  index,
+  unique,
+  serial,
+  date,
+  integer,
+  varchar,
+  boolean,
+  numeric,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
+// --- Neon schema (see directives/infrastructure/neon_schema.md) ---
 
-export const playerData = pgTable("player_data_2026", {
-	id: serial().primaryKey().notNull(),
-	playerName: text("player_name"),
-	gameDate: date("game_date"),
-	location: text(),
-	opponent: text(),
-	mp: integer(),
-	fg: integer(),
-	fga: integer(),
-	fgPct: real("fg_pct"),
-	fg3: integer(),
-	fg3a: integer(),
-	fg3Pct: real("fg3_pct"),
-	fg2: integer(),
-	fg2a: integer(),
-	fg2Pct: real("fg2_pct"), 
-	efgPct: real("efg_pct"),
-	ft: integer(),
-	fta: integer(),
-	ftPct: real("ft_pct"),
-	orb: integer(),
-	drb: integer(),
-	trb: integer(),
-	ast: integer(),
-	stl: integer(),
-	blk: integer(),
-	tov: integer(),
-	pts: integer(),
-	pra: integer(),
-	pr: integer(),
-	pa: integer(),
-	ra: integer(),
-	sb: integer(),
-}, (table) => [
-	index("idx_game_data").using("btree", table.gameDate.asc().nullsLast().op("date_ops")),
-	index("idx_player_name").using("btree", table.playerName.asc().nullsLast().op("text_ops")),
-	index("idx_player_opponent").using("btree", table.playerName.asc().nullsLast().op("text_ops"), table.opponent.asc().nullsLast().op("text_ops")),
-	unique("player_data_player_name_game_date_opponent_key").on(table.playerName, table.gameDate, table.opponent),
-]);
+export const teams = pgTable(
+  "teams",
+  {
+    teamId: serial("team_id").primaryKey(),
+    teamCode: varchar("team_code", { length: 3 }).notNull().unique(),
+    teamName: varchar("team_name", { length: 50 }).notNull().unique(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("idx_team_abbr").on(table.teamCode)]
+);
 
-export const playerProps = pgTable("player_props", {
-	id: serial().primaryKey().notNull(),
-	playerName: varchar("player_name", { length: 100 }).notNull(),
-	gameDate: date("game_date").notNull(),
-	statType: varchar("stat_type", { length: 20 }),
-	ou: varchar({ length: 5 }),
-	fairOdds: integer("fair_odds"),
-	fairLine: real("fair_line"),
-	bookOdds: integer("book_odds"),
-	bookLine: real("book_line"),
-}, (table) => [
-	index("idx_player_date").using("btree", table.playerName.asc().nullsLast().op("date_ops"), table.gameDate.asc().nullsLast().op("date_ops")),
-	check("player_props_ou_check", sql`(ou)::text = ANY ((ARRAY['OVER'::character varying, 'UNDER'::character varying])::text[])`),
-  unique("unique_player_game_stat").on(
-    table.playerName, 
-    table.gameDate, 
-    table.statType
-  ),
-]);
+export const players = pgTable(
+  "players",
+  {
+    playerId: serial("player_id").primaryKey(),
+    playerName: varchar("player_name", { length: 100 }).notNull().unique(),
+    url: varchar("url", { length: 120 }).notNull().unique(),
+    playerAbbreviation: varchar("player_abbreviation", { length: 9 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index("idx_player_names").on(table.playerName)]
+);
 
-export type PlayerProp = typeof playerProps.$inferSelect;
-export type PlayerGameLog = typeof playerData.$inferSelect;
+export const games = pgTable(
+  "games",
+  {
+    gameId: serial("game_id").primaryKey(),
+    gameDate: date("game_date").notNull(),
+    homeTeamId: integer("home_team_id").notNull().references(() => teams.teamId),
+    awayTeamId: integer("away_team_id").notNull().references(() => teams.teamId),
+    season: varchar("season", { length: 9 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("unique_game").on(table.gameDate, table.homeTeamId, table.awayTeamId),
+    index("idx_games_date").on(table.gameDate),
+  ]
+);
+
+export const playerGameStats = pgTable(
+  "player_game_stats",
+  {
+    gamelogId: serial("gamelog_id").primaryKey(),
+    playerId: integer("player_id").notNull().references(() => players.playerId),
+    gameId: integer("game_id").notNull().references(() => games.gameId),
+    teamId: integer("team_id").notNull().references(() => teams.teamId),
+    isHome: boolean("is_home").notNull(),
+    minutesPlayed: varchar("minutes_played", { length: 5 }),
+    fieldGoalsMade: integer("field_goals_made").default(0),
+    fieldGoalsAttempted: integer("field_goals_attempted").default(0),
+    fieldGoalPct: numeric("field_goal_pct"),
+    threePointersMade: integer("three_pointers_made").default(0),
+    threePointersAttempted: integer("three_pointers_attempted").default(0),
+    threePointPct: numeric("three_point_pct"),
+    twoPointersMade: integer("two_pointers_made").default(0),
+    twoPointersAttempted: integer("two_pointers_attempted").default(0),
+    twoPointPct: numeric("two_point_pct"),
+    freeThrowsMade: integer("free_throws_made").default(0),
+    freeThrowsAttempted: integer("free_throws_attempted").default(0),
+    freeThrowPct: numeric("free_throw_pct"),
+    effectiveFgPct: numeric("effective_fg_pct"),
+    offensiveRebounds: integer("offensive_rebounds").default(0),
+    defensiveRebounds: integer("defensive_rebounds").default(0),
+    totalRebounds: integer("total_rebounds").default(0),
+    assists: integer("assists").default(0),
+    steals: integer("steals").default(0),
+    blocks: integer("blocks").default(0),
+    turnovers: integer("turnovers").default(0),
+    personalFouls: integer("personal_fouls").default(0),
+    points: integer("points").default(0),
+    ptsRebAst: integer("pts_reb_ast"),
+    ptsReb: integer("pts_reb"),
+    ptsAst: integer("pts_ast"),
+    rebAst: integer("reb_ast"),
+    stlBlk: integer("stl_blk"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("unq_player_game").on(table.playerId, table.gameId),
+    index("idx_stats_lookup").on(table.playerId, table.gameId),
+  ]
+);
+
+export const propMarkets = pgTable("prop_markets", {
+  marketId: serial("market_id").primaryKey(),
+  marketCode: varchar("market_code", { length: 20 }).notNull().unique(),
+  marketName: varchar("market_name", { length: 50 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const playerProps = pgTable(
+  "player_props",
+  {
+    propId: serial("prop_id").primaryKey(),
+    playerId: integer("player_id").notNull().references(() => players.playerId),
+    gameId: integer("game_id").notNull().references(() => games.gameId),
+    marketId: integer("market_id").notNull().references(() => propMarkets.marketId),
+    overUnder: varchar("over_under", { length: 5 }),
+    fairLine: numeric("fair_line"),
+    fairOdds: integer("fair_odds"),
+    bookLine: numeric("book_line"),
+    bookOdds: integer("book_odds"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("unq_player_game_market").on(table.playerId, table.gameId, table.marketId),
+    index("idx_props_lookup").on(table.playerId, table.gameId),
+  ]
+);
+
+// --- UI-facing type: flat game log shape (mapped from player_game_stats + games + players) ---
+
+export type PlayerGameLog = {
+  playerName: string | null;
+  gameDate: string | null;
+  location: string | null;
+  opponent: string | null;
+  mp: string | null;
+  fg: number | null;
+  fga: number | null;
+  fgPct: number | null;
+  fg3: number | null;
+  fg3a: number | null;
+  fg3Pct: number | null;
+  fg2: number | null;
+  fg2a: number | null;
+  fg2Pct: number | null;
+  efgPct: number | null;
+  ft: number | null;
+  fta: number | null;
+  ftPct: number | null;
+  orb: number | null;
+  drb: number | null;
+  trb: number | null;
+  ast: number | null;
+  stl: number | null;
+  blk: number | null;
+  tov: number | null;
+  pts: number | null;
+  pra: number | null;
+  pr: number | null;
+  pa: number | null;
+  ra: number | null;
+  sb: number | null;
+};
+
 export const PLAYER_STAT_NAMES: string[] = [
-  "fg",
-  "fga",
-  "fgPct",
-  "fg3",
-  "fg3a",
-  "fg3Pct",
-  "fg2",
-  "fg2a",
-  "fg2Pct",
-  "efgPct",
-  "ft",
-  "fta",
-  "ftPct",
-  "orb",
-  "drb",
-  "trb",
-  "ast",
-  "stl",
-  "blk",
-  "tov",
-  "pts",
-  "pra",
-  "pr",
-  "pa",
-  "ra",
-  "sb",
+  "fg", "fga", "fgPct", "fg3", "fg3a", "fg3Pct", "fg2", "fg2a", "fg2Pct", "efgPct",
+  "ft", "fta", "ftPct", "orb", "drb", "trb", "ast", "stl", "blk", "tov", "pts",
+  "pra", "pr", "pa", "ra", "sb",
 ];
 
 export type PLAYER_STAT_TYPE =
-  | "fg"
-  | "fga"
-  | "fgPct"
-  | "fg3"
-  | "fg3a"
-  | "fg3Pct"
-  | "fg2"
-  | "fg2a"
-  | "fg2Pct"
-  | "efgPct"
-  | "ft"
-  | "fta"
-  | "ftPct"
-  | "orb"
-  | "drb"
-  | "trb"
-  | "ast"
-  | "stl"
-  | "blk"
-  | "tov"
-  | "pts"
-  | "pra"
-  | "pr"
-  | "pa"
-  | "ra"
-  | "sb";
+  | "fg" | "fga" | "fgPct" | "fg3" | "fg3a" | "fg3Pct" | "fg2" | "fg2a" | "fg2Pct" | "efgPct"
+  | "ft" | "fta" | "ftPct" | "orb" | "drb" | "trb" | "ast" | "stl" | "blk" | "tov" | "pts"
+  | "pra" | "pr" | "pa" | "ra" | "sb";

@@ -1,5 +1,4 @@
 "use client";
-
 import { useMemo } from "react";
 import {
   BarChart,
@@ -26,12 +25,21 @@ const COLORS = {
   UNDER: "#fbbf24",
   PUSH: "#94a3b8",
   GRID: "rgba(255, 255, 255, 0.05)",
-  TEXT: "#94a3b8" 
+  TEXT: "#94a3b8"
 };
 
+// Format YYYY-MM-DD as M/D without timezone shift (DB date is calendar date, not UTC midnight).
+function formatGameDate(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  if (isNaN(month) || isNaN(day)) return dateStr;
+  return `${month}/${day}`;
+}
+
 export default function PlayerChartDisplay({ data, statKey, propLine }: ChartProps) {
-  
-  // 1. Memoize formatting to prevent unnecessary recalculations
   const formattedData = useMemo(() => {
     return data
       .filter((game) => game.gameDate !== null)
@@ -40,10 +48,7 @@ export default function PlayerChartDisplay({ data, statKey, propLine }: ChartPro
         return {
           ...game,
           value: statValue,
-          displayDate: new Date(game.gameDate as string).toLocaleDateString("en-US", {
-            month: "numeric",
-            day: "numeric",
-          }),
+          displayDate: formatGameDate(game.gameDate as string),
           fillColor:
             statValue > propLine ? COLORS.OVER : 
             statValue < propLine ? COLORS.UNDER : COLORS.PUSH,
