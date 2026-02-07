@@ -7,16 +7,15 @@ import PlayerPageContent from "@/app/components/PlayerPageContent";
 const CACHE_TAG = "player-data";
 const REVALIDATE_SECONDS = 86400; // 24h fallback; invalidate via POST /api/revalidate after scrape
 
-interface PageProps {
-  params: Promise<{ name: string }> | { name: string };
-  searchParams: Promise<{ games?: string }> | { games?: string };
-}
-
-export default async function PlayerPage({ params, searchParams }: PageProps) {
-  const resolvedParams = await Promise.resolve(params);
-  const resolvedSearchParams = await Promise.resolve(searchParams);
-  const encodedName = resolvedParams.name;
-  const gamesParam = resolvedSearchParams.games;
+export default async function PlayerPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ name: string }>;
+  searchParams: Promise<{ games?: string }>;
+}) {
+  const { name: encodedName } = await params;
+  const { games: gamesParam } = await searchParams;
 
   const playerName = decodeURIComponent(encodedName);
   if (!ALL_PLAYER_NAMES.includes(playerName)) notFound();

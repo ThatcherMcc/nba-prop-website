@@ -26,7 +26,7 @@ export default function FeaturedPlayer({ playerName, data }: FeaturedPlayerProps
       (g) => ((g.pts as number | null) ?? 0) > propLine
     ).length;
     return ((gamesOver / data.length) * 100).toFixed(1);
-  }, [data]);
+  }, [data, propLine]);
 
   if (data.length === 0) return null;
 

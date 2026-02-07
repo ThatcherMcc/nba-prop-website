@@ -15,6 +15,8 @@ export default function PlayerCard({
   gameCount,
   verdict,
 }: PlayerCardProps) {
+  void playerName;
+  void stat;
   const isHighHit = parseFloat(hitRate) >= 60;
   const isLowHit = parseFloat(hitRate) <= 40;
 
