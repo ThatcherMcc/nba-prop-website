@@ -1,4 +1,8 @@
-export const ALL_PLAYER_NAMES: string[] = [
+/**
+ * Fallback list when getPlayerNames() from @/lib/data fails or returns empty.
+ * The players table in Neon is the source of truth; this is used only as fallback.
+ */
+export const FALLBACK_PLAYER_NAMES: string[] = [
   "Precious Achiuwa",
   "Steven Adams",
   "Bam Adebayo",
@@ -487,3 +491,6 @@ export const ALL_PLAYER_NAMES: string[] = [
   "Trae Young",
   "Ivica Zubac",
 ];
+
+/** @deprecated Use getPlayerNames() from @/lib/data (or FALLBACK_PLAYER_NAMES for static fallback). */
+export const ALL_PLAYER_NAMES: string[] = FALLBACK_PLAYER_NAMES;

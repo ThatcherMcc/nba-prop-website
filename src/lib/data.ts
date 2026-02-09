@@ -3,10 +3,56 @@
 import { db, players, games, playerGameStats, type PlayerGameLog } from "@/db";
 import { eq, desc, sql, gte, and } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
+import { FALLBACK_PLAYER_NAMES } from "@/lib/playerNames";
+
+/**
+ * Canonical list of player names from Neon `players` table (source of truth).
+ * Used for search suggestions and validation. Cached with tag "player-data";
+ * call POST /api/revalidate after the pipeline runs to refresh.
+ * Falls back to FALLBACK_PLAYER_NAMES if the DB fails or returns no rows.
+ */
+export async function getPlayerNames(): Promise<string[]> {
+  noStore();
+  try {
+    const rows = await db
+      .select({ playerName: players.playerName })
+      .from(players)
+      .orderBy(players.playerName);
+    const names = rows.map((r) => r.playerName);
+    return names.length > 0 ? names : FALLBACK_PLAYER_NAMES;
+  } catch (error) {
+    console.error("Database Error (getPlayerNames):", error);
+    return FALLBACK_PLAYER_NAMES;
+  }
+}
+
+/** True if a player with this name exists in `players` (case-insensitive). Used for 404 on invalid /player/[name]. */
+export async function getPlayerExists(playerName: string): Promise<boolean> {
+  noStore();
+  try {
+    const [row] = await db
+      .select({ playerId: players.playerId })
+      .from(players)
+      .where(eq(sql`lower(${players.playerName})`, playerName.toLowerCase()))
+      .limit(1);
+    return row != null;
+  } catch (error) {
+    console.error("Database Error (getPlayerExists):", error);
+    return false;
+  }
+}
 
 // Only include games where the player actually played (exclude DNP).
 // Excluded values (case-insensitive, trimmed): '', 'inactive', 'inact', 'did n', '0', '0:00'.
 // Keep .cursor/rules/nba-prop-website.mdc "Played-only / DNP exclusion" in sync if adding values.
+const DNP_MINUTES_VALUES = ["", "inactive", "inact", "did n", "0", "0:00"] as const;
+
+/** True if minutes_played indicates DNP (did not play). Used for last-game status. */
+function isDnpMinutes(mp: string | null | undefined): boolean {
+  const v = (mp ?? "").toLowerCase().trim();
+  return (DNP_MINUTES_VALUES as readonly string[]).includes(v);
+}
+
 const PLAYED_ONLY = sql`COALESCE(LOWER(TRIM(player_game_stats.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')`;
 
 // --- Hottest hands: most points in each player's most recent game ---
@@ -124,6 +170,45 @@ function rowToPlayerGameLog(
     ra: row.rebAst,
     sb: row.stlBlk,
   };
+}
+
+/** Most recent game (by date) for the player; used to show "Last game: DNP" when excluded from averages. */
+export type PlayerLastGameStatus = {
+  lastGameDate: string | null;
+  isDnp: boolean;
+};
+
+export async function getPlayerLastGameStatus(
+  playerName: string
+): Promise<PlayerLastGameStatus> {
+  noStore();
+  try {
+    const [player] = await db
+      .select({ playerId: players.playerId })
+      .from(players)
+      .where(eq(sql`lower(${players.playerName})`, playerName.toLowerCase()))
+      .limit(1);
+
+    if (!player) return { lastGameDate: null, isDnp: false };
+
+    const [row] = await db
+      .select({
+        gameDate: games.gameDate,
+        minutesPlayed: playerGameStats.minutesPlayed,
+      })
+      .from(playerGameStats)
+      .innerJoin(games, eq(playerGameStats.gameId, games.gameId))
+      .where(eq(playerGameStats.playerId, player.playerId))
+      .orderBy(desc(games.gameDate))
+      .limit(1);
+
+    if (!row) return { lastGameDate: null, isDnp: false };
+    const lastGameDate = row.gameDate != null ? String(row.gameDate) : null;
+    return { lastGameDate, isDnp: isDnpMinutes(row.minutesPlayed) };
+  } catch (error) {
+    console.error("Database Error (getPlayerLastGameStatus):", error);
+    return { lastGameDate: null, isDnp: false };
+  }
 }
 
 export async function getPlayerData(
@@ -306,6 +391,149 @@ export async function getPlayersOverSeasonAvgLast5(
     }));
   } catch (error) {
     console.error("Database Error (getPlayersOverSeasonAvgLast5):", error);
+    return [];
+  }
+}
+
+// --- Under season average in last 5 games (points) — "Cold last 5" ---
+export type UnderSeasonAvgLast5 = {
+  playerName: string | null;
+  seasonAvgPts: number;
+  last5AvgPts: number;
+  gamesInLast5: number;
+  diff: number; // last5AvgPts - seasonAvgPts (negative when cold)
+};
+
+export async function getPlayersUnderSeasonAvgLast5(
+  limit = 8
+): Promise<UnderSeasonAvgLast5[]> {
+  noStore();
+
+  type Row = {
+    player_name: string | null;
+    season_avg_pts: string | number;
+    last5_avg_pts: string | number;
+    games_in_last5: number;
+    diff: string | number;
+  };
+
+  try {
+    const result = await db.execute<Row>(sql`
+      WITH ranked AS (
+        SELECT s.player_id, s.points, g.game_date,
+          ROW_NUMBER() OVER (PARTITION BY s.player_id ORDER BY g.game_date DESC) AS rn
+        FROM player_game_stats s
+        JOIN games g ON g.game_id = s.game_id
+        WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+      ),
+      last_5_agg AS (
+        SELECT player_id,
+          AVG(points) AS last5_avg_pts,
+          COUNT(*)::int AS games_in_last5
+        FROM ranked
+        WHERE rn <= 5
+        GROUP BY player_id
+        HAVING COUNT(*) >= 5
+      ),
+      season_avg AS (
+        SELECT player_id,
+          AVG(points) AS season_avg_pts
+        FROM player_game_stats
+        WHERE COALESCE(LOWER(TRIM(minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+        GROUP BY player_id
+      )
+      SELECT p.player_name,
+        ROUND(sa.season_avg_pts::numeric, 1) AS season_avg_pts,
+        ROUND(l5.last5_avg_pts::numeric, 1) AS last5_avg_pts,
+        l5.games_in_last5,
+        ROUND((l5.last5_avg_pts - sa.season_avg_pts)::numeric, 1) AS diff
+      FROM last_5_agg l5
+      JOIN season_avg sa ON sa.player_id = l5.player_id
+      JOIN players p ON p.player_id = l5.player_id
+      WHERE l5.last5_avg_pts < sa.season_avg_pts
+      ORDER BY (l5.last5_avg_pts - sa.season_avg_pts) ASC
+      LIMIT ${limit}
+    `);
+
+    const rows: Row[] =
+      "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+    return rows.map((r: Row) => ({
+      playerName: r.player_name ?? null,
+      seasonAvgPts: Number(r.season_avg_pts) ?? 0,
+      last5AvgPts: Number(r.last5_avg_pts) ?? 0,
+      gamesInLast5: Number(r.games_in_last5) ?? 0,
+      diff: Number(r.diff) ?? 0,
+    }));
+  } catch (error) {
+    console.error("Database Error (getPlayersUnderSeasonAvgLast5):", error);
+    return [];
+  }
+}
+
+// --- Trending: last 3 games avg vs previous 3 games avg (points) ---
+export type TrendingPlayer = {
+  playerName: string | null;
+  last3AvgPts: number;
+  prev3AvgPts: number;
+  diff: number; // last3AvgPts - prev3AvgPts
+};
+
+export async function getTrendingPlayers(
+  limit = 8
+): Promise<TrendingPlayer[]> {
+  noStore();
+
+  type Row = {
+    player_name: string | null;
+    last3_avg_pts: string | number;
+    prev3_avg_pts: string | number;
+    diff: string | number;
+  };
+
+  try {
+    const result = await db.execute<Row>(sql`
+      WITH ranked AS (
+        SELECT s.player_id, s.points, g.game_date,
+          ROW_NUMBER() OVER (PARTITION BY s.player_id ORDER BY g.game_date DESC) AS rn
+        FROM player_game_stats s
+        JOIN games g ON g.game_id = s.game_id
+        WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+      ),
+      last_3 AS (
+        SELECT player_id, AVG(points) AS last3_avg_pts
+        FROM ranked WHERE rn <= 3
+        GROUP BY player_id
+        HAVING COUNT(*) >= 3
+      ),
+      prev_3 AS (
+        SELECT player_id, AVG(points) AS prev3_avg_pts
+        FROM ranked WHERE rn BETWEEN 4 AND 6
+        GROUP BY player_id
+        HAVING COUNT(*) >= 3
+      )
+      SELECT p.player_name,
+        ROUND(l3.last3_avg_pts::numeric, 1) AS last3_avg_pts,
+        ROUND(pr.prev3_avg_pts::numeric, 1) AS prev3_avg_pts,
+        ROUND((l3.last3_avg_pts - pr.prev3_avg_pts)::numeric, 1) AS diff
+      FROM last_3 l3
+      JOIN prev_3 pr ON pr.player_id = l3.player_id
+      JOIN players p ON p.player_id = l3.player_id
+      ORDER BY (l3.last3_avg_pts - pr.prev3_avg_pts) DESC
+      LIMIT ${limit}
+    `);
+
+    const rows: Row[] =
+      "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+    return rows.map((r: Row) => ({
+      playerName: r.player_name ?? null,
+      last3AvgPts: Number(r.last3_avg_pts) ?? 0,
+      prev3AvgPts: Number(r.prev3_avg_pts) ?? 0,
+      diff: Number(r.diff) ?? 0,
+    }));
+  } catch (error) {
+    console.error("Database Error (getTrendingPlayers):", error);
     return [];
   }
 }

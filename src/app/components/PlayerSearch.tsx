@@ -5,19 +5,33 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { PlayerGameLog } from "@/db/schema";
 import type { OverSeasonAvgLast5 as OverSeasonAvgLast5Type } from "@/lib/data";
-import { ALL_PLAYER_NAMES } from "@/lib/playerNames";
+import type { UnderSeasonAvgLast5 } from "@/lib/data";
+import type { TrendingPlayer } from "@/lib/data";
 import HomeHero from "./HomeHero";
 import OverSeasonAvgLast5 from "./OverSeasonAvgLast5";
+import ColdLast5 from "./ColdLast5";
+import TrendingPlayers from "./TrendingPlayers";
 import FeaturedPlayer from "./FeaturedPlayer";
 
+/** Normalize for match: lowercase, collapse spaces. */
+function normalizeForMatch(s: string): string {
+  return s.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 export default function PlayerSearch({
+  playerNames = [],
   featuredPlayerName = "LeBron James",
   featuredPlayerData = [],
   overSeasonAvgLast5 = [],
+  underSeasonAvgLast5 = [],
+  trendingPlayers = [],
 }: {
+  playerNames?: string[];
   featuredPlayerName?: string;
   featuredPlayerData?: PlayerGameLog[];
   overSeasonAvgLast5?: OverSeasonAvgLast5Type[];
+  underSeasonAvgLast5?: UnderSeasonAvgLast5[];
+  trendingPlayers?: TrendingPlayer[];
 }) {
   const router = useRouter();
   const [playerName, setPlayerName] = useState("");
@@ -25,10 +39,14 @@ export default function PlayerSearch({
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const name = playerName.trim();
-    if (name && ALL_PLAYER_NAMES.includes(name)) {
-      router.push(`/player/${encodeURIComponent(name)}`);
-    }
+    if (!name) return;
+    const normalized = normalizeForMatch(name);
+    const match = playerNames.find((n) => normalizeForMatch(n) === normalized);
+    if (match) router.push(`/player/${encodeURIComponent(match)}`);
   };
+
+  const goToPlayer = (name: string, games = 5) =>
+    router.push(`/player/${encodeURIComponent(name)}?games=${games}`);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 selection:bg-blue-500/30">
@@ -57,9 +75,15 @@ export default function PlayerSearch({
         <HomeHero />
         <OverSeasonAvgLast5
           players={overSeasonAvgLast5}
-          onSelectPlayer={(name) => {
-            router.push(`/player/${encodeURIComponent(name)}?games=5`);
-          }}
+          onSelectPlayer={(name) => goToPlayer(name, 5)}
+        />
+        <ColdLast5
+          players={underSeasonAvgLast5}
+          onSelectPlayer={(name) => goToPlayer(name, 5)}
+        />
+        <TrendingPlayers
+          players={trendingPlayers}
+          onSelectPlayer={(name) => goToPlayer(name, 5)}
         />
         <FeaturedPlayer
           playerName={featuredPlayerName}
@@ -71,7 +95,7 @@ export default function PlayerSearch({
       </main>
 
       <datalist id="player-suggestions">
-        {ALL_PLAYER_NAMES.map((name) => (
+        {playerNames.map((name) => (
           <option key={name} value={name} />
         ))}
       </datalist>
