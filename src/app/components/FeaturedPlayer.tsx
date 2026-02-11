@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import type { PlayerGameLog } from "@/db/schema";
+import { isDnpMinutes } from "@/lib/dnp";
 
 const PlayerChartDisplay = dynamic(() => import("./PlayerChartDisplay"), {
   ssr: false,
@@ -21,11 +22,12 @@ interface FeaturedPlayerProps {
 export default function FeaturedPlayer({ playerName, data }: FeaturedPlayerProps) {
   const propLine = FEATURED_LINE;
   const hitRate = useMemo(() => {
-    if (data.length === 0) return "0";
-    const gamesOver = data.filter(
+    const played = data.filter((g) => !isDnpMinutes(g.mp));
+    if (played.length === 0) return "0";
+    const gamesOver = played.filter(
       (g) => ((g.pts as number | null) ?? 0) > propLine
     ).length;
-    return ((gamesOver / data.length) * 100).toFixed(1);
+    return ((gamesOver / played.length) * 100).toFixed(1);
   }, [data, propLine]);
 
   if (data.length === 0) return null;

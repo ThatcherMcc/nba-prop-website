@@ -12,6 +12,7 @@ import {
   CartesianGrid
 } from "recharts";
 import { PlayerGameLog, PLAYER_STAT_TYPE } from "@/db/schema";
+import { isDnpMinutes } from "@/lib/dnp";
 
 export interface ChartProps {
   data: PlayerGameLog[];
@@ -26,6 +27,7 @@ const COLORS = {
   OVER: "#4ade80",
   UNDER: "#fbbf24",
   PUSH: "#94a3b8",
+  DNP: "#64748b",
   GRID: "rgba(255, 255, 255, 0.05)",
   TEXT: "#94a3b8"
 };
@@ -41,19 +43,49 @@ function formatGameDate(dateStr: string | null): string {
   return `${month}/${day}`;
 }
 
+// Bar value for DNP so the bar is visible but minimal (Recharts needs a number).
+const DNP_BAR_VALUE = 0;
+
+type ChartTooltipPayload = { isDnp?: boolean; value?: number; displayDate?: string };
+
+function ChartTooltip(
+  props: { active?: boolean; payload?: Array<{ payload: ChartTooltipPayload }>; label?: string }
+) {
+  const { active, payload, label } = props;
+  if (!active || !payload?.length) return null;
+  const entry = payload[0].payload;
+  return (
+    <div className="rounded-lg border border-white/20 bg-zinc-900 px-3 py-2 text-sm shadow-xl">
+      <div className="font-medium text-zinc-300">{label ?? entry.displayDate}</div>
+      {entry.isDnp ? (
+        <div className="font-bold text-zinc-400">DNP</div>
+      ) : (
+        <div className="font-bold text-white">{entry.value}</div>
+      )}
+    </div>
+  );
+}
+
 export default function PlayerChartDisplay({ data, statKey, propLine, compact = false }: ChartProps) {
   const formattedData = useMemo(() => {
     return data
       .filter((game) => game.gameDate !== null)
       .map((game) => {
-        const statValue = (game[statKey] as number) ?? 0;
+        const dnp = isDnpMinutes(game.mp);
+        const statValue = dnp ? null : ((game[statKey] as number) ?? 0);
+        const value = dnp ? DNP_BAR_VALUE : statValue!;
         return {
           ...game,
-          value: statValue,
+          value,
+          isDnp: dnp,
           displayDate: formatGameDate(game.gameDate as string),
-          fillColor:
-            statValue > propLine ? COLORS.OVER : 
-            statValue < propLine ? COLORS.UNDER : COLORS.PUSH,
+          fillColor: dnp
+            ? COLORS.DNP
+            : value > propLine
+              ? COLORS.OVER
+              : value < propLine
+                ? COLORS.UNDER
+                : COLORS.PUSH,
         };
       });
   }, [data, statKey, propLine]);
@@ -88,15 +120,8 @@ export default function PlayerChartDisplay({ data, statKey, propLine, compact = 
           />
 
           <Tooltip
+            content={<ChartTooltip />}
             cursor={{ fill: "rgba(255,255,255,0.05)" }}
-            contentStyle={{
-              backgroundColor: "#111827",
-              border: "1px solid #374151",
-              borderRadius: "8px",
-              fontSize: compact ? "12px" : "14px",
-              color: "#fff"
-            }}
-            itemStyle={{ fontWeight: "bold" }}
           />
 
           <Bar 

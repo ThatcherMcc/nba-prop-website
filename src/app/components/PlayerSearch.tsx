@@ -45,8 +45,13 @@ export default function PlayerSearch({
     if (match) router.push(`/player/${encodeURIComponent(match)}`);
   };
 
-  const goToPlayer = (name: string, games = 5) =>
-    router.push(`/player/${encodeURIComponent(name)}?games=${games}`);
+  const goToPlayer = (name: string, games = 5, stat?: string, line?: number) => {
+    const params = new URLSearchParams();
+    params.set("games", String(games));
+    if (stat) params.set("stat", stat);
+    if (line != null && !Number.isNaN(line)) params.set("line", String(line));
+    router.push(`/player/${encodeURIComponent(name)}?${params.toString()}`);
+  };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 selection:bg-blue-500/30">
@@ -75,15 +80,21 @@ export default function PlayerSearch({
         <HomeHero />
         <OverSeasonAvgLast5
           players={overSeasonAvgLast5}
-          onSelectPlayer={(name) => goToPlayer(name, 5)}
+          onSelectPlayer={(name, seasonAvgPts) =>
+            goToPlayer(name, 10, "pts", seasonAvgPts ?? undefined)
+          }
         />
         <ColdLast5
           players={underSeasonAvgLast5}
-          onSelectPlayer={(name) => goToPlayer(name, 5)}
+          onSelectPlayer={(name, seasonAvgPts) =>
+            goToPlayer(name, 10, "pts", seasonAvgPts ?? undefined)
+          }
         />
         <TrendingPlayers
           players={trendingPlayers}
-          onSelectPlayer={(name) => goToPlayer(name, 5)}
+          onSelectPlayer={(name, last3AvgPts) =>
+            goToPlayer(name, 10, "pts", last3AvgPts ?? undefined)
+          }
         />
         <FeaturedPlayer
           playerName={featuredPlayerName}

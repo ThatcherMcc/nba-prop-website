@@ -3,7 +3,7 @@ import type { TrendingPlayer } from "@/lib/data";
 
 interface TrendingPlayersProps {
   players: TrendingPlayer[];
-  onSelectPlayer?: (name: string) => void;
+  onSelectPlayer?: (name: string, last3AvgPts?: number) => void;
 }
 
 export default function TrendingPlayers({
@@ -18,8 +18,9 @@ export default function TrendingPlayers({
         📈 Trending — last 3 vs previous 3 games (points)
       </h2>
       <p className="text-xs text-zinc-500 mb-3 max-w-xl">
-        Players whose last 3-game average is above their previous 3-game average.
-        Click to analyze.
+        Players whose last 3 (played) game average is above their previous 3
+        (played) game average. DNPs excluded. Season average ≥ 8 ppg. Click to
+        analyze.
       </p>
       <div className="rounded-2xl bg-zinc-900/80 border border-white/10 p-4 overflow-x-auto no-scrollbar">
         <div className="flex gap-4">
@@ -27,7 +28,9 @@ export default function TrendingPlayers({
             <button
               key={p.playerName ?? `player-${i}`}
               type="button"
-              onClick={() => p.playerName && onSelectPlayer?.(p.playerName)}
+              onClick={() =>
+                p.playerName && onSelectPlayer?.(p.playerName, p.last3AvgPts)
+              }
               className="flex-shrink-0 flex flex-col items-start gap-1 rounded-xl bg-white/5 border border-white/10 px-4 py-3 min-w-[180px] transition-colors hover:bg-white/10 hover:border-amber-500/40 focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-left"
             >
               <span className="text-lg font-bold text-white truncate w-full">

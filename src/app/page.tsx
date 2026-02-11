@@ -35,17 +35,17 @@ export default async function Page() {
     );
     const getCachedOverSeason = unstable_cache(
       () => getPlayersOverSeasonAvgLast5(8),
-      ["over-season-avg", "8"],
+      ["over-season-avg-v2", "8"],
       { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
     );
     const getCachedUnderSeason = unstable_cache(
       () => getPlayersUnderSeasonAvgLast5(8),
-      ["under-season-avg", "8"],
+      ["under-season-avg-v2", "8"],
       { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
     );
     const getCachedTrending = unstable_cache(
       () => getTrendingPlayers(8),
-      ["trending", "8"],
+      ["trending-v2", "8"],
       { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
     );
     [playerNames, featuredData, overSeasonAvgLast5, underSeasonAvgLast5, trendingPlayers] =

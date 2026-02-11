@@ -44,14 +44,8 @@ export async function getPlayerExists(playerName: string): Promise<boolean> {
 
 // Only include games where the player actually played (exclude DNP).
 // Excluded values (case-insensitive, trimmed): '', 'inactive', 'inact', 'did n', '0', '0:00'.
-// Keep .cursor/rules/nba-prop-website.mdc "Played-only / DNP exclusion" in sync if adding values.
-const DNP_MINUTES_VALUES = ["", "inactive", "inact", "did n", "0", "0:00"] as const;
-
-/** True if minutes_played indicates DNP (did not play). Used for last-game status. */
-function isDnpMinutes(mp: string | null | undefined): boolean {
-  const v = (mp ?? "").toLowerCase().trim();
-  return (DNP_MINUTES_VALUES as readonly string[]).includes(v);
-}
+// Keep .cursor/rules/nba-prop-website.mdc and @/lib/dnp.ts in sync if adding values.
+import { isDnpMinutes } from "@/lib/dnp";
 
 const PLAYED_ONLY = sql`COALESCE(LOWER(TRIM(player_game_stats.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')`;
 
@@ -261,12 +255,7 @@ export async function getPlayerData(
       .from(playerGameStats)
       .innerJoin(games, eq(playerGameStats.gameId, games.gameId))
       .innerJoin(players, eq(playerGameStats.playerId, players.playerId))
-      .where(
-        and(
-          eq(playerGameStats.playerId, player.playerId),
-          PLAYED_ONLY
-        )
-      )
+      .where(eq(playerGameStats.playerId, player.playerId))
       .orderBy(desc(games.gameDate))
       .limit(limit);
 
@@ -320,11 +309,13 @@ export async function getTopScorersLast7Days(
 }
 
 // --- Over season average in last 5 games (points) ---
+// Players with 5/5 or 4/5 of last 5 games over their season average; season avg >= 8.
 export type OverSeasonAvgLast5 = {
   playerName: string | null;
   seasonAvgPts: number;
   last5AvgPts: number;
   gamesInLast5: number;
+  overCount: number; // 4 or 5 — how many of last 5 games were over season avg
   diff: number; // last5AvgPts - seasonAvgPts
 };
 
@@ -338,6 +329,7 @@ export async function getPlayersOverSeasonAvgLast5(
     season_avg_pts: string | number;
     last5_avg_pts: string | number;
     games_in_last5: number;
+    over_count: number;
     diff: string | number;
   };
 
@@ -350,45 +342,56 @@ export async function getPlayersOverSeasonAvgLast5(
         JOIN games g ON g.game_id = s.game_id
         WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
       ),
-      last_5_agg AS (
-        SELECT player_id,
-          AVG(points) AS last5_avg_pts,
-          COUNT(*)::int AS games_in_last5
-        FROM ranked
-        WHERE rn <= 5
-        GROUP BY player_id
-        HAVING COUNT(*) >= 5
-      ),
       season_avg AS (
-        SELECT player_id,
-          AVG(points) AS season_avg_pts
+        SELECT player_id, AVG(points) AS season_avg_pts
         FROM player_game_stats
         WHERE COALESCE(LOWER(TRIM(minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
         GROUP BY player_id
+        HAVING AVG(points) >= 8
+      ),
+      last_5_with_sa AS (
+        SELECT r.player_id, r.points, sa.season_avg_pts
+        FROM ranked r
+        JOIN season_avg sa ON sa.player_id = r.player_id
+        WHERE r.rn <= 5
+      ),
+      over_agg AS (
+        SELECT player_id,
+          COUNT(*)::int AS games_in_last5,
+          COUNT(*) FILTER (WHERE points > season_avg_pts)::int AS over_count,
+          AVG(points) AS last5_avg_pts
+        FROM last_5_with_sa
+        GROUP BY player_id
+        HAVING COUNT(*) >= 5 AND COUNT(*) FILTER (WHERE points > season_avg_pts) IN (4, 5)
       )
       SELECT p.player_name,
         ROUND(sa.season_avg_pts::numeric, 1) AS season_avg_pts,
-        ROUND(l5.last5_avg_pts::numeric, 1) AS last5_avg_pts,
-        l5.games_in_last5,
-        ROUND((l5.last5_avg_pts - sa.season_avg_pts)::numeric, 1) AS diff
-      FROM last_5_agg l5
-      JOIN season_avg sa ON sa.player_id = l5.player_id
-      JOIN players p ON p.player_id = l5.player_id
-      WHERE l5.last5_avg_pts > sa.season_avg_pts
-      ORDER BY (l5.last5_avg_pts - sa.season_avg_pts) DESC
+        ROUND(o.last5_avg_pts::numeric, 1) AS last5_avg_pts,
+        o.games_in_last5,
+        o.over_count,
+        ROUND((o.last5_avg_pts - sa.season_avg_pts)::numeric, 1) AS diff
+      FROM over_agg o
+      JOIN season_avg sa ON sa.player_id = o.player_id
+      JOIN players p ON p.player_id = o.player_id
+      ORDER BY o.over_count DESC, sa.season_avg_pts DESC
       LIMIT ${limit}
     `);
 
     const rows: Row[] =
       "rows" in result && Array.isArray(result.rows) ? result.rows : [];
 
-    return rows.map((r: Row) => ({
-      playerName: r.player_name ?? null,
-      seasonAvgPts: Number(r.season_avg_pts) ?? 0,
-      last5AvgPts: Number(r.last5_avg_pts) ?? 0,
-      gamesInLast5: Number(r.games_in_last5) ?? 0,
-      diff: Number(r.diff) ?? 0,
-    }));
+    return rows.map((r: Row) => {
+      const raw = r as Record<string, unknown>;
+      const overCount = Number(r.over_count ?? raw.over_count ?? 0);
+      return {
+        playerName: r.player_name ?? null,
+        seasonAvgPts: Number(r.season_avg_pts ?? raw.season_avg_pts ?? 0),
+        last5AvgPts: Number(r.last5_avg_pts ?? raw.last5_avg_pts ?? 0),
+        gamesInLast5: Number(r.games_in_last5 ?? raw.games_in_last5 ?? 0),
+        overCount: overCount >= 4 && overCount <= 5 ? overCount : 0,
+        diff: Number(r.diff ?? raw.diff ?? 0),
+      };
+    }).filter((p) => p.seasonAvgPts >= 8 && (p.overCount === 4 || p.overCount === 5));
   } catch (error) {
     console.error("Database Error (getPlayersOverSeasonAvgLast5):", error);
     return [];
@@ -396,11 +399,13 @@ export async function getPlayersOverSeasonAvgLast5(
 }
 
 // --- Under season average in last 5 games (points) — "Cold last 5" ---
+// Players with 5/5 or 4/5 of last 5 (played) games under their season average; season avg >= 8; DNPs excluded.
 export type UnderSeasonAvgLast5 = {
   playerName: string | null;
   seasonAvgPts: number;
   last5AvgPts: number;
   gamesInLast5: number;
+  underCount: number; // 4 or 5 — how many of last 5 games were under season avg
   diff: number; // last5AvgPts - seasonAvgPts (negative when cold)
 };
 
@@ -414,6 +419,7 @@ export async function getPlayersUnderSeasonAvgLast5(
     season_avg_pts: string | number;
     last5_avg_pts: string | number;
     games_in_last5: number;
+    under_count: number;
     diff: string | number;
   };
 
@@ -426,45 +432,60 @@ export async function getPlayersUnderSeasonAvgLast5(
         JOIN games g ON g.game_id = s.game_id
         WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
       ),
-      last_5_agg AS (
-        SELECT player_id,
-          AVG(points) AS last5_avg_pts,
-          COUNT(*)::int AS games_in_last5
-        FROM ranked
-        WHERE rn <= 5
-        GROUP BY player_id
-        HAVING COUNT(*) >= 5
-      ),
       season_avg AS (
-        SELECT player_id,
-          AVG(points) AS season_avg_pts
+        SELECT player_id, AVG(points) AS season_avg_pts
         FROM player_game_stats
         WHERE COALESCE(LOWER(TRIM(minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
         GROUP BY player_id
+        HAVING AVG(points) >= 8
+      ),
+      last_5_with_sa AS (
+        SELECT r.player_id, r.points, sa.season_avg_pts
+        FROM ranked r
+        JOIN season_avg sa ON sa.player_id = r.player_id
+        WHERE r.rn <= 5
+      ),
+      under_agg AS (
+        SELECT player_id,
+          COUNT(*)::int AS games_in_last5,
+          COUNT(*) FILTER (WHERE points < season_avg_pts)::int AS under_count,
+          AVG(points) AS last5_avg_pts
+        FROM last_5_with_sa
+        GROUP BY player_id
+        HAVING COUNT(*) >= 5 AND COUNT(*) FILTER (WHERE points < season_avg_pts) IN (4, 5)
       )
       SELECT p.player_name,
         ROUND(sa.season_avg_pts::numeric, 1) AS season_avg_pts,
-        ROUND(l5.last5_avg_pts::numeric, 1) AS last5_avg_pts,
-        l5.games_in_last5,
-        ROUND((l5.last5_avg_pts - sa.season_avg_pts)::numeric, 1) AS diff
-      FROM last_5_agg l5
-      JOIN season_avg sa ON sa.player_id = l5.player_id
-      JOIN players p ON p.player_id = l5.player_id
-      WHERE l5.last5_avg_pts < sa.season_avg_pts
-      ORDER BY (l5.last5_avg_pts - sa.season_avg_pts) ASC
+        ROUND(u.last5_avg_pts::numeric, 1) AS last5_avg_pts,
+        u.games_in_last5,
+        u.under_count,
+        ROUND((u.last5_avg_pts - sa.season_avg_pts)::numeric, 1) AS diff
+      FROM under_agg u
+      JOIN season_avg sa ON sa.player_id = u.player_id
+      JOIN players p ON p.player_id = u.player_id
+      ORDER BY u.under_count DESC, sa.season_avg_pts DESC
       LIMIT ${limit}
     `);
 
     const rows: Row[] =
       "rows" in result && Array.isArray(result.rows) ? result.rows : [];
 
-    return rows.map((r: Row) => ({
-      playerName: r.player_name ?? null,
-      seasonAvgPts: Number(r.season_avg_pts) ?? 0,
-      last5AvgPts: Number(r.last5_avg_pts) ?? 0,
-      gamesInLast5: Number(r.games_in_last5) ?? 0,
-      diff: Number(r.diff) ?? 0,
-    }));
+    return rows
+      .map((r: Row) => {
+        const raw = r as Record<string, unknown>;
+        const underCount = Number(r.under_count ?? raw.under_count ?? 0);
+        return {
+          playerName: r.player_name ?? null,
+          seasonAvgPts: Number(r.season_avg_pts ?? raw.season_avg_pts ?? 0),
+          last5AvgPts: Number(r.last5_avg_pts ?? raw.last5_avg_pts ?? 0),
+          gamesInLast5: Number(r.games_in_last5 ?? raw.games_in_last5 ?? 0),
+          underCount: underCount >= 4 && underCount <= 5 ? underCount : 0,
+          diff: Number(r.diff ?? raw.diff ?? 0),
+        };
+      })
+      .filter(
+        (p) => p.seasonAvgPts >= 8 && (p.underCount === 4 || p.underCount === 5)
+      );
   } catch (error) {
     console.error("Database Error (getPlayersUnderSeasonAvgLast5):", error);
     return [];
@@ -472,6 +493,7 @@ export async function getPlayersUnderSeasonAvgLast5(
 }
 
 // --- Trending: last 3 games avg vs previous 3 games avg (points) ---
+// DNPs excluded; only players with season avg >= 8. Sorted by diff (last 3 − prev 3) DESC.
 export type TrendingPlayer = {
   playerName: string | null;
   last3AvgPts: number;
@@ -500,16 +522,27 @@ export async function getTrendingPlayers(
         JOIN games g ON g.game_id = s.game_id
         WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
       ),
-      last_3 AS (
-        SELECT player_id, AVG(points) AS last3_avg_pts
-        FROM ranked WHERE rn <= 3
+      season_avg AS (
+        SELECT player_id
+        FROM player_game_stats
+        WHERE COALESCE(LOWER(TRIM(minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
         GROUP BY player_id
+        HAVING AVG(points) >= 8
+      ),
+      last_3 AS (
+        SELECT r.player_id, AVG(r.points) AS last3_avg_pts
+        FROM ranked r
+        JOIN season_avg sa ON sa.player_id = r.player_id
+        WHERE r.rn <= 3
+        GROUP BY r.player_id
         HAVING COUNT(*) >= 3
       ),
       prev_3 AS (
-        SELECT player_id, AVG(points) AS prev3_avg_pts
-        FROM ranked WHERE rn BETWEEN 4 AND 6
-        GROUP BY player_id
+        SELECT r.player_id, AVG(r.points) AS prev3_avg_pts
+        FROM ranked r
+        JOIN season_avg sa ON sa.player_id = r.player_id
+        WHERE r.rn BETWEEN 4 AND 6
+        GROUP BY r.player_id
         HAVING COUNT(*) >= 3
       )
       SELECT p.player_name,
@@ -526,12 +559,15 @@ export async function getTrendingPlayers(
     const rows: Row[] =
       "rows" in result && Array.isArray(result.rows) ? result.rows : [];
 
-    return rows.map((r: Row) => ({
-      playerName: r.player_name ?? null,
-      last3AvgPts: Number(r.last3_avg_pts) ?? 0,
-      prev3AvgPts: Number(r.prev3_avg_pts) ?? 0,
-      diff: Number(r.diff) ?? 0,
-    }));
+    return rows.map((r: Row) => {
+      const raw = r as Record<string, unknown>;
+      return {
+        playerName: r.player_name ?? null,
+        last3AvgPts: Number(r.last3_avg_pts ?? raw.last3_avg_pts ?? 0),
+        prev3AvgPts: Number(r.prev3_avg_pts ?? raw.prev3_avg_pts ?? 0),
+        diff: Number(r.diff ?? raw.diff ?? 0),
+      };
+    });
   } catch (error) {
     console.error("Database Error (getTrendingPlayers):", error);
     return [];

@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import type { PlayerGameLog, PLAYER_STAT_TYPE } from "@/db/schema";
 import { PLAYER_STAT_NAMES } from "@/db/schema";
 import { getPlayerData } from "@/lib/data";
+import { isDnpMinutes } from "@/lib/dnp";
 import type { PlayerLastGameStatus } from "@/lib/data";
 
 const PlayerChartDisplay = dynamic(() => import("./PlayerChartDisplay"), {
@@ -23,6 +24,8 @@ interface PlayerPageContentProps {
   initialData: PlayerGameLog[];
   initialGameCount: number;
   lastGameStatus?: PlayerLastGameStatus | null;
+  initialStat?: PLAYER_STAT_TYPE;
+  initialPropLine?: number;
 }
 
 export default function PlayerPageContent({
@@ -30,15 +33,21 @@ export default function PlayerPageContent({
   initialData,
   initialGameCount,
   lastGameStatus = null,
+  initialStat,
+  initialPropLine,
 }: PlayerPageContentProps) {
   const router = useRouter();
   const [gameCount, setGameCount] = useState(initialGameCount);
   const [playerData, setPlayerData] = useState<PlayerGameLog[]>(initialData);
   const [viewMode, setViewMode] = useState<"single" | "multi">("single");
-  const [selectedStat, setSelectedStat] = useState<PLAYER_STAT_TYPE>("pts");
+  const [selectedStat, setSelectedStat] = useState<PLAYER_STAT_TYPE>(initialStat ?? "pts");
   const [multiStats, setMultiStats] = useState<[PLAYER_STAT_TYPE, PLAYER_STAT_TYPE, PLAYER_STAT_TYPE]>(DEFAULT_MULTI_STATS);
-  const [propLineInput, setPropLineInput] = useState("0");
-  const [numericPropLine, setNumericPropLine] = useState<number | null>(0);
+  const [propLineInput, setPropLineInput] = useState(
+    initialPropLine != null ? String(initialPropLine) : "0"
+  );
+  const [numericPropLine, setNumericPropLine] = useState<number | null>(
+    initialPropLine ?? 0
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -61,14 +70,18 @@ export default function PlayerPageContent({
   };
 
   const primaryStat = viewMode === "multi" ? multiStats[0] : selectedStat;
+  const playedGames = useMemo(
+    () => playerData.filter((g) => !isDnpMinutes(g.mp)),
+    [playerData]
+  );
   const { propLine, hitRate, verdict } = useMemo(() => {
     const line = numericPropLine ?? 0;
-    const gamesOver = playerData.filter(
+    const gamesOver = playedGames.filter(
       (g) => ((g[primaryStat] as number | null) ?? 0) > line
     ).length;
-    const pct = playerData.length > 0 ? (gamesOver / playerData.length) * 100 : 0;
+    const pct = playedGames.length > 0 ? (gamesOver / playedGames.length) * 100 : 0;
     let verdictText: string;
-    if (playerData.length === 0) verdictText = "Add a line to see a trend.";
+    if (playedGames.length === 0) verdictText = "Add a line to see a trend.";
     else if (line === 0 && pct === 0) verdictText = "Enter the line you're considering (e.g. 25.5 points).";
     else if (pct >= 60) verdictText = "Strong Over — hits above this line most of the time.";
     else if (pct <= 40) verdictText = "Lean Under — usually below this line recently.";
@@ -78,7 +91,7 @@ export default function PlayerPageContent({
       hitRate: pct.toFixed(1),
       verdict: verdictText,
     };
-  }, [playerData, primaryStat, numericPropLine]);
+  }, [playedGames, primaryStat, numericPropLine]);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 selection:bg-blue-500/30">
