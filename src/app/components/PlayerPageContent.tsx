@@ -12,6 +12,7 @@ import type { PlayerLastGameStatus, PlayerSplits as PlayerSplitsType, PlayerMatc
 import PlayerSplits from "./PlayerSplits";
 import PlayerMatchups from "./PlayerMatchups";
 import PlayerEdgeFinder from "./PlayerEdgeFinder";
+import GameLogTable from "./GameLogTable";
 
 const PlayerChartDisplay = dynamic(() => import("./PlayerChartDisplay"), {
   ssr: false,
@@ -21,7 +22,7 @@ const PlayerCard = dynamic(() => import("./PlayerCard"), { ssr: false });
 const GAME_COUNT_OPTIONS = [5, 10, 15, 20] as const;
 const DEFAULT_MULTI_STATS: [PLAYER_STAT_TYPE, PLAYER_STAT_TYPE, PLAYER_STAT_TYPE] = ["pts", "trb", "ast"];
 
-type AnalyticsTab = "edge" | "splits" | "matchups";
+type AnalyticsTab = "edge" | "splits" | "matchups" | "gamelog";
 
 interface PlayerPageContentProps {
   playerName: string;
@@ -389,6 +390,7 @@ export default function PlayerPageContent({
                       { key: "edge" as const, label: "Edge Finder" },
                       { key: "splits" as const, label: "Home / Away" },
                       { key: "matchups" as const, label: "Matchups" },
+                      { key: "gamelog" as const, label: "Game Log" },
                     ] as const
                   ).map(({ key, label }) => (
                     <button
@@ -418,6 +420,13 @@ export default function PlayerPageContent({
                   )}
                   {analyticsTab === "matchups" && matchups && (
                     <PlayerMatchups matchups={matchups} />
+                  )}
+                  {analyticsTab === "gamelog" && (
+                    <GameLogTable
+                      data={playerData}
+                      propLine={propLine}
+                      highlightStat={primaryStat}
+                    />
                   )}
                 </div>
               </div>
