@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import type { PLAYER_STAT_TYPE } from "@/db/schema";
-import { getPlayerData, getPlayerExists, getPlayerLastGameStatus } from "@/lib/data";
+import {
+  getPlayerData,
+  getPlayerExists,
+  getPlayerLastGameStatus,
+  getPlayerSplits,
+  getPlayerMatchups,
+} from "@/lib/data";
 import PlayerPageContent from "@/app/components/PlayerPageContent";
 
 const CACHE_TAG = "player-data";
@@ -43,10 +49,22 @@ export default async function PlayerPage({
     ["player-last-game", encodedName],
     { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
   );
+  const getCachedSplits = unstable_cache(
+    () => getPlayerSplits(playerName),
+    ["player-splits", encodedName],
+    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
+  );
+  const getCachedMatchups = unstable_cache(
+    () => getPlayerMatchups(playerName),
+    ["player-matchups", encodedName],
+    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
+  );
 
-  const [initialData, lastGameStatus] = await Promise.all([
+  const [initialData, lastGameStatus, splits, matchups] = await Promise.all([
     getCachedPlayerData(),
     getCachedLastGameStatus(),
+    getCachedSplits(),
+    getCachedMatchups(),
   ]);
 
   return (
@@ -57,6 +75,8 @@ export default async function PlayerPage({
       lastGameStatus={lastGameStatus}
       initialStat={initialStat as PLAYER_STAT_TYPE | undefined}
       initialPropLine={initialPropLineValid ? initialPropLine : undefined}
+      splits={splits}
+      matchups={matchups}
     />
   );
 }

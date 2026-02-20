@@ -9,7 +9,10 @@ import type { PlayerGameLog, PLAYER_STAT_TYPE } from "@/db/schema";
 import { PLAYER_STAT_NAMES } from "@/db/schema";
 import { getPlayerData } from "@/lib/data";
 import { isDnpMinutes } from "@/lib/dnp";
-import type { PlayerLastGameStatus } from "@/lib/data";
+import type { PlayerLastGameStatus, PlayerSplits as PlayerSplitsType, PlayerMatchup } from "@/lib/data";
+import PlayerSplits from "./PlayerSplits";
+import PlayerMatchups from "./PlayerMatchups";
+import PlayerEdgeFinder from "./PlayerEdgeFinder";
 
 const PlayerChartDisplay = dynamic(() => import("./PlayerChartDisplay"), {
   ssr: false,
@@ -19,6 +22,8 @@ const PlayerCard = dynamic(() => import("./PlayerCard"), { ssr: false });
 const GAME_COUNT_OPTIONS = [5, 10, 15, 20] as const;
 const DEFAULT_MULTI_STATS: [PLAYER_STAT_TYPE, PLAYER_STAT_TYPE, PLAYER_STAT_TYPE] = ["pts", "trb", "ast"];
 
+type AnalyticsTab = "edge" | "splits" | "matchups";
+
 interface PlayerPageContentProps {
   playerName: string;
   initialData: PlayerGameLog[];
@@ -26,6 +31,8 @@ interface PlayerPageContentProps {
   lastGameStatus?: PlayerLastGameStatus | null;
   initialStat?: PLAYER_STAT_TYPE;
   initialPropLine?: number;
+  splits?: PlayerSplitsType | null;
+  matchups?: PlayerMatchup[] | null;
 }
 
 export default function PlayerPageContent({
@@ -35,6 +42,8 @@ export default function PlayerPageContent({
   lastGameStatus = null,
   initialStat,
   initialPropLine,
+  splits = null,
+  matchups = null,
 }: PlayerPageContentProps) {
   const router = useRouter();
   const [gameCount, setGameCount] = useState(initialGameCount);
@@ -49,6 +58,7 @@ export default function PlayerPageContent({
     initialPropLine ?? 0
   );
   const [loading, setLoading] = useState(false);
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("edge");
 
   useEffect(() => {
     if (gameCount === initialGameCount) return;
@@ -315,6 +325,49 @@ export default function PlayerPageContent({
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Edge Analytics Section */}
+            <div className="col-span-12 mt-4">
+              <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="flex items-center gap-1 border-b border-white/10 px-2">
+                  {(
+                    [
+                      { key: "edge" as const, label: "Edge Finder" },
+                      { key: "splits" as const, label: "Home / Away" },
+                      { key: "matchups" as const, label: "Matchups" },
+                    ] as const
+                  ).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setAnalyticsTab(key)}
+                      className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+                        analyticsTab === key
+                          ? "text-white"
+                          : "text-zinc-500 hover:text-zinc-300"
+                      }`}
+                    >
+                      {label}
+                      {analyticsTab === key && (
+                        <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-500 rounded-full" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="p-6">
+                  {analyticsTab === "edge" && (
+                    <PlayerEdgeFinder data={playerData} stat={primaryStat} />
+                  )}
+                  {analyticsTab === "splits" && splits && (
+                    <PlayerSplits splits={splits} />
+                  )}
+                  {analyticsTab === "matchups" && matchups && (
+                    <PlayerMatchups matchups={matchups} />
+                  )}
+                </div>
               </div>
             </div>
           </>

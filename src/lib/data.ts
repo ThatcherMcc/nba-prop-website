@@ -538,6 +538,158 @@ export type TrendingPlayer = {
   diff: number; // last3AvgPts - prev3AvgPts
 };
 
+// --- Home/Away splits for a player (full season) ---
+export type SplitStats = {
+  games: number;
+  avgPts: number;
+  avgReb: number;
+  avgAst: number;
+  avgStl: number;
+  avgBlk: number;
+  avg3pm: number;
+  avgPra: number;
+};
+
+export type PlayerSplits = {
+  home: SplitStats;
+  away: SplitStats;
+};
+
+export async function getPlayerSplits(
+  playerName: string
+): Promise<PlayerSplits> {
+  noStore();
+  const empty: SplitStats = {
+    games: 0, avgPts: 0, avgReb: 0, avgAst: 0,
+    avgStl: 0, avgBlk: 0, avg3pm: 0, avgPra: 0,
+  };
+
+  type Row = {
+    is_home: boolean;
+    games: number;
+    avg_pts: string | number;
+    avg_reb: string | number;
+    avg_ast: string | number;
+    avg_stl: string | number;
+    avg_blk: string | number;
+    avg_3pm: string | number;
+    avg_pra: string | number;
+  };
+
+  try {
+    const result = await db.execute<Row>(sql`
+      SELECT
+        s.is_home,
+        COUNT(*)::int AS games,
+        ROUND(AVG(s.points)::numeric, 1) AS avg_pts,
+        ROUND(AVG(s.total_rebounds)::numeric, 1) AS avg_reb,
+        ROUND(AVG(s.assists)::numeric, 1) AS avg_ast,
+        ROUND(AVG(s.steals)::numeric, 1) AS avg_stl,
+        ROUND(AVG(s.blocks)::numeric, 1) AS avg_blk,
+        ROUND(AVG(s.three_pointers_made)::numeric, 1) AS avg_3pm,
+        ROUND(AVG(s.pts_reb_ast)::numeric, 1) AS avg_pra
+      FROM player_game_stats s
+      JOIN players p ON p.player_id = s.player_id
+      WHERE LOWER(p.player_name) = LOWER(${playerName})
+        AND COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+      GROUP BY s.is_home
+    `);
+
+    const rows: Row[] =
+      "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+    const toStats = (r: Row): SplitStats => ({
+      games: Number(r.games),
+      avgPts: Number(r.avg_pts),
+      avgReb: Number(r.avg_reb),
+      avgAst: Number(r.avg_ast),
+      avgStl: Number(r.avg_stl),
+      avgBlk: Number(r.avg_blk),
+      avg3pm: Number(r.avg_3pm),
+      avgPra: Number(r.avg_pra),
+    });
+
+    const homeRow = rows.find((r) => r.is_home === true);
+    const awayRow = rows.find((r) => r.is_home === false);
+
+    return {
+      home: homeRow ? toStats(homeRow) : empty,
+      away: awayRow ? toStats(awayRow) : empty,
+    };
+  } catch (error) {
+    console.error("Database Error (getPlayerSplits):", error);
+    return { home: empty, away: empty };
+  }
+}
+
+// --- Matchup averages per opponent team (full season) ---
+export type PlayerMatchup = {
+  opponentCode: string;
+  opponentName: string;
+  games: number;
+  avgPts: number;
+  avgReb: number;
+  avgAst: number;
+  avgPra: number;
+  lastPlayed: string | null;
+};
+
+export async function getPlayerMatchups(
+  playerName: string
+): Promise<PlayerMatchup[]> {
+  noStore();
+
+  type Row = {
+    opponent_code: string;
+    opponent_name: string;
+    games: number;
+    avg_pts: string | number;
+    avg_reb: string | number;
+    avg_ast: string | number;
+    avg_pra: string | number;
+    last_played: string | null;
+  };
+
+  try {
+    const result = await db.execute<Row>(sql`
+      SELECT
+        t.team_code AS opponent_code,
+        t.team_name AS opponent_name,
+        COUNT(*)::int AS games,
+        ROUND(AVG(s.points)::numeric, 1) AS avg_pts,
+        ROUND(AVG(s.total_rebounds)::numeric, 1) AS avg_reb,
+        ROUND(AVG(s.assists)::numeric, 1) AS avg_ast,
+        ROUND(AVG(s.pts_reb_ast)::numeric, 1) AS avg_pra,
+        MAX(g.game_date)::text AS last_played
+      FROM player_game_stats s
+      JOIN players p ON p.player_id = s.player_id
+      JOIN games g ON g.game_id = s.game_id
+      JOIN teams t ON t.team_id = CASE WHEN s.is_home THEN g.away_team_id ELSE g.home_team_id END
+      WHERE LOWER(p.player_name) = LOWER(${playerName})
+        AND COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+      GROUP BY t.team_code, t.team_name
+      ORDER BY COUNT(*) DESC, AVG(s.points) DESC
+    `);
+
+    const rows: Row[] =
+      "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+    return rows.map((r) => ({
+      opponentCode: r.opponent_code,
+      opponentName: r.opponent_name,
+      games: Number(r.games),
+      avgPts: Number(r.avg_pts),
+      avgReb: Number(r.avg_reb),
+      avgAst: Number(r.avg_ast),
+      avgPra: Number(r.avg_pra),
+      lastPlayed: r.last_played,
+    }));
+  } catch (error) {
+    console.error("Database Error (getPlayerMatchups):", error);
+    return [];
+  }
+}
+
 export async function getTrendingPlayers(
   limit = 8
 ): Promise<TrendingPlayer[]> {
