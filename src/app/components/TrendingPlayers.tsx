@@ -12,39 +12,55 @@ export default function TrendingPlayers({
 }: TrendingPlayersProps) {
   if (players.length === 0) return null;
 
+  const doubled = [...players, ...players];
+
   return (
-    <section className="mb-8">
-      <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">
-        📈 Trending — last 3 vs previous 3 games (points)
-      </h2>
-      <p className="text-xs text-zinc-500 mb-3 max-w-xl">
-        Players whose last 3 (played) game average is above their previous 3
-        (played) game average. DNPs excluded. Season average ≥ 8 ppg. Click to
-        analyze.
-      </p>
-      <div className="rounded-2xl bg-zinc-900/80 border border-white/10 p-4 overflow-x-auto no-scrollbar">
-        <div className="flex gap-4">
-          {players.map((p, i) => (
+    <section className="mb-10">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">🚀</span>
+        <div>
+          <h2 className="text-lg font-black uppercase tracking-wide text-white">
+            Trending Up
+          </h2>
+          <p className="text-xs text-zinc-500">
+            Last 3 games avg above previous 3 — momentum plays
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-hidden group rounded-2xl bg-zinc-900/60 border border-white/5 p-4">
+        <div className="flex gap-4 animate-marquee w-max">
+          {doubled.map((p, i) => (
             <button
-              key={p.playerName ?? `player-${i}`}
+              key={`${p.playerName}-${i}`}
               type="button"
               onClick={() =>
                 p.playerName && onSelectPlayer?.(p.playerName, p.last3AvgPts)
               }
-              className="flex-shrink-0 flex flex-col items-start gap-1 rounded-xl bg-white/5 border border-white/10 px-4 py-3 min-w-[180px] transition-colors hover:bg-white/10 hover:border-amber-500/40 focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-left"
+              className="flex-shrink-0 flex flex-col items-start gap-2 rounded-xl bg-white/5 border-l-4 border-amber-500 px-5 py-4 min-w-[220px] transition-all hover:bg-amber-500/10 focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-left cursor-pointer"
             >
-              <span className="text-lg font-bold text-white truncate w-full">
+              <span className="text-base font-bold text-white truncate w-full">
                 {p.playerName ?? "—"}
               </span>
-              <span className="text-sm text-zinc-400">
-                Last 3:{" "}
-                <span className="font-semibold text-white">{p.last3AvgPts}</span>{" "}
-                pts/gm
+
+              <span className="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full">
+                +{p.diff} PPG
               </span>
-              <span className="text-sm text-zinc-400">
-                Prev 3: <span className="text-zinc-500">{p.prev3AvgPts}</span> ·{" "}
-                <span className="text-amber-400 font-medium">+{p.diff}</span>
-              </span>
+
+              <div className="w-full space-y-0.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500">Last 3</span>
+                  <span className="font-bold text-white">{p.last3AvgPts}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500">Prev 3</span>
+                  <span className="text-zinc-400">{p.prev3AvgPts}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-1 border-t border-white/5">
+                  <span className="text-zinc-500">Jump</span>
+                  <span className="font-bold text-amber-400">+{p.diff}</span>
+                </div>
+              </div>
             </button>
           ))}
         </div>

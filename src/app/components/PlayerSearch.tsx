@@ -56,28 +56,38 @@ export default function PlayerSearch({
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 selection:bg-blue-500/30">
       <nav className="border-b border-white/10 bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="text-xl font-black tracking-tighter flex items-center gap-2">
-            <span className="bg-blue-600 p-1.5 rounded-lg">🏀</span>
+            <span className="bg-blue-600 p-1.5 rounded-lg text-sm">🏀</span>
             PROP<span className="text-blue-500">ANALYZER</span>
           </Link>
 
           <form onSubmit={handleSearch} className="flex-1 max-w-xl mx-10 relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">🔍</span>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">🔍</span>
             <input
               type="text"
               list="player-suggestions"
-              placeholder="Search NBA Players (e.g. LeBron James)"
+              placeholder="Search any NBA player..."
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
-              className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-11 pr-5 py-3 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm font-medium placeholder:text-zinc-600 shadow-inner"
+              className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-11 pr-5 py-2.5 outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all text-sm font-medium placeholder:text-zinc-600 shadow-inner"
             />
           </form>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto p-6">
+      <main className="max-w-7xl mx-auto px-6 py-8">
         <HomeHero />
+
+        {/* GOAT section first — the attention grabber */}
+        <FeaturedPlayer
+          playerName={featuredPlayerName}
+          data={featuredPlayerData}
+        />
+
+        {/* Divider */}
+        <div className="border-t border-white/5 my-10" />
+
         <OverSeasonAvgLast5
           players={overSeasonAvgLast5}
           onSelectPlayer={(name, seasonAvgPts) =>
@@ -96,14 +106,22 @@ export default function PlayerSearch({
             goToPlayer(name, 10, "pts", last3AvgPts ?? undefined)
           }
         />
-        <FeaturedPlayer
-          playerName={featuredPlayerName}
-          data={featuredPlayerData}
-        />
-        <p className="text-center text-sm text-zinc-500 mt-8">
-          Search a player or click a name above to open their stats page. Use the back button to return home.
-        </p>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 bg-[#09090b]">
+        <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm text-zinc-500">
+            <span className="bg-blue-600 p-1 rounded text-xs">🏀</span>
+            <span className="font-bold text-zinc-400">PROP<span className="text-blue-500">ANALYZER</span></span>
+            <span className="text-zinc-600">·</span>
+            <span>Built for smarter bets</span>
+          </div>
+          <p className="text-xs text-zinc-600">
+            Data updated daily from Basketball Reference. Not financial advice. Gamble responsibly.
+          </p>
+        </div>
+      </footer>
 
       <datalist id="player-suggestions">
         {playerNames.map((name) => (

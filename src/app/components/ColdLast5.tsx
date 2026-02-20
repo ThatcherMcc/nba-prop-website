@@ -12,47 +12,55 @@ export default function ColdLast5({
 }: ColdLast5Props) {
   if (players.length === 0) return null;
 
+  const doubled = [...players, ...players];
+
   return (
-    <section className="mb-8">
-      <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">
-        🧊 Cold last 5 — below season average (points)
-      </h2>
-      <p className="text-xs text-zinc-500 mb-3 max-w-xl">
-        Players whose last 5 (played) games were under their season average in
-        5/5 or 4/5 of those games. DNPs excluded. Season average ≥ 8 ppg.
-        Sorted by consistency (5/5 first) then by season average. Click to
-        analyze.
-      </p>
-      <div className="rounded-2xl bg-zinc-900/80 border border-white/10 p-4 overflow-x-auto no-scrollbar">
-        <div className="flex gap-4">
-          {players.map((p, i) => (
+    <section className="mb-10">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">🧊</span>
+        <div>
+          <h2 className="text-lg font-black uppercase tracking-wide text-white">
+            Ice Cold
+          </h2>
+          <p className="text-xs text-zinc-500">
+            Under season average in 4 or 5 of last 5 games — fade candidates
+          </p>
+        </div>
+      </div>
+
+      <div className="overflow-hidden group rounded-2xl bg-zinc-900/60 border border-white/5 p-4">
+        <div className="flex gap-4 animate-marquee w-max">
+          {doubled.map((p, i) => (
             <button
-              key={p.playerName ?? `player-${i}`}
+              key={`${p.playerName}-${i}`}
               type="button"
               onClick={() =>
                 p.playerName && onSelectPlayer?.(p.playerName, p.seasonAvgPts)
               }
-              className="flex-shrink-0 flex flex-col items-start gap-1 rounded-xl bg-white/5 border border-white/10 px-4 py-3 min-w-[180px] transition-colors hover:bg-white/10 hover:border-sky-500/40 focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-left"
+              className="flex-shrink-0 flex flex-col items-start gap-2 rounded-xl bg-white/5 border-l-4 border-sky-500 px-5 py-4 min-w-[220px] transition-all hover:bg-sky-500/10 focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-left cursor-pointer"
             >
-              <span className="text-lg font-bold text-white truncate w-full">
+              <span className="text-base font-bold text-white truncate w-full">
                 {p.playerName ?? "—"}
               </span>
-              <span className="text-sm text-zinc-400">
-                <span className="font-semibold text-sky-400">
-                  {typeof p.underCount === "number" ? p.underCount : "—"}/5
-                </span>{" "}
-                games under season avg
+
+              <span className="inline-flex items-center gap-1.5 bg-sky-500/15 text-sky-400 text-xs font-bold px-2.5 py-1 rounded-full">
+                {typeof p.underCount === "number" ? p.underCount : "—"}/5 UNDER
               </span>
-              <span className="text-sm text-zinc-400">
-                Last 5:{" "}
-                <span className="font-semibold text-white">{p.last5AvgPts}</span>{" "}
-                pts/gm · Season:{" "}
-                <span className="text-zinc-500">{p.seasonAvgPts}</span>
-              </span>
-              <span className="text-sm text-zinc-400">
-                <span className="text-sky-400 font-medium">{p.diff}</span> vs
-                season
-              </span>
+
+              <div className="w-full space-y-0.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500">Last 5</span>
+                  <span className="font-bold text-white">{p.last5AvgPts}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-zinc-500">Season</span>
+                  <span className="text-zinc-400">{p.seasonAvgPts}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-1 border-t border-white/5">
+                  <span className="text-zinc-500">Diff</span>
+                  <span className="font-bold text-sky-400">{p.diff}</span>
+                </div>
+              </div>
             </button>
           ))}
         </div>
