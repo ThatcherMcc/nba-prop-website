@@ -538,6 +538,80 @@ export type TrendingPlayer = {
   diff: number; // last3AvgPts - prev3AvgPts
 };
 
+// --- Best Edges: players with highest over% at their season avg line (points) ---
+// Looks at players with season avg >= 15, then computes how often they exceed
+// that avg in their last 10 played games. Returns those with hit rate >= 60%.
+export type BestEdgePlayer = {
+  playerName: string | null;
+  seasonAvgPts: number;
+  gamesChecked: number;
+  overCount: number;
+  hitRate: number; // 0-100
+};
+
+export async function getBestEdges(limit = 10): Promise<BestEdgePlayer[]> {
+  noStore();
+
+  type Row = {
+    player_name: string | null;
+    season_avg_pts: string | number;
+    games_checked: number;
+    over_count: number;
+    hit_rate: string | number;
+  };
+
+  try {
+    const result = await db.execute<Row>(sql`
+      WITH season_avg AS (
+        SELECT player_id, AVG(points) AS season_avg_pts
+        FROM player_game_stats
+        WHERE COALESCE(LOWER(TRIM(minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+        GROUP BY player_id
+        HAVING AVG(points) >= 15
+      ),
+      ranked AS (
+        SELECT s.player_id, s.points, sa.season_avg_pts,
+          ROW_NUMBER() OVER (PARTITION BY s.player_id ORDER BY g.game_date DESC) AS rn
+        FROM player_game_stats s
+        JOIN games g ON g.game_id = s.game_id
+        JOIN season_avg sa ON sa.player_id = s.player_id
+        WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+      ),
+      last_10 AS (
+        SELECT player_id, season_avg_pts,
+          COUNT(*)::int AS games_checked,
+          COUNT(*) FILTER (WHERE points > season_avg_pts)::int AS over_count,
+          ROUND((COUNT(*) FILTER (WHERE points > season_avg_pts)::numeric / COUNT(*)) * 100, 0) AS hit_rate
+        FROM ranked
+        WHERE rn <= 10
+        GROUP BY player_id, season_avg_pts
+        HAVING COUNT(*) >= 8 AND COUNT(*) FILTER (WHERE points > season_avg_pts)::numeric / COUNT(*) >= 0.6
+      )
+      SELECT p.player_name,
+        ROUND(l.season_avg_pts::numeric, 1) AS season_avg_pts,
+        l.games_checked, l.over_count, l.hit_rate
+      FROM last_10 l
+      JOIN players p ON p.player_id = l.player_id
+      ORDER BY l.hit_rate DESC, l.season_avg_pts DESC
+      LIMIT ${limit}
+    `);
+
+    const rows: Row[] =
+      "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+    return rows.map((r) => ({
+      playerName: r.player_name ?? null,
+      seasonAvgPts: Number(r.season_avg_pts),
+      gamesChecked: Number(r.games_checked),
+      overCount: Number(r.over_count),
+      hitRate: Number(r.hit_rate),
+    }));
+  } catch (error) {
+    console.error("Database Error (getBestEdges):", error);
+    return [];
+  }
+}
+
 // --- Home/Away splits for a player (full season) ---
 export type SplitStats = {
   games: number;

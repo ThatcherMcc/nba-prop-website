@@ -7,11 +7,13 @@ import type { PlayerGameLog } from "@/db/schema";
 import type { OverSeasonAvgLast5 as OverSeasonAvgLast5Type } from "@/lib/data";
 import type { UnderSeasonAvgLast5 } from "@/lib/data";
 import type { TrendingPlayer } from "@/lib/data";
+import type { BestEdgePlayer } from "@/lib/data";
 import HomeHero from "./HomeHero";
 import OverSeasonAvgLast5 from "./OverSeasonAvgLast5";
 import ColdLast5 from "./ColdLast5";
 import TrendingPlayers from "./TrendingPlayers";
 import FeaturedPlayer from "./FeaturedPlayer";
+import BestEdges from "./BestEdges";
 
 /** Normalize for match: lowercase, collapse spaces. */
 function normalizeForMatch(s: string): string {
@@ -25,6 +27,7 @@ export default function PlayerSearch({
   overSeasonAvgLast5 = [],
   underSeasonAvgLast5 = [],
   trendingPlayers = [],
+  bestEdges = [],
 }: {
   playerNames?: string[];
   featuredPlayerName?: string;
@@ -32,6 +35,7 @@ export default function PlayerSearch({
   overSeasonAvgLast5?: OverSeasonAvgLast5Type[];
   underSeasonAvgLast5?: UnderSeasonAvgLast5[];
   trendingPlayers?: TrendingPlayer[];
+  bestEdges?: BestEdgePlayer[];
 }) {
   const router = useRouter();
   const [playerName, setPlayerName] = useState("");
@@ -87,6 +91,13 @@ export default function PlayerSearch({
 
         {/* Divider */}
         <div className="border-t border-white/5 my-10" />
+
+        <BestEdges
+          players={bestEdges}
+          onSelectPlayer={(name, seasonAvgPts) =>
+            goToPlayer(name, 10, "pts", seasonAvgPts ?? undefined)
+          }
+        />
 
         <OverSeasonAvgLast5
           players={overSeasonAvgLast5}
