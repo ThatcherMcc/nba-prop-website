@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -78,6 +77,26 @@ export default function PlayerPageContent({
       setNumericPropLine(!isNaN(n) ? n : null);
     }
   };
+
+  // Season averages from splits (full season, not limited by gameCount)
+  const seasonStats = useMemo(() => {
+    if (!splits) return null;
+    const { home, away } = splits;
+    const total = home.games + away.games;
+    if (total === 0) return null;
+    const w = (h: number, a: number) =>
+      +((h * home.games + a * away.games) / total).toFixed(1);
+    return {
+      games: total,
+      pts: w(home.avgPts, away.avgPts),
+      reb: w(home.avgReb, away.avgReb),
+      ast: w(home.avgAst, away.avgAst),
+      stl: w(home.avgStl, away.avgStl),
+      blk: w(home.avgBlk, away.avgBlk),
+      fg3: w(home.avg3pm, away.avg3pm),
+      pra: w(home.avgPra, away.avgPra),
+    };
+  }, [splits]);
 
   const primaryStat = viewMode === "multi" ? multiStats[0] : selectedStat;
   const playedGames = useMemo(
@@ -157,23 +176,56 @@ export default function PlayerPageContent({
 
         {!loading && playerData.length > 0 && (
           <>
+            {/* Player header with season stats */}
+            <div className="mt-4 mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                <h2 className="text-3xl font-black tracking-tight text-white">
+                  {playerName}
+                </h2>
+                {seasonStats && (
+                  <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
+                    <span>{seasonStats.games} games this season</span>
+                  </div>
+                )}
+              </div>
+
+              {seasonStats && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {([
+                    { label: "PTS", value: seasonStats.pts },
+                    { label: "REB", value: seasonStats.reb },
+                    { label: "AST", value: seasonStats.ast },
+                    { label: "STL", value: seasonStats.stl },
+                    { label: "BLK", value: seasonStats.blk },
+                    { label: "3PM", value: seasonStats.fg3 },
+                    { label: "PRA", value: seasonStats.pra },
+                  ] as const).map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className="flex items-center gap-1.5 bg-zinc-900 border border-white/10 rounded-lg px-3 py-1.5"
+                    >
+                      <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                        {label}
+                      </span>
+                      <span className="text-white font-bold text-sm">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {lastGameStatus?.isDnp && (
-              <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-2.5 text-amber-400 text-sm font-medium">
+              <div className="flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-2.5 text-amber-400 text-sm font-medium mb-2">
                 <span aria-hidden>⚠️</span>
                 <span>Last game: DNP (excluded from averages)</span>
               </div>
             )}
+
             <div className="grid grid-cols-12 gap-8 mt-4">
               <div className="col-span-12 lg:col-span-4 space-y-6">
                 <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-                  <div className="aspect-square bg-gradient-to-b from-blue-600/20 to-transparent relative">
-                    <Image
-                      src="/LebronPic.png"
-                      fill
-                      className="object-contain p-4"
-                      alt={playerName}
-                    />
-                  </div>
                   <div className="p-6 space-y-4">
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
