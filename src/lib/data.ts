@@ -342,6 +342,20 @@ export async function getPlayersOverSeasonAvgLast5(
         JOIN games g ON g.game_id = s.game_id
         WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
       ),
+      recently_active AS (
+        SELECT sub.player_id
+        FROM (
+          SELECT s.player_id, s.minutes_played,
+            ROW_NUMBER() OVER (PARTITION BY s.player_id ORDER BY g.game_date DESC) AS rn
+          FROM player_game_stats s
+          JOIN games g ON g.game_id = s.game_id
+        ) sub
+        WHERE sub.rn <= 3
+        GROUP BY sub.player_id
+        HAVING COUNT(*) FILTER (
+          WHERE COALESCE(LOWER(TRIM(sub.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+        ) >= 3
+      ),
       season_avg AS (
         SELECT player_id, AVG(points) AS season_avg_pts
         FROM player_game_stats
@@ -353,6 +367,7 @@ export async function getPlayersOverSeasonAvgLast5(
         SELECT r.player_id, r.points, sa.season_avg_pts
         FROM ranked r
         JOIN season_avg sa ON sa.player_id = r.player_id
+        JOIN recently_active ra ON ra.player_id = r.player_id
         WHERE r.rn <= 5
       ),
       over_agg AS (
@@ -432,6 +447,27 @@ export async function getPlayersUnderSeasonAvgLast5(
         JOIN games g ON g.game_id = s.game_id
         WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
       ),
+      recently_active AS (
+        SELECT sub.player_id
+        FROM (
+          SELECT s.player_id, s.minutes_played,
+            ROW_NUMBER() OVER (PARTITION BY s.player_id ORDER BY g.game_date DESC) AS rn
+          FROM player_game_stats s
+          JOIN games g ON g.game_id = s.game_id
+        ) sub
+        WHERE sub.rn <= 5
+        GROUP BY sub.player_id
+        HAVING
+          -- most recent game must be played
+          COUNT(*) FILTER (
+            WHERE sub.rn = 1
+              AND COALESCE(LOWER(TRIM(sub.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          ) = 1
+          -- at least 3 of last 5 played
+          AND COUNT(*) FILTER (
+            WHERE COALESCE(LOWER(TRIM(sub.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          ) >= 3
+      ),
       season_avg AS (
         SELECT player_id, AVG(points) AS season_avg_pts
         FROM player_game_stats
@@ -443,6 +479,7 @@ export async function getPlayersUnderSeasonAvgLast5(
         SELECT r.player_id, r.points, sa.season_avg_pts
         FROM ranked r
         JOIN season_avg sa ON sa.player_id = r.player_id
+        JOIN recently_active ra ON ra.player_id = r.player_id
         WHERE r.rn <= 5
       ),
       under_agg AS (
@@ -522,6 +559,20 @@ export async function getTrendingPlayers(
         JOIN games g ON g.game_id = s.game_id
         WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
       ),
+      recently_active AS (
+        SELECT sub.player_id
+        FROM (
+          SELECT s.player_id, s.minutes_played,
+            ROW_NUMBER() OVER (PARTITION BY s.player_id ORDER BY g.game_date DESC) AS rn
+          FROM player_game_stats s
+          JOIN games g ON g.game_id = s.game_id
+        ) sub
+        WHERE sub.rn <= 6
+        GROUP BY sub.player_id
+        HAVING COUNT(*) FILTER (
+          WHERE COALESCE(LOWER(TRIM(sub.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+        ) >= 6
+      ),
       season_avg AS (
         SELECT player_id
         FROM player_game_stats
@@ -533,6 +584,7 @@ export async function getTrendingPlayers(
         SELECT r.player_id, AVG(r.points) AS last3_avg_pts
         FROM ranked r
         JOIN season_avg sa ON sa.player_id = r.player_id
+        JOIN recently_active ra ON ra.player_id = r.player_id
         WHERE r.rn <= 3
         GROUP BY r.player_id
         HAVING COUNT(*) >= 3
