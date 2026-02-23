@@ -6,7 +6,9 @@ import {
   getPlayersOverSeasonAvgLast5,
   getPlayersUnderSeasonAvgLast5,
   getTrendingPlayers,
-  getBestEdges,
+  getTopPicks,
+  getUnderPicks,
+  getBacktestResults,
 } from "@/lib/data";
 
 const FEATURED_PLAYER = "LeBron James";
@@ -21,7 +23,9 @@ export default async function Page() {
   let overSeasonAvgLast5: Awaited<ReturnType<typeof getPlayersOverSeasonAvgLast5>> = [];
   let underSeasonAvgLast5: Awaited<ReturnType<typeof getPlayersUnderSeasonAvgLast5>> = [];
   let trendingPlayers: Awaited<ReturnType<typeof getTrendingPlayers>> = [];
-  let bestEdges: Awaited<ReturnType<typeof getBestEdges>> = [];
+  let topPicks: Awaited<ReturnType<typeof getTopPicks>> = [];
+  let underPicks: Awaited<ReturnType<typeof getUnderPicks>> = [];
+  let backtestResults: Awaited<ReturnType<typeof getBacktestResults>> = { gameDate: "", picks: [] };
   let playerNames: string[] = [];
 
   try {
@@ -50,19 +54,31 @@ export default async function Page() {
       ["trending-v2", "8"],
       { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
     );
-    const getCachedBestEdges = unstable_cache(
-      () => getBestEdges(10),
-      ["best-edges", "10"],
+    const getCachedTopPicks = unstable_cache(
+      () => getTopPicks(25),
+      ["top-picks", "25"],
+      { revalidate: 3600, tags: [CACHE_TAG] }
+    );
+    const getCachedUnderPicks = unstable_cache(
+      () => getUnderPicks(25),
+      ["under-picks", "25"],
+      { revalidate: 3600, tags: [CACHE_TAG] }
+    );
+    const getCachedBacktest = unstable_cache(
+      () => getBacktestResults(),
+      ["backtest-results"],
       { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
     );
-    [playerNames, featuredData, overSeasonAvgLast5, underSeasonAvgLast5, trendingPlayers, bestEdges] =
+    [playerNames, featuredData, overSeasonAvgLast5, underSeasonAvgLast5, trendingPlayers, topPicks, underPicks, backtestResults] =
       await Promise.all([
         getCachedPlayerNames(),
         getCachedFeatured(),
         getCachedOverSeason(),
         getCachedUnderSeason(),
         getCachedTrending(),
-        getCachedBestEdges(),
+        getCachedTopPicks(),
+        getCachedUnderPicks(),
+        getCachedBacktest(),
       ]);
   } catch (e) {
     console.error("Homepage data load failed:", e);
@@ -77,7 +93,9 @@ export default async function Page() {
         overSeasonAvgLast5={overSeasonAvgLast5}
         underSeasonAvgLast5={underSeasonAvgLast5}
         trendingPlayers={trendingPlayers}
-        bestEdges={bestEdges}
+        topPicks={topPicks}
+        underPicks={underPicks}
+        backtestResults={backtestResults}
       />
     </div>
   );
