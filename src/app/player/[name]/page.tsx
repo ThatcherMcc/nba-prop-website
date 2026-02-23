@@ -7,13 +7,15 @@ import {
   getPlayerLastGameStatus,
   getPlayerSplits,
   getPlayerMatchups,
+  getPlayerPropLines,
+  getPlayerTodaysGame,
 } from "@/lib/data";
 import PlayerPageContent from "@/app/components/PlayerPageContent";
 
 const CACHE_TAG = "player-data";
 const REVALIDATE_SECONDS = 86400; // 24h fallback; invalidate via POST /api/revalidate after scrape
 
-const VALID_STATS = ["pts", "trb", "ast", "stl", "blk", "fg3", "fg", "ft"] as const;
+import { PLAYER_STAT_NAMES } from "@/db/schema";
 
 export default async function PlayerPage({
   params,
@@ -35,7 +37,7 @@ export default async function PlayerPage({
   if (!exists) notFound();
 
   const initialGameCount = gamesParam ? Math.min(20, Math.max(5, parseInt(gamesParam, 10) || 20)) : 20;
-  const initialStat = statParam && (VALID_STATS as readonly string[]).includes(statParam) ? statParam : undefined;
+  const initialStat = statParam && PLAYER_STAT_NAMES.includes(statParam) ? statParam : undefined;
   const initialPropLine = lineParam != null ? parseFloat(lineParam) : undefined;
   const initialPropLineValid = initialPropLine != null && !Number.isNaN(initialPropLine);
 
@@ -59,12 +61,24 @@ export default async function PlayerPage({
     ["player-matchups", encodedName],
     { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
   );
+  const getCachedPropLines = unstable_cache(
+    () => getPlayerPropLines(playerName),
+    ["player-props", encodedName],
+    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
+  );
+  const getCachedTodaysGame = unstable_cache(
+    () => getPlayerTodaysGame(playerName),
+    ["player-todays-game", encodedName],
+    { revalidate: 3600, tags: [CACHE_TAG] }
+  );
 
-  const [initialData, lastGameStatus, splits, matchups] = await Promise.all([
+  const [initialData, lastGameStatus, splits, matchups, propLines, todaysGame] = await Promise.all([
     getCachedPlayerData(),
     getCachedLastGameStatus(),
     getCachedSplits(),
     getCachedMatchups(),
+    getCachedPropLines(),
+    getCachedTodaysGame(),
   ]);
 
   return (
@@ -77,6 +91,8 @@ export default async function PlayerPage({
       initialPropLine={initialPropLineValid ? initialPropLine : undefined}
       splits={splits}
       matchups={matchups}
+      propLines={propLines}
+      todaysGame={todaysGame}
     />
   );
 }

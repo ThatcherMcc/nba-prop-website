@@ -8,11 +8,12 @@ import type { PlayerGameLog, PLAYER_STAT_TYPE } from "@/db/schema";
 import { PLAYER_STAT_NAMES } from "@/db/schema";
 import { getPlayerData } from "@/lib/data";
 import { isDnpMinutes } from "@/lib/dnp";
-import type { PlayerLastGameStatus, PlayerSplits as PlayerSplitsType, PlayerMatchup } from "@/lib/data";
+import type { PlayerLastGameStatus, PlayerSplits as PlayerSplitsType, PlayerMatchup, PlayerPropLine, TodaysGame } from "@/lib/data";
 import PlayerSplits from "./PlayerSplits";
 import PlayerMatchups from "./PlayerMatchups";
 import PlayerEdgeFinder from "./PlayerEdgeFinder";
 import GameLogTable from "./GameLogTable";
+import PlayerPropLines from "./PlayerPropLines";
 
 const PlayerChartDisplay = dynamic(() => import("./PlayerChartDisplay"), {
   ssr: false,
@@ -22,7 +23,24 @@ const PlayerCard = dynamic(() => import("./PlayerCard"), { ssr: false });
 const GAME_COUNT_OPTIONS = [5, 10, 15, 20] as const;
 const DEFAULT_MULTI_STATS: [PLAYER_STAT_TYPE, PLAYER_STAT_TYPE, PLAYER_STAT_TYPE] = ["pts", "trb", "ast"];
 
-type AnalyticsTab = "edge" | "splits" | "matchups" | "gamelog";
+// Map frontend stat keys to prop market codes
+const STAT_TO_MARKET: Partial<Record<PLAYER_STAT_TYPE, string>> = {
+  pts: "PTS",
+  trb: "REB",
+  ast: "AST",
+  stl: "STL",
+  blk: "BLK",
+  fg3: "FG3",
+  ft: "FTM",
+  tov: "TOV",
+  pra: "PRA",
+  pr: "PR",
+  pa: "PA",
+  ra: "RA",
+  sb: "SB",
+};
+
+type AnalyticsTab = "props" | "edge" | "splits" | "matchups" | "gamelog";
 
 interface PlayerPageContentProps {
   playerName: string;
@@ -33,6 +51,8 @@ interface PlayerPageContentProps {
   initialPropLine?: number;
   splits?: PlayerSplitsType | null;
   matchups?: PlayerMatchup[] | null;
+  propLines?: PlayerPropLine[] | null;
+  todaysGame?: TodaysGame | null;
 }
 
 export default function PlayerPageContent({
@@ -44,6 +64,8 @@ export default function PlayerPageContent({
   initialPropLine,
   splits = null,
   matchups = null,
+  propLines = null,
+  todaysGame = null,
 }: PlayerPageContentProps) {
   const router = useRouter();
   const [gameCount, setGameCount] = useState(initialGameCount);
@@ -51,14 +73,46 @@ export default function PlayerPageContent({
   const [viewMode, setViewMode] = useState<"single" | "multi">("single");
   const [selectedStat, setSelectedStat] = useState<PLAYER_STAT_TYPE>(initialStat ?? "pts");
   const [multiStats, setMultiStats] = useState<[PLAYER_STAT_TYPE, PLAYER_STAT_TYPE, PLAYER_STAT_TYPE]>(DEFAULT_MULTI_STATS);
-  const [propLineInput, setPropLineInput] = useState(
-    initialPropLine != null ? String(initialPropLine) : "0"
-  );
-  const [numericPropLine, setNumericPropLine] = useState<number | null>(
-    initialPropLine ?? 0
-  );
+
+  // Build lookup: market code → book line from prop data
+  const propLineByMarket = useMemo(() => {
+    const map = new Map<string, number>();
+    if (propLines) {
+      for (const pl of propLines) {
+        if (pl.bookLine != null) map.set(pl.marketCode, pl.bookLine);
+      }
+    }
+    return map;
+  }, [propLines]);
+
+  // Get the book line for a stat key (if available from today's props)
+  const getBookLineForStat = (stat: PLAYER_STAT_TYPE): number | null => {
+    const market = STAT_TO_MARKET[stat];
+    if (!market) return null;
+    return propLineByMarket.get(market) ?? null;
+  };
+
+  // Initial prop line: use URL param, or auto-fill from book line
+  const resolvedInitialLine = initialPropLine ?? getBookLineForStat(initialStat ?? "pts") ?? 0;
+
+  const [propLineInput, setPropLineInput] = useState(String(resolvedInitialLine));
+  const [numericPropLine, setNumericPropLine] = useState<number | null>(resolvedInitialLine);
   const [loading, setLoading] = useState(false);
-  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("edge");
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>(
+    propLines && propLines.length > 0 ? "props" : "edge"
+  );
+
+  // Auto-fill prop line from book data when stat changes
+  useEffect(() => {
+    // Don't override if user passed an explicit line via URL
+    if (initialPropLine != null) return;
+    const bookLine = getBookLineForStat(selectedStat);
+    if (bookLine != null) {
+      setPropLineInput(String(bookLine));
+      setNumericPropLine(bookLine);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStat]);
 
   useEffect(() => {
     if (gameCount === initialGameCount) return;
@@ -297,6 +351,11 @@ export default function PlayerPageContent({
                             placeholder="e.g. 25.5"
                             className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 placeholder:text-zinc-500"
                           />
+                          {getBookLineForStat(selectedStat) != null && (
+                            <p className="text-[10px] text-blue-400/70">
+                              Book line for {STAT_TO_MARKET[selectedStat]}
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -387,6 +446,7 @@ export default function PlayerPageContent({
                 <div className="flex items-center gap-1 border-b border-white/10 px-2">
                   {(
                     [
+                      { key: "props" as const, label: "Prop Lines" },
                       { key: "edge" as const, label: "Edge Finder" },
                       { key: "splits" as const, label: "Home / Away" },
                       { key: "matchups" as const, label: "Matchups" },
@@ -412,14 +472,20 @@ export default function PlayerPageContent({
                 </div>
 
                 <div className="p-6">
+                  {analyticsTab === "props" && (
+                    <PlayerPropLines
+                      propLines={propLines ?? []}
+                      seasonStats={seasonStats}
+                    />
+                  )}
                   {analyticsTab === "edge" && (
                     <PlayerEdgeFinder data={playerData} stat={primaryStat} />
                   )}
                   {analyticsTab === "splits" && splits && (
-                    <PlayerSplits splits={splits} />
+                    <PlayerSplits splits={splits} todaysGame={todaysGame} />
                   )}
                   {analyticsTab === "matchups" && matchups && (
-                    <PlayerMatchups matchups={matchups} />
+                    <PlayerMatchups matchups={matchups} todaysGame={todaysGame} />
                   )}
                   {analyticsTab === "gamelog" && (
                     <GameLogTable

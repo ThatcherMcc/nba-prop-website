@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { PlayerMatchup } from "@/lib/data";
+import type { PlayerMatchup, TodaysGame } from "@/lib/data";
 
 interface Props {
   matchups: PlayerMatchup[];
+  todaysGame?: TodaysGame | null;
 }
 
 type SortKey = "games" | "avgPts" | "avgReb" | "avgAst" | "avgPra";
@@ -17,7 +18,7 @@ const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "avgPra", label: "PRA" },
 ];
 
-export default function PlayerMatchups({ matchups }: Props) {
+export default function PlayerMatchups({ matchups, todaysGame }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("avgPts");
   const [sortDesc, setSortDesc] = useState(true);
 
@@ -39,6 +40,11 @@ export default function PlayerMatchups({ matchups }: Props) {
   const weightedAvgPts =
     matchups.reduce((s, m) => s + m.avgPts * m.games, 0) / (totalGames || 1);
 
+  // Find today's opponent in the matchup list
+  const todaysMatchup = todaysGame
+    ? matchups.find((m) => m.opponentCode === todaysGame.opponentCode)
+    : null;
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDesc(!sortDesc);
     else {
@@ -48,7 +54,47 @@ export default function PlayerMatchups({ matchups }: Props) {
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="space-y-4">
+      {/* Today's Matchup highlight */}
+      {todaysMatchup && todaysGame && (
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
+              Today&apos;s Matchup
+            </span>
+            <span className="text-[10px] text-zinc-500">
+              {todaysGame.isHome ? "Home" : "Away"} vs {todaysMatchup.opponentCode}
+            </span>
+          </div>
+          <div className="grid grid-cols-5 gap-3 text-center">
+            {COLUMNS.map(({ key, label }) => {
+              const val = todaysMatchup[key] as number;
+              const isAboveAvg = key === "avgPts" && val - weightedAvgPts >= 2;
+              const isBelowAvg = key === "avgPts" && weightedAvgPts - val >= 2;
+              return (
+                <div key={key}>
+                  <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                    {label}
+                  </div>
+                  <div
+                    className={`text-lg font-bold mt-0.5 ${
+                      isAboveAvg
+                        ? "text-emerald-400"
+                        : isBelowAvg
+                          ? "text-red-400"
+                          : "text-white"
+                    }`}
+                  >
+                    {key === "games" ? val : val.toFixed(1)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-white/10">
@@ -144,6 +190,7 @@ export default function PlayerMatchups({ matchups }: Props) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

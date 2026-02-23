@@ -109,29 +109,13 @@ export default function PlayerEdgeFinder({ data, stat }: Props) {
   return (
     <div className="space-y-6">
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-zinc-800/50 rounded-xl px-4 py-3 text-center">
           <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
             Season Avg
           </div>
           <div className="text-2xl font-black text-white mt-1">
             {analysis.avg.toFixed(1)}
-          </div>
-        </div>
-        <div className="bg-zinc-800/50 rounded-xl px-4 py-3 text-center">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            Range
-          </div>
-          <div className="text-lg font-bold text-white mt-1">
-            {analysis.min}–{analysis.max}
-          </div>
-        </div>
-        <div className="bg-zinc-800/50 rounded-xl px-4 py-3 text-center">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-            Std Dev
-          </div>
-          <div className="text-lg font-bold text-white mt-1">
-            {analysis.stddev.toFixed(1)}
           </div>
         </div>
         <div className={`rounded-xl px-4 py-3 text-center border ${consistencyColor}`}>
@@ -177,10 +161,15 @@ export default function PlayerEdgeFinder({ data, stat }: Props) {
             return (
               <div
                 key={line}
-                className={`flex items-center gap-3 py-1.5 px-3 rounded-lg transition-colors ${
-                  isSweet ? "bg-blue-500/10 border border-blue-500/20" : "hover:bg-white/[0.02]"
+                className={`relative flex items-center gap-3 py-1.5 px-3 rounded-lg transition-colors ${
+                  isSweet ? "bg-blue-500/10 border border-blue-500/20" : "border border-transparent hover:bg-white/[0.02]"
                 }`}
               >
+                {isSweet && (
+                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 bg-blue-500 text-[8px] font-black text-white px-1 py-0.5 rounded leading-none">
+                    EDGE
+                  </span>
+                )}
                 <div className="w-12 text-right text-sm font-mono text-zinc-300 shrink-0">
                   {line % 1 === 0 ? `${line}.0` : line}
                 </div>
@@ -196,11 +185,6 @@ export default function PlayerEdgeFinder({ data, stat }: Props) {
                 <div className="w-16 text-right text-xs text-zinc-500 shrink-0">
                   L5: {overRecent5}/{recent5Count}
                 </div>
-                {isSweet && (
-                  <span className="text-[10px] font-bold text-blue-400 shrink-0">
-                    EDGE
-                  </span>
-                )}
               </div>
             );
           })}

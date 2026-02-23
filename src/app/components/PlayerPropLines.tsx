@@ -1,0 +1,210 @@
+"use client";
+
+import type { PlayerPropLine } from "@/lib/data";
+
+interface Props {
+  propLines: PlayerPropLine[];
+  seasonStats?: {
+    pts: number;
+    reb: number;
+    ast: number;
+    stl: number;
+    blk: number;
+    fg3: number;
+    pra: number;
+  } | null;
+}
+
+// Map market_code → season stat key
+const MARKET_TO_STAT: Record<string, string> = {
+  PTS: "pts",
+  REB: "reb",
+  AST: "ast",
+  STL: "stl",
+  BLK: "blk",
+  FG3: "fg3",
+  PRA: "pra",
+};
+
+// Display order for markets (primary stats first, combos last)
+const MARKET_ORDER = [
+  "PTS", "REB", "AST", "STL", "BLK", "FG3", "FTM", "TOV",
+  "PR", "PA", "RA", "PRA", "SB",
+];
+
+function formatOdds(odds: number | null): string {
+  if (odds == null) return "—";
+  return odds >= 0 ? `+${odds}` : `${odds}`;
+}
+
+function oddsColor(odds: number | null): string {
+  if (odds == null) return "text-zinc-500";
+  if (odds >= 100) return "text-emerald-400";
+  if (odds <= -150) return "text-red-400";
+  return "text-zinc-300";
+}
+
+export default function PlayerPropLines({ propLines, seasonStats }: Props) {
+  if (propLines.length === 0) {
+    return (
+      <div className="text-zinc-500 text-sm text-center py-8">
+        No prop lines available for this player yet.
+      </div>
+    );
+  }
+
+  const gameDate = propLines[0]?.gameDate;
+
+  // Sort by preferred order
+  const sorted = [...propLines].sort((a, b) => {
+    const ai = MARKET_ORDER.indexOf(a.marketCode);
+    const bi = MARKET_ORDER.indexOf(b.marketCode);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+
+  return (
+    <div>
+      {gameDate && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+            Lines for
+          </span>
+          <span className="text-xs font-bold text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded">
+            {new Date(gameDate + "T00:00:00").toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {sorted.map((line) => {
+          const statKey = MARKET_TO_STAT[line.marketCode];
+          const seasonAvg =
+            seasonStats && statKey
+              ? (seasonStats as Record<string, number>)[statKey]
+              : null;
+
+          const hasFairLine = line.fairLine != null;
+          const hasBookLine = line.bookLine != null;
+          const lineDiff =
+            hasFairLine && hasBookLine
+              ? +(line.fairLine! - line.bookLine!).toFixed(1)
+              : null;
+
+          // Edge: if fair line > book line, the over has value (book is too low)
+          // If fair line < book line, the under has value (book is too high)
+          let edgeLabel = "";
+          let edgeColor = "";
+          if (lineDiff != null && Math.abs(lineDiff) >= 0.5) {
+            if (lineDiff > 0) {
+              edgeLabel = "OVER value";
+              edgeColor = "text-emerald-400 bg-emerald-500/10";
+            } else {
+              edgeLabel = "UNDER value";
+              edgeColor = "text-red-400 bg-red-500/10";
+            }
+          }
+
+          return (
+            <div
+              key={line.marketCode}
+              className="bg-zinc-800/50 border border-white/5 rounded-xl p-4 hover:border-white/10 transition-colors"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-white uppercase">
+                    {line.marketCode}
+                  </span>
+                  <span className="text-[10px] text-zinc-500">
+                    {line.marketName}
+                  </span>
+                </div>
+                {edgeLabel && (
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${edgeColor}`}
+                  >
+                    {edgeLabel}
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {/* Book line */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                    Book
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-black text-white">
+                      {hasBookLine ? line.bookLine : "—"}
+                    </span>
+                    <span
+                      className={`text-xs font-mono font-bold ${oddsColor(line.bookOdds)}`}
+                    >
+                      {formatOdds(line.bookOdds)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Fair line */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                    Fair
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-zinc-400">
+                      {hasFairLine ? line.fairLine : "—"}
+                    </span>
+                    <span
+                      className={`text-xs font-mono ${oddsColor(line.fairOdds)}`}
+                    >
+                      {formatOdds(line.fairOdds)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Season average comparison */}
+                {seasonAvg != null && hasBookLine && (
+                  <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                      Avg
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-zinc-400">
+                        {seasonAvg}
+                      </span>
+                      {(() => {
+                        const diff = +(seasonAvg - line.bookLine!).toFixed(1);
+                        if (Math.abs(diff) < 0.5)
+                          return (
+                            <span className="text-[10px] text-zinc-600">
+                              = line
+                            </span>
+                          );
+                        return (
+                          <span
+                            className={`text-[10px] font-bold ${
+                              diff > 0
+                                ? "text-emerald-400"
+                                : "text-red-400"
+                            }`}
+                          >
+                            {diff > 0 ? "+" : ""}
+                            {diff} vs line
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

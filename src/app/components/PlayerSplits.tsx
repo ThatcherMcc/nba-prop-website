@@ -1,9 +1,10 @@
 "use client";
 
-import type { PlayerSplits as PlayerSplitsType } from "@/lib/data";
+import type { PlayerSplits as PlayerSplitsType, TodaysGame } from "@/lib/data";
 
 interface Props {
   splits: PlayerSplitsType;
+  todaysGame?: TodaysGame | null;
 }
 
 const STAT_LABELS: { key: keyof PlayerSplitsType["home"]; label: string }[] = [
@@ -22,7 +23,7 @@ function diffColor(home: number, away: number) {
   return "text-zinc-400";
 }
 
-export default function PlayerSplits({ splits }: Props) {
+export default function PlayerSplits({ splits, todaysGame }: Props) {
   const { home, away } = splits;
   if (home.games === 0 && away.games === 0) {
     return (
@@ -38,11 +39,21 @@ export default function PlayerSplits({ splits }: Props) {
         <div className="flex items-center gap-2 justify-center">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           Home ({home.games}G)
+          {todaysGame?.isHome && (
+            <span className="bg-blue-500 text-[8px] font-black text-white px-1.5 py-0.5 rounded leading-none normal-case tracking-normal">
+              TODAY
+            </span>
+          )}
         </div>
         <div>Stat</div>
         <div className="flex items-center gap-2 justify-center">
           <span className="w-2 h-2 rounded-full bg-sky-500" />
           Away ({away.games}G)
+          {todaysGame && !todaysGame.isHome && (
+            <span className="bg-blue-500 text-[8px] font-black text-white px-1.5 py-0.5 rounded leading-none normal-case tracking-normal">
+              TODAY
+            </span>
+          )}
         </div>
       </div>
 
