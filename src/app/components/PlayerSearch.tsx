@@ -91,8 +91,6 @@ export default function PlayerSearch({
       <main className="max-w-7xl mx-auto px-6 py-8">
         <HomeHero />
 
-        <BacktestResults data={backtestResults} />
-
         <TopPicks
           picks={topPicks}
           onSelectPlayer={(name, stat, line) =>
@@ -106,6 +104,8 @@ export default function PlayerSearch({
             goToPlayer(name, 10, stat, line ?? undefined)
           }
         />
+
+        <BacktestResults data={backtestResults} />
 
         <OverSeasonAvgLast5
           players={overSeasonAvgLast5}
