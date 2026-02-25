@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import { unstable_cache } from "next/cache";
 import type { PLAYER_STAT_TYPE } from "@/db/schema";
 import {
   getPlayerData,
@@ -11,11 +10,9 @@ import {
   getPlayerTodaysGame,
 } from "@/lib/data";
 import PlayerPageContent from "@/app/components/PlayerPageContent";
-
-const CACHE_TAG = "player-data";
-const REVALIDATE_SECONDS = 86400; // 24h fallback; invalidate via POST /api/revalidate after scrape
-
 import { PLAYER_STAT_NAMES } from "@/db/schema";
+
+export const dynamic = "force-dynamic";
 
 export default async function PlayerPage({
   params,
@@ -28,12 +25,7 @@ export default async function PlayerPage({
   const { games: gamesParam, stat: statParam, line: lineParam } = await searchParams;
 
   const playerName = decodeURIComponent(encodedName);
-  const getCachedExists = unstable_cache(
-    () => getPlayerExists(playerName),
-    ["player-exists", encodedName],
-    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
-  );
-  const exists = await getCachedExists();
+  const exists = await getPlayerExists(playerName);
   if (!exists) notFound();
 
   const initialGameCount = gamesParam ? Math.min(20, Math.max(5, parseInt(gamesParam, 10) || 20)) : 20;
@@ -41,44 +33,13 @@ export default async function PlayerPage({
   const initialPropLine = lineParam != null ? parseFloat(lineParam) : undefined;
   const initialPropLineValid = initialPropLine != null && !Number.isNaN(initialPropLine);
 
-  const getCachedPlayerData = unstable_cache(
-    () => getPlayerData(playerName, initialGameCount),
-    ["player", encodedName, String(initialGameCount)],
-    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
-  );
-  const getCachedLastGameStatus = unstable_cache(
-    () => getPlayerLastGameStatus(playerName),
-    ["player-last-game", encodedName],
-    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
-  );
-  const getCachedSplits = unstable_cache(
-    () => getPlayerSplits(playerName),
-    ["player-splits", encodedName],
-    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
-  );
-  const getCachedMatchups = unstable_cache(
-    () => getPlayerMatchups(playerName),
-    ["player-matchups", encodedName],
-    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
-  );
-  const getCachedPropLines = unstable_cache(
-    () => getPlayerPropLines(playerName),
-    ["player-props", encodedName],
-    { revalidate: REVALIDATE_SECONDS, tags: [CACHE_TAG] }
-  );
-  const getCachedTodaysGame = unstable_cache(
-    () => getPlayerTodaysGame(playerName),
-    ["player-todays-game", encodedName],
-    { revalidate: 3600, tags: [CACHE_TAG] }
-  );
-
   const [initialData, lastGameStatus, splits, matchups, propLines, todaysGame] = await Promise.all([
-    getCachedPlayerData(),
-    getCachedLastGameStatus(),
-    getCachedSplits(),
-    getCachedMatchups(),
-    getCachedPropLines(),
-    getCachedTodaysGame(),
+    getPlayerData(playerName, initialGameCount),
+    getPlayerLastGameStatus(playerName),
+    getPlayerSplits(playerName),
+    getPlayerMatchups(playerName),
+    getPlayerPropLines(playerName),
+    getPlayerTodaysGame(playerName),
   ]);
 
   return (
