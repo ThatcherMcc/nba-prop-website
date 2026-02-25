@@ -648,6 +648,7 @@ export async function getTopPicks(limit = 15): Promise<TopPick[]> {
         FROM hit_rates h
         JOIN players p ON p.player_id = h.player_id
         WHERE h.over_count::numeric / h.games_checked >= 0.6
+          AND h.book_line > 1.5
       )
       SELECT player_name, market_code, market_name, book_line,
         games_checked, over_count, hit_rate
@@ -771,6 +772,7 @@ export async function getUnderPicks(limit = 25): Promise<UnderPick[]> {
         JOIN players p ON p.player_id = h.player_id
         WHERE h.under_count::numeric / h.games_checked >= 0.6
           AND NOT (h.market_code IN ('BLK', 'STL') AND h.book_line <= 0.5)
+          AND h.book_line > 1.5
       )
       SELECT player_name, market_code, market_name, book_line,
         games_checked, under_count, hit_rate
@@ -931,6 +933,7 @@ export async function getBacktestResults(): Promise<BacktestResult> {
         FROM hit_rates h
         JOIN players p ON p.player_id = h.player_id
         WHERE h.over_count::numeric / h.games_checked >= 0.6
+          AND h.book_line > 1.5
       ),
       under_ranked AS (
         SELECT p.player_name, h.player_id, h.market_code, h.market_name,
@@ -945,6 +948,7 @@ export async function getBacktestResults(): Promise<BacktestResult> {
         JOIN players p ON p.player_id = h.player_id
         WHERE h.under_count::numeric / h.games_checked >= 0.6
           AND NOT (h.market_code IN ('BLK', 'STL') AND h.book_line <= 0.5)
+          AND h.book_line > 1.5
       ),
       all_picks AS (
         (SELECT player_name, player_id, market_code, market_name, book_line, game_id,
