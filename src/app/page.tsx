@@ -19,8 +19,8 @@ export default async function Page() {
   let overSeasonAvgLast5: Awaited<ReturnType<typeof getPlayersOverSeasonAvgLast5>> = [];
   let underSeasonAvgLast5: Awaited<ReturnType<typeof getPlayersUnderSeasonAvgLast5>> = [];
   let trendingPlayers: Awaited<ReturnType<typeof getTrendingPlayers>> = [];
-  let topPicks: Awaited<ReturnType<typeof getTopPicks>> = [];
-  let underPicks: Awaited<ReturnType<typeof getUnderPicks>> = [];
+  let topPicks: Awaited<ReturnType<typeof getTopPicks>> = { picks: [], propDate: null };
+  let underPicks: Awaited<ReturnType<typeof getUnderPicks>> = { picks: [], propDate: null };
   let backtestResults: Awaited<ReturnType<typeof getBacktestResults>> = { gameDate: "", picks: [] };
   let playerNames: string[] = [];
 
@@ -49,8 +49,9 @@ export default async function Page() {
         overSeasonAvgLast5={overSeasonAvgLast5}
         underSeasonAvgLast5={underSeasonAvgLast5}
         trendingPlayers={trendingPlayers}
-        topPicks={topPicks}
-        underPicks={underPicks}
+        topPicks={topPicks.picks}
+        underPicks={underPicks.picks}
+        propDate={topPicks.propDate ?? underPicks.propDate}
         backtestResults={backtestResults}
       />
     </div>
