@@ -564,10 +564,15 @@ export type TopPick = {
   playingToday: boolean;
 };
 
+export type PicksResult<T> = {
+  picks: T[];
+  propDate: string | null; // ISO date string e.g. "2026-02-27"
+};
+
 // Map market codes to frontend stat keys (used by TopPicks component)
 // NOTE: Cannot export plain objects from "use server" files — define in consumer instead.
 
-export async function getTopPicks(limit = 15): Promise<TopPick[]> {
+export async function getTopPicks(limit = 15): Promise<PicksResult<TopPick>> {
   noStore();
 
   type Row = {
@@ -578,16 +583,27 @@ export async function getTopPicks(limit = 15): Promise<TopPick[]> {
     games_checked: number;
     over_count: number;
     hit_rate: string | number;
+    prop_date: string | null;
   };
 
   try {
     const result = await db.execute<Row>(sql`
-      WITH todays_props AS (
+      WITH prop_date AS (
+        SELECT COALESCE(
+          (SELECT g.game_date FROM player_props pp
+           JOIN games g ON g.game_id = pp.game_id
+           WHERE g.game_date >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+           ORDER BY g.game_date ASC LIMIT 1),
+          (SELECT MAX(g.game_date) FROM player_props pp
+           JOIN games g ON g.game_id = pp.game_id)
+        ) AS target_date
+      ),
+      todays_props AS (
         SELECT pp.player_id, pm.market_code, pm.market_name, pp.book_line
         FROM player_props pp
         JOIN games g ON g.game_id = pp.game_id
         JOIN prop_markets pm ON pm.market_id = pp.market_id
-        WHERE g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+        WHERE g.game_date = (SELECT target_date FROM prop_date)
           AND pp.book_line IS NOT NULL
       ),
       ranked_games AS (
@@ -651,7 +667,8 @@ export async function getTopPicks(limit = 15): Promise<TopPick[]> {
           AND h.book_line > 1.5
       )
       SELECT player_name, market_code, market_name, book_line,
-        games_checked, over_count, hit_rate
+        games_checked, over_count, hit_rate,
+        (SELECT target_date::text FROM prop_date) AS prop_date
       FROM ranked_picks
       WHERE player_rn <= 2
       ORDER BY hit_rate DESC, book_line DESC
@@ -661,19 +678,22 @@ export async function getTopPicks(limit = 15): Promise<TopPick[]> {
     const rows: Row[] =
       "rows" in result && Array.isArray(result.rows) ? result.rows : [];
 
-    return rows.map((r) => ({
-      playerName: r.player_name,
-      marketCode: r.market_code,
-      marketName: r.market_name,
-      bookLine: Number(r.book_line),
-      gamesChecked: Number(r.games_checked),
-      overCount: Number(r.over_count),
-      hitRate: Number(r.hit_rate),
-      playingToday: true,
-    }));
+    return {
+      picks: rows.map((r) => ({
+        playerName: r.player_name,
+        marketCode: r.market_code,
+        marketName: r.market_name,
+        bookLine: Number(r.book_line),
+        gamesChecked: Number(r.games_checked),
+        overCount: Number(r.over_count),
+        hitRate: Number(r.hit_rate),
+        playingToday: true,
+      })),
+      propDate: rows[0]?.prop_date ?? null,
+    };
   } catch (error) {
     console.error("Database Error (getTopPicks):", error);
-    return [];
+    return { picks: [], propDate: null };
   }
 }
 
@@ -689,7 +709,7 @@ export type UnderPick = {
   playingToday: boolean;
 };
 
-export async function getUnderPicks(limit = 25): Promise<UnderPick[]> {
+export async function getUnderPicks(limit = 25): Promise<PicksResult<UnderPick>> {
   noStore();
 
   type Row = {
@@ -700,16 +720,27 @@ export async function getUnderPicks(limit = 25): Promise<UnderPick[]> {
     games_checked: number;
     under_count: number;
     hit_rate: string | number;
+    prop_date: string | null;
   };
 
   try {
     const result = await db.execute<Row>(sql`
-      WITH todays_props AS (
+      WITH prop_date AS (
+        SELECT COALESCE(
+          (SELECT g.game_date FROM player_props pp
+           JOIN games g ON g.game_id = pp.game_id
+           WHERE g.game_date >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+           ORDER BY g.game_date ASC LIMIT 1),
+          (SELECT MAX(g.game_date) FROM player_props pp
+           JOIN games g ON g.game_id = pp.game_id)
+        ) AS target_date
+      ),
+      todays_props AS (
         SELECT pp.player_id, pm.market_code, pm.market_name, pp.book_line
         FROM player_props pp
         JOIN games g ON g.game_id = pp.game_id
         JOIN prop_markets pm ON pm.market_id = pp.market_id
-        WHERE g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+        WHERE g.game_date = (SELECT target_date FROM prop_date)
           AND pp.book_line IS NOT NULL
       ),
       ranked_games AS (
@@ -775,7 +806,8 @@ export async function getUnderPicks(limit = 25): Promise<UnderPick[]> {
           AND h.book_line > 1.5
       )
       SELECT player_name, market_code, market_name, book_line,
-        games_checked, under_count, hit_rate
+        games_checked, under_count, hit_rate,
+        (SELECT target_date::text FROM prop_date) AS prop_date
       FROM ranked_picks
       WHERE player_rn <= 2
       ORDER BY hit_rate DESC, book_line DESC
@@ -785,19 +817,22 @@ export async function getUnderPicks(limit = 25): Promise<UnderPick[]> {
     const rows: Row[] =
       "rows" in result && Array.isArray(result.rows) ? result.rows : [];
 
-    return rows.map((r) => ({
-      playerName: r.player_name,
-      marketCode: r.market_code,
-      marketName: r.market_name,
-      bookLine: Number(r.book_line),
-      gamesChecked: Number(r.games_checked),
-      underCount: Number(r.under_count),
-      hitRate: Number(r.hit_rate),
-      playingToday: true,
-    }));
+    return {
+      picks: rows.map((r) => ({
+        playerName: r.player_name,
+        marketCode: r.market_code,
+        marketName: r.market_name,
+        bookLine: Number(r.book_line),
+        gamesChecked: Number(r.games_checked),
+        underCount: Number(r.under_count),
+        hitRate: Number(r.hit_rate),
+        playingToday: true,
+      })),
+      propDate: rows[0]?.prop_date ?? null,
+    };
   } catch (error) {
     console.error("Database Error (getUnderPicks):", error);
-    return [];
+    return { picks: [], propDate: null };
   }
 }
 
@@ -1402,20 +1437,28 @@ export async function getPlayerTodaysGame(
         is_home: boolean;
       };
       const gameResult = await db.execute<GameRow>(sql`
+        WITH player_team AS (
+          SELECT s.player_id,
+            CASE WHEN s.is_home THEN g.home_team_id ELSE g.away_team_id END AS team_id
+          FROM player_game_stats s
+          JOIN players p ON p.player_id = s.player_id
+          JOIN games g ON g.game_id = s.game_id
+          WHERE LOWER(p.player_name) = LOWER(${playerName})
+          ORDER BY g.game_date DESC
+          LIMIT 1
+        )
         SELECT
           opp.team_code AS opponent_code,
           opp.team_name AS opponent_name,
           (pt.team_id = g.home_team_id) AS is_home
         FROM player_props pp
-        JOIN players p ON p.player_id = pp.player_id
+        JOIN player_team pt ON pt.player_id = pp.player_id
         JOIN games g ON g.game_id = pp.game_id
-        JOIN teams pt ON pt.team_id = p.team_id
         JOIN teams opp ON opp.team_id = CASE
           WHEN pt.team_id = g.home_team_id THEN g.away_team_id
           ELSE g.home_team_id
         END
-        WHERE LOWER(p.player_name) = LOWER(${playerName})
-          AND g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+        WHERE g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
         LIMIT 1
       `);
 

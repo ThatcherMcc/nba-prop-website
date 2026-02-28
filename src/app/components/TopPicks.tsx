@@ -11,7 +11,20 @@ const MARKET_TO_STAT: Record<string, string> = {
 
 interface Props {
   picks: TopPick[];
+  propDate?: string | null;
   onSelectPlayer?: (name: string, stat?: string, line?: number) => void;
+}
+
+function formatPropDate(propDate?: string | null): string {
+  if (!propDate) return "today's";
+  const today = new Date();
+  const d = new Date(propDate + "T12:00:00");
+  const diffMs = d.getTime() - today.getTime();
+  const diffDays = Math.round(diffMs / 86400000);
+  if (diffDays === 0) return "today's";
+  if (diffDays === 1) return "tomorrow's";
+  if (diffDays === -1) return "yesterday's";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 const STAT_COLORS: Record<string, string> = {
@@ -30,7 +43,7 @@ function getStatColor(code: string) {
 
 const COLLAPSED_COUNT = 10;
 
-export default function TopPicks({ picks, onSelectPlayer }: Props) {
+export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
   const [expanded, setExpanded] = useState(false);
   if (picks.length === 0) return null;
 
@@ -46,7 +59,7 @@ export default function TopPicks({ picks, onSelectPlayer }: Props) {
             Top Picks — Over
           </h2>
           <p className="text-xs text-zinc-500">
-            Highest over hit rates at today&apos;s book lines (last 10 games, 60%+)
+            Highest over hit rates at {formatPropDate(propDate)} book lines (last 10 games, 60%+)
           </p>
         </div>
       </div>

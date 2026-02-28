@@ -33,6 +33,7 @@ export default function PlayerSearch({
   trendingPlayers = [],
   topPicks = [],
   underPicks = [],
+  propDate = null,
   backtestResults = { gameDate: "", picks: [] },
 }: {
   playerNames?: string[];
@@ -43,6 +44,7 @@ export default function PlayerSearch({
   trendingPlayers?: TrendingPlayer[];
   topPicks?: TopPick[];
   underPicks?: UnderPick[];
+  propDate?: string | null;
   backtestResults?: BacktestResult;
 }) {
   const router = useRouter();
@@ -93,6 +95,7 @@ export default function PlayerSearch({
 
         <TopPicks
           picks={topPicks}
+          propDate={propDate}
           onSelectPlayer={(name, stat, line) =>
             goToPlayer(name, 10, stat, line ?? undefined)
           }
@@ -100,6 +103,7 @@ export default function PlayerSearch({
 
         <UnderPicks
           picks={underPicks}
+          propDate={propDate}
           onSelectPlayer={(name, stat, line) =>
             goToPlayer(name, 10, stat, line ?? undefined)
           }
