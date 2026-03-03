@@ -112,7 +112,7 @@ export default function ColdLast5({
             <button
               type="button"
               onClick={() => setMobileIndex((i) => Math.max(0, i - 1))}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-zinc-800/80 border border-white/10 flex items-center justify-center text-white text-sm active:bg-zinc-700"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-zinc-800/80 border border-white/10 flex items-center justify-center text-white text-sm active:bg-zinc-700"
               aria-label="Previous player"
             >
               ‹
@@ -126,7 +126,7 @@ export default function ColdLast5({
               onClick={() =>
                 setMobileIndex((i) => Math.min(players.length - 1, i + 1))
               }
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-zinc-800/80 border border-white/10 flex items-center justify-center text-white text-sm active:bg-zinc-700"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-zinc-800/80 border border-white/10 flex items-center justify-center text-white text-sm active:bg-zinc-700"
               aria-label="Next player"
             >
               ›
@@ -135,17 +135,21 @@ export default function ColdLast5({
         </div>
 
         {/* Dot indicators */}
-        <div className="flex items-center justify-center gap-1.5 mt-3">
+        <div className="flex items-center justify-center mt-3">
           {players.map((p, i) => (
             <button
               key={p.playerName}
               type="button"
               onClick={() => setMobileIndex(i)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                i === mobileIndex ? "bg-sky-400" : "bg-zinc-700"
-              }`}
+              className="flex items-center justify-center p-3"
               aria-label={`Go to ${p.playerName}`}
-            />
+            >
+              <span
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  i === mobileIndex ? "bg-sky-400" : "bg-zinc-700"
+                }`}
+              />
+            </button>
           ))}
         </div>
       </div>
