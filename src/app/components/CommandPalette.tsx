@@ -198,6 +198,14 @@ export default function CommandPalette({
           </div>
         )}
 
+        {/* No-query empty state */}
+        {query.trim().length === 0 && displayItems.length === 0 && (
+          <div className="px-4 py-8 text-center space-y-1">
+            <p className="text-sm text-zinc-500">Start typing a player name</p>
+            <p className="text-xs text-zinc-600">515+ NBA players available</p>
+          </div>
+        )}
+
         {/* Empty state */}
         {query.trim().length > 0 && results.length === 0 && (
           <div className="px-4 py-8 text-center text-sm text-zinc-500">
