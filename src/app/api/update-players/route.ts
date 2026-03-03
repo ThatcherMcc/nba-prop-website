@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { timingSafeCompare, extractBearerToken } from "@/lib/auth";
 
 /**
  * Player/gamelog data now lives in Neon tables: players, games, player_game_stats.
@@ -7,10 +8,17 @@ import { NextResponse } from "next/server";
  * this route is updated to write to the new schema if needed.
  */
 export async function PUT(request: Request) {
-  const API_KEY = process.env.UPDATE_API_KEY;
-  const authHeader = request.headers.get("authorization");
+  const apiKey = process.env.UPDATE_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { message: "Server misconfigured" },
+      { status: 500 }
+    );
+  }
 
-  if (!authHeader || authHeader.split(" ")[1] !== API_KEY) {
+  const provided = extractBearerToken(request.headers.get("authorization")) ?? "";
+
+  if (!provided || !timingSafeCompare(provided, apiKey)) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 

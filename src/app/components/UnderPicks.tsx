@@ -41,14 +41,15 @@ function getStatColor(code: string) {
   return STAT_COLORS[code] ?? "bg-zinc-500/15 text-zinc-400 border-zinc-500/30";
 }
 
-const COLLAPSED_COUNT = 10;
+const MOBILE_COLLAPSED = 5;
+const DESKTOP_COLLAPSED = 10;
 
 export default function UnderPicks({ picks, propDate, onSelectPlayer }: Props) {
   const [expanded, setExpanded] = useState(false);
   if (picks.length === 0) return null;
 
-  const visible = expanded ? picks : picks.slice(0, COLLAPSED_COUNT);
-  const hasMore = picks.length > COLLAPSED_COUNT;
+  const visible = expanded ? picks : picks.slice(0, DESKTOP_COLLAPSED);
+  const hasMore = picks.length > MOBILE_COLLAPSED;
 
   return (
     <section className="mb-10">
@@ -71,7 +72,7 @@ export default function UnderPicks({ picks, propDate, onSelectPlayer }: Props) {
               <th className="text-left py-3 px-4">Player</th>
               <th className="text-left py-3 px-3">Stat</th>
               <th className="text-right py-3 px-3">Line</th>
-              <th className="text-right py-3 px-3">Under</th>
+              <th className="text-right py-3 px-3 hidden sm:table-cell">Under</th>
               <th className="text-right py-3 px-3">Hit Rate</th>
               <th className="text-right py-3 px-4 hidden sm:table-cell">Confidence</th>
             </tr>
@@ -86,36 +87,38 @@ export default function UnderPicks({ picks, propDate, onSelectPlayer }: Props) {
                     : "text-amber-400";
               const barWidth = Math.max(0, Math.min(100, p.hitRate));
               const statKey = MARKET_TO_STAT[p.marketCode];
+              const hiddenOnMobileWhenCollapsed =
+                !expanded && i >= MOBILE_COLLAPSED ? "hidden md:table-row" : "";
               return (
                 <tr
                   key={`${p.playerName}-${p.marketCode}-${i}`}
-                  className="border-b border-white/5 hover:bg-white/[0.03] transition-colors cursor-pointer"
+                  className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors cursor-pointer ${hiddenOnMobileWhenCollapsed}`}
                   onClick={() =>
                     onSelectPlayer?.(p.playerName, statKey, p.bookLine)
                   }
                 >
-                  <td className="py-3 px-4">
-                    <span className="font-bold text-white">
+                  <td className="py-4 md:py-3 px-4">
+                    <span className="text-base md:text-sm font-bold text-white">
                       {p.playerName}
                     </span>
                   </td>
-                  <td className="py-3 px-3">
+                  <td className="py-4 md:py-3 px-3">
                     <span
                       className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getStatColor(p.marketCode)}`}
                     >
                       {p.marketCode}
                     </span>
                   </td>
-                  <td className="text-right py-3 px-3 text-zinc-300 font-mono">
+                  <td className="text-right py-4 md:py-3 px-3 text-base md:text-sm text-zinc-300 font-mono">
                     {p.bookLine}
                   </td>
-                  <td className="text-right py-3 px-3 text-zinc-400">
+                  <td className="text-right py-4 md:py-3 px-3 text-base md:text-sm text-zinc-400 hidden sm:table-cell">
                     {p.underCount}/{p.gamesChecked}
                   </td>
-                  <td className={`text-right py-3 px-3 font-bold ${hitColor}`}>
+                  <td className={`text-right py-4 md:py-3 px-3 text-base md:text-sm font-bold ${hitColor}`}>
                     {p.hitRate}%
                   </td>
-                  <td className="text-right py-3 px-4 hidden sm:table-cell">
+                  <td className="text-right py-4 md:py-3 px-4 hidden sm:table-cell">
                     <div className="inline-flex items-center gap-2 w-24">
                       <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                         <div
@@ -137,7 +140,7 @@ export default function UnderPicks({ picks, propDate, onSelectPlayer }: Props) {
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="w-full py-2.5 text-xs font-bold text-zinc-400 hover:text-white border-t border-white/5 transition-colors"
+            className="w-full py-3 md:py-2 text-base md:text-sm font-bold text-zinc-400 hover:text-white border-t border-white/5 transition-colors"
           >
             {expanded ? "Show less" : `Show all ${picks.length} picks`}
           </button>

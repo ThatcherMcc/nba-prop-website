@@ -61,3 +61,10 @@ body {
 .animate-pulse-live {
   animation: pulse-live 2s ease-in-out infinite;
 }
+
+/* Safe area for notched phones (bottom tab bar) */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
