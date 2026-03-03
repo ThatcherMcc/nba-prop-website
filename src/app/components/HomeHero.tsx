@@ -1,14 +1,40 @@
 "use client";
-export default function HomeHero() {
+
+function formatRelativeTime(isoString: string | null | undefined): string {
+  if (!isoString) return "Updating...";
+  const diff = Date.now() - new Date(isoString).getTime();
+  const hours = Math.floor(diff / 3600000);
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `Updated ${minutes}m ago`;
+  if (hours < 24) return `Updated ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `Updated ${days}d ago`;
+}
+
+export default function HomeHero({
+  lastUpdated,
+}: {
+  lastUpdated?: string | null;
+}) {
+  const isRecent =
+    lastUpdated != null &&
+    Date.now() - new Date(lastUpdated).getTime() < 6 * 3600000;
+
   return (
     <header className="mb-12 pt-4">
       <div className="flex items-center gap-2 mb-4">
         <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-pulse-live absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          {isRecent && (
+            <span className="animate-pulse-live absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          )}
+          <span
+            className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isRecent ? "bg-emerald-500" : "bg-zinc-500"}`}
+          />
         </span>
-        <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
-          Live Data
+        <span
+          className={`text-xs font-bold uppercase tracking-widest ${isRecent ? "text-emerald-400" : "text-zinc-400"}`}
+        >
+          {formatRelativeTime(lastUpdated)}
         </span>
       </div>
 

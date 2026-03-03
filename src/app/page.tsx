@@ -7,6 +7,7 @@ import {
   getTopPicks,
   getUnderPicks,
   getBacktestResults,
+  getLastDataUpdate,
 } from "@/lib/data";
 
 const FEATURED_PLAYER = "LeBron James";
@@ -32,6 +33,8 @@ export default async function Page() {
     gameDate: "",
     picks: [],
   };
+  let lastUpdated: string | null = null;
+  let hasError = false;
 
   try {
     [
@@ -42,6 +45,7 @@ export default async function Page() {
       topPicks,
       underPicks,
       backtestResults,
+      lastUpdated,
     ] = await Promise.all([
       getPlayerData(FEATURED_PLAYER, 10),
       getPlayersOverSeasonAvgLast5(8),
@@ -50,9 +54,11 @@ export default async function Page() {
       getTopPicks(25),
       getUnderPicks(25),
       getBacktestResults(),
+      getLastDataUpdate(),
     ]);
   } catch (e) {
     console.error("Homepage data load failed:", e);
+    hasError = true;
   }
 
   return (
@@ -66,6 +72,8 @@ export default async function Page() {
       underPicks={underPicks.picks}
       propDate={topPicks.propDate ?? underPicks.propDate}
       backtestResults={backtestResults}
+      lastUpdated={lastUpdated}
+      hasError={hasError}
     />
   );
 }

@@ -29,6 +29,8 @@ export default function HomepageContent({
   underPicks = [],
   propDate = null,
   backtestResults = { gameDate: "", picks: [] },
+  lastUpdated = null,
+  hasError = false,
 }: {
   featuredPlayerName?: string;
   featuredPlayerData?: PlayerGameLog[];
@@ -39,6 +41,8 @@ export default function HomepageContent({
   underPicks?: UnderPick[];
   propDate?: string | null;
   backtestResults?: BacktestResult;
+  lastUpdated?: string | null;
+  hasError?: boolean;
 }) {
   const router = useRouter();
 
@@ -55,9 +59,28 @@ export default function HomepageContent({
     router.push(`/player/${encodeURIComponent(name)}?${params.toString()}`);
   };
 
+  const allDataEmpty =
+    topPicks.length === 0 &&
+    underPicks.length === 0 &&
+    overSeasonAvgLast5.length === 0 &&
+    underSeasonAvgLast5.length === 0 &&
+    trendingPlayers.length === 0;
+
   return (
     <>
-      <HomeHero />
+      <HomeHero lastUpdated={lastUpdated} />
+
+      {hasError && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-8 text-amber-200 text-sm">
+          We&apos;re having trouble loading data right now. Data updates daily at 3:00 AM ET — please try again shortly.
+        </div>
+      )}
+
+      {!hasError && allDataEmpty && (
+        <div className="bg-zinc-800/50 border border-white/5 rounded-xl p-6 mb-8 text-center text-zinc-400 text-sm">
+          No games scheduled today. Check back tomorrow for fresh picks.
+        </div>
+      )}
 
       <TopPicks
         picks={topPicks}
