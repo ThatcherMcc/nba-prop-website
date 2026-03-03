@@ -135,13 +135,15 @@ function rowToPlayerGameLog(
     ptsAst: number | null;
     rebAst: number | null;
     stlBlk: number | null;
+    isHome?: boolean | null;
+    opponentCode?: string | null;
   }
 ): PlayerGameLog {
   return {
     playerName: row.playerName,
     gameDate: row.gameDate,
-    location: null,
-    opponent: null,
+    location: row.isHome ? "" : "@",
+    opponent: row.opponentCode ?? null,
     mp: row.minutesPlayed,
     fg: row.fieldGoalsMade,
     fga: row.fieldGoalsAttempted,
@@ -254,6 +256,14 @@ export const getPlayerData = unstable_cache(
           ptsAst: playerGameStats.ptsAst,
           rebAst: playerGameStats.rebAst,
           stlBlk: playerGameStats.stlBlk,
+          isHome: playerGameStats.isHome,
+          opponentCode: sql<string>`(
+            SELECT t.team_code FROM teams t
+            WHERE t.team_id = CASE
+              WHEN ${playerGameStats.isHome} THEN ${games.awayTeamId}
+              ELSE ${games.homeTeamId}
+            END
+          )`,
         })
         .from(playerGameStats)
         .innerJoin(games, eq(playerGameStats.gameId, games.gameId))
@@ -266,6 +276,8 @@ export const getPlayerData = unstable_cache(
         rowToPlayerGameLog({
           ...r,
           playerName: r.playerName ?? "",
+          isHome: r.isHome,
+          opponentCode: r.opponentCode,
         })
       );
     } catch (error) {
@@ -1088,6 +1100,8 @@ export type SplitStats = {
   avgBlk: number;
   avg3pm: number;
   avgPra: number;
+  avgFtm: number;
+  avgFta: number;
 };
 
 export type PlayerSplits = {
@@ -1100,6 +1114,7 @@ export const getPlayerSplits = unstable_cache(
     const empty: SplitStats = {
       games: 0, avgPts: 0, avgReb: 0, avgAst: 0,
       avgStl: 0, avgBlk: 0, avg3pm: 0, avgPra: 0,
+      avgFtm: 0, avgFta: 0,
     };
 
     type Row = {
@@ -1112,6 +1127,8 @@ export const getPlayerSplits = unstable_cache(
       avg_blk: string | number;
       avg_3pm: string | number;
       avg_pra: string | number;
+      avg_ftm: string | number;
+      avg_fta: string | number;
     };
 
     try {
@@ -1125,7 +1142,9 @@ export const getPlayerSplits = unstable_cache(
           ROUND(AVG(s.steals)::numeric, 1) AS avg_stl,
           ROUND(AVG(s.blocks)::numeric, 1) AS avg_blk,
           ROUND(AVG(s.three_pointers_made)::numeric, 1) AS avg_3pm,
-          ROUND(AVG(s.pts_reb_ast)::numeric, 1) AS avg_pra
+          ROUND(AVG(s.pts_reb_ast)::numeric, 1) AS avg_pra,
+          ROUND(AVG(s.free_throws_made)::numeric, 1) AS avg_ftm,
+          ROUND(AVG(s.free_throws_attempted)::numeric, 1) AS avg_fta
         FROM player_game_stats s
         JOIN players p ON p.player_id = s.player_id
         WHERE LOWER(p.player_name) = LOWER(${playerName})
@@ -1145,6 +1164,8 @@ export const getPlayerSplits = unstable_cache(
         avgBlk: Number(r.avg_blk),
         avg3pm: Number(r.avg_3pm),
         avgPra: Number(r.avg_pra),
+        avgFtm: Number(r.avg_ftm),
+        avgFta: Number(r.avg_fta),
       });
 
       const homeRow = rows.find((r) => r.is_home === true);
@@ -1172,6 +1193,9 @@ export type PlayerMatchup = {
   avgReb: number;
   avgAst: number;
   avgPra: number;
+  avgStl: number;
+  avgBlk: number;
+  avgTov: number;
   lastPlayed: string | null;
 };
 
@@ -1185,6 +1209,9 @@ export const getPlayerMatchups = unstable_cache(
       avg_reb: string | number;
       avg_ast: string | number;
       avg_pra: string | number;
+      avg_stl: string | number;
+      avg_blk: string | number;
+      avg_tov: string | number;
       last_played: string | null;
     };
 
@@ -1198,6 +1225,9 @@ export const getPlayerMatchups = unstable_cache(
           ROUND(AVG(s.total_rebounds)::numeric, 1) AS avg_reb,
           ROUND(AVG(s.assists)::numeric, 1) AS avg_ast,
           ROUND(AVG(s.pts_reb_ast)::numeric, 1) AS avg_pra,
+          ROUND(AVG(s.steals)::numeric, 1) AS avg_stl,
+          ROUND(AVG(s.blocks)::numeric, 1) AS avg_blk,
+          ROUND(AVG(s.turnovers)::numeric, 1) AS avg_tov,
           MAX(g.game_date)::text AS last_played
         FROM player_game_stats s
         JOIN players p ON p.player_id = s.player_id
@@ -1220,6 +1250,9 @@ export const getPlayerMatchups = unstable_cache(
         avgReb: Number(r.avg_reb),
         avgAst: Number(r.avg_ast),
         avgPra: Number(r.avg_pra),
+        avgStl: Number(r.avg_stl),
+        avgBlk: Number(r.avg_blk),
+        avgTov: Number(r.avg_tov),
         lastPlayed: r.last_played,
       }));
     } catch (error) {
@@ -1567,5 +1600,28 @@ export const getTodaysPlayers = unstable_cache(
     }
   },
   ["getTodaysPlayers"],
+  { tags: ["player-data"] }
+);
+
+/**
+ * Returns the ISO timestamp of the most recently updated player_game_stats row.
+ * Used by HomeHero to display a data freshness indicator.
+ */
+export const getLastDataUpdate = unstable_cache(
+  async (): Promise<string | null> => {
+    type Row = { last_updated: string | null };
+    try {
+      const result = await db.execute<Row>(
+        sql`SELECT MAX(updated_at)::text AS last_updated FROM player_game_stats`
+      );
+      const rows: Row[] =
+        "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      return rows[0]?.last_updated ?? null;
+    } catch (error) {
+      console.error("Database Error (getLastDataUpdate):", error);
+      return null;
+    }
+  },
+  ["getLastDataUpdate"],
   { tags: ["player-data"] }
 );

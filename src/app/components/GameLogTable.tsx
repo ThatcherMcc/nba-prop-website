@@ -35,6 +35,7 @@ function formatDate(d: string | null) {
 export default function GameLogTable({ data, propLine, highlightStat }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("gameDate");
   const [sortDesc, setSortDesc] = useState(true);
+  const [showAll, setShowAll] = useState(false);
 
   const sorted = useMemo(() => {
     const rows = [...data];
@@ -81,6 +82,8 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
                 <span className="ml-0.5 text-blue-400">{sortDesc ? " ↓" : " ↑"}</span>
               )}
             </th>
+            <th className="text-left py-2 px-2">OPP</th>
+            <th className="text-left py-2 px-2">MIN</th>
             <th className="text-center py-2 px-1 w-8">O/U</th>
             {VISIBLE_STATS.map(({ key, label }) => (
               <th
@@ -99,7 +102,7 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
           </tr>
         </thead>
         <tbody>
-          {sorted.map((game, i) => {
+          {(showAll ? sorted : sorted.slice(0, 5)).map((game, i) => {
             const dnp = isDnpMinutes(game.mp);
             const statVal = (game[highlightStat] as number | null) ?? 0;
             const isOver = !dnp && propLine > 0 && statVal > propLine;
@@ -120,6 +123,18 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
               >
                 <td className="py-2 px-2 text-zinc-400 sticky left-0 bg-zinc-900 z-10">
                   {formatDate(game.gameDate)}
+                </td>
+                <td className="py-2 px-2">
+                  {game.opponent == null ? (
+                    <span className="text-zinc-600">—</span>
+                  ) : game.location === "@" ? (
+                    <span className="text-zinc-500">@{game.opponent}</span>
+                  ) : (
+                    <span className="text-zinc-400">vs {game.opponent}</span>
+                  )}
+                </td>
+                <td className="py-2 px-2 text-zinc-400">
+                  {dnp ? "—" : game.mp ?? "—"}
                 </td>
                 <td className="py-2 px-1 text-center">
                   {dnp ? (
@@ -164,6 +179,15 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
           })}
         </tbody>
       </table>
+      {!showAll && sorted.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="w-full py-3 md:py-2 text-base md:text-sm text-zinc-500 hover:text-white transition-colors border-t border-white/5"
+        >
+          Show all {sorted.length} games
+        </button>
+      )}
     </div>
   );
 }
