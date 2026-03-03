@@ -14,6 +14,8 @@ const STAT_LABELS: { key: keyof PlayerSplitsType["home"]; label: string }[] = [
   { key: "avgStl", label: "STL" },
   { key: "avgBlk", label: "BLK" },
   { key: "avg3pm", label: "3PM" },
+  { key: "avgFtm", label: "FTM" },
+  { key: "avgFta", label: "FTA" },
   { key: "avgPra", label: "PRA" },
 ];
 

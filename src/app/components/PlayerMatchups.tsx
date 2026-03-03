@@ -8,15 +8,24 @@ interface Props {
   todaysGame?: TodaysGame | null;
 }
 
-type SortKey = "games" | "avgPts" | "avgReb" | "avgAst" | "avgPra";
+type SortKey = "games" | "avgPts" | "avgReb" | "avgAst" | "avgPra" | "avgStl" | "avgBlk" | "avgTov";
 
-const COLUMNS: { key: SortKey; label: string }[] = [
+const COLUMNS: { key: SortKey; label: string; hiddenMobile?: boolean }[] = [
   { key: "games", label: "GP" },
   { key: "avgPts", label: "PTS" },
   { key: "avgReb", label: "REB" },
   { key: "avgAst", label: "AST" },
   { key: "avgPra", label: "PRA" },
+  { key: "avgStl", label: "STL", hiddenMobile: true },
+  { key: "avgBlk", label: "BLK", hiddenMobile: true },
+  { key: "avgTov", label: "TOV", hiddenMobile: true },
 ];
+
+function formatLastPlayed(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr + "T00:00:00");
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
 
 export default function PlayerMatchups({ matchups, todaysGame }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("avgPts");
@@ -67,7 +76,7 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
             </span>
           </div>
           <div className="grid grid-cols-5 gap-3 text-center">
-            {COLUMNS.map(({ key, label }) => {
+            {COLUMNS.filter((c) => !c.hiddenMobile).map(({ key, label }) => {
               const val = todaysMatchup[key] as number;
               const isAboveAvg = key === "avgPts" && val - weightedAvgPts >= 2;
               const isBelowAvg = key === "avgPts" && weightedAvgPts - val >= 2;
@@ -99,10 +108,11 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
         <thead>
           <tr className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-white/10">
             <th className="text-left py-2 px-2">Team</th>
-            {COLUMNS.map(({ key, label }) => (
+            <th className="text-right py-2 px-2 text-zinc-500">Last</th>
+            {COLUMNS.map(({ key, label, hiddenMobile }) => (
               <th
                 key={key}
-                className="text-right py-2 px-2 cursor-pointer hover:text-zinc-300 transition-colors select-none"
+                className={`text-right py-2 px-2 cursor-pointer hover:text-zinc-300 transition-colors select-none${hiddenMobile ? " hidden sm:table-cell" : ""}`}
                 onClick={() => handleSort(key)}
               >
                 {label}
@@ -139,6 +149,9 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
                     </span>
                   </div>
                 </td>
+                <td className="text-right py-2.5 px-2 text-zinc-500 text-xs">
+                  {formatLastPlayed(m.lastPlayed)}
+                </td>
                 <td className="text-right py-2.5 px-2 text-zinc-400">
                   {m.games}
                 </td>
@@ -159,6 +172,15 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
                 </td>
                 <td className="text-right py-2.5 px-2 text-zinc-300 font-medium">
                   {m.avgPra.toFixed(1)}
+                </td>
+                <td className="text-right py-2.5 px-2 text-zinc-400 hidden sm:table-cell">
+                  {m.avgStl.toFixed(1)}
+                </td>
+                <td className="text-right py-2.5 px-2 text-zinc-400 hidden sm:table-cell">
+                  {m.avgBlk.toFixed(1)}
+                </td>
+                <td className="text-right py-2.5 px-2 text-zinc-400 hidden sm:table-cell">
+                  {m.avgTov.toFixed(1)}
                 </td>
               </tr>
             );
