@@ -85,8 +85,8 @@ export default function BacktestResults({ data }: { data: BacktestResult }) {
             <span className="text-zinc-600 mx-1">-</span>
             <span className="text-red-400 font-bold">{totalLosses}L</span>
           </div>
-          <div className="h-8 w-px bg-white/10 hidden sm:block" />
-          <div className="hidden sm:flex gap-4 text-xs text-zinc-500">
+          <div className="h-px w-full sm:h-8 sm:w-px bg-white/10" />
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs text-zinc-500">
             <span>
               Over:{" "}
               <span className="text-zinc-300 font-medium">
