@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 
 import dynamic from "next/dynamic";
@@ -100,6 +100,19 @@ export default function PlayerPageContent({
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>(
     propLines && propLines.length > 0 ? "props" : "edge"
   );
+
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [showTabFade, setShowTabFade] = useState(true);
+
+  const handleTabScroll = () => {
+    const el = tabsRef.current;
+    if (!el) return;
+    setShowTabFade(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  };
+
+  useEffect(() => {
+    handleTabScroll();
+  }, []);
 
   // Auto-fill prop line from book data when stat changes
   useEffect(() => {
@@ -409,7 +422,12 @@ export default function PlayerPageContent({
             {/* Edge Analytics Section */}
             <div className="col-span-12 mt-4">
               <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
-                <div className="flex items-center gap-1 border-b border-white/10 px-2 overflow-x-auto no-scrollbar">
+                <div className="relative">
+                <div
+                  ref={tabsRef}
+                  onScroll={handleTabScroll}
+                  className="flex items-center gap-1 border-b border-white/10 px-2 overflow-x-auto no-scrollbar"
+                >
                   {(
                     [
                       { key: "props" as const, label: "Prop Lines" },
@@ -436,6 +454,10 @@ export default function PlayerPageContent({
                     </button>
                   ))}
                 </div>
+                {showTabFade && (
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-zinc-900 to-transparent pointer-events-none z-10" />
+                )}
+                </div>
 
                 <div className="p-3 md:p-6">
                   {analyticsTab === "props" && (
@@ -445,7 +467,7 @@ export default function PlayerPageContent({
                     />
                   )}
                   {analyticsTab === "edge" && (
-                    <PlayerEdgeFinder data={playerData} stat={primaryStat} />
+                    <PlayerEdgeFinder data={initialData} stat={primaryStat} />
                   )}
                   {analyticsTab === "splits" && splits && (
                     <PlayerSplits splits={splits} todaysGame={todaysGame} />

@@ -52,7 +52,7 @@ export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
   const hasMore = picks.length > MOBILE_COLLAPSED;
 
   return (
-    <section className="mb-10">
+    <section id="picks" className="mb-10">
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">&#x1F3AF;</span>
         <div>
