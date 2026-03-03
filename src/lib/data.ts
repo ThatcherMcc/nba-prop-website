@@ -393,6 +393,12 @@ export const getPlayersOverSeasonAvgLast5 = unstable_cache(
           FROM last_5_with_sa
           GROUP BY player_id
           HAVING COUNT(*) >= 5 AND COUNT(*) FILTER (WHERE points > season_avg_pts) IN (4, 5)
+        ),
+        playing_today AS (
+          SELECT DISTINCT pp.player_id
+          FROM player_props pp
+          JOIN games g ON g.game_id = pp.game_id
+          WHERE g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
         )
         SELECT p.player_name,
           ROUND(sa.season_avg_pts::numeric, 1) AS season_avg_pts,
@@ -403,12 +409,9 @@ export const getPlayersOverSeasonAvgLast5 = unstable_cache(
         FROM over_agg o
         JOIN season_avg sa ON sa.player_id = o.player_id
         JOIN players p ON p.player_id = o.player_id
+        WHERE EXISTS (SELECT 1 FROM playing_today pt WHERE pt.player_id = o.player_id)
+           OR NOT EXISTS (SELECT 1 FROM playing_today)
         ORDER BY
-          CASE WHEN EXISTS (
-            SELECT 1 FROM player_props pp
-            JOIN games g ON g.game_id = pp.game_id
-            WHERE pp.player_id = o.player_id AND g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
-          ) THEN 0 ELSE 1 END,
           o.over_count DESC, sa.season_avg_pts DESC
         LIMIT ${limit}
       `);
@@ -511,6 +514,12 @@ export const getPlayersUnderSeasonAvgLast5 = unstable_cache(
           FROM last_5_with_sa
           GROUP BY player_id
           HAVING COUNT(*) >= 5 AND COUNT(*) FILTER (WHERE points < season_avg_pts) IN (4, 5)
+        ),
+        playing_today AS (
+          SELECT DISTINCT pp.player_id
+          FROM player_props pp
+          JOIN games g ON g.game_id = pp.game_id
+          WHERE g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
         )
         SELECT p.player_name,
           ROUND(sa.season_avg_pts::numeric, 1) AS season_avg_pts,
@@ -521,12 +530,9 @@ export const getPlayersUnderSeasonAvgLast5 = unstable_cache(
         FROM under_agg u
         JOIN season_avg sa ON sa.player_id = u.player_id
         JOIN players p ON p.player_id = u.player_id
+        WHERE EXISTS (SELECT 1 FROM playing_today pt WHERE pt.player_id = u.player_id)
+           OR NOT EXISTS (SELECT 1 FROM playing_today)
         ORDER BY
-          CASE WHEN EXISTS (
-            SELECT 1 FROM player_props pp
-            JOIN games g ON g.game_id = pp.game_id
-            WHERE pp.player_id = u.player_id AND g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
-          ) THEN 0 ELSE 1 END,
           u.under_count DESC, sa.season_avg_pts DESC
         LIMIT ${limit}
       `);
@@ -1319,6 +1325,12 @@ export const getTrendingPlayers = unstable_cache(
           WHERE r.rn BETWEEN 4 AND 6
           GROUP BY r.player_id
           HAVING COUNT(*) >= 3
+        ),
+        playing_today AS (
+          SELECT DISTINCT pp.player_id
+          FROM player_props pp
+          JOIN games g ON g.game_id = pp.game_id
+          WHERE g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
         )
         SELECT p.player_name,
           ROUND(l3.last3_avg_pts::numeric, 1) AS last3_avg_pts,
@@ -1327,12 +1339,9 @@ export const getTrendingPlayers = unstable_cache(
         FROM last_3 l3
         JOIN prev_3 pr ON pr.player_id = l3.player_id
         JOIN players p ON p.player_id = l3.player_id
+        WHERE EXISTS (SELECT 1 FROM playing_today pt WHERE pt.player_id = l3.player_id)
+           OR NOT EXISTS (SELECT 1 FROM playing_today)
         ORDER BY
-          CASE WHEN EXISTS (
-            SELECT 1 FROM player_props pp
-            JOIN games g ON g.game_id = pp.game_id
-            WHERE pp.player_id = l3.player_id AND g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
-          ) THEN 0 ELSE 1 END,
           (l3.last3_avg_pts - pr.prev3_avg_pts) DESC
         LIMIT ${limit}
       `);
