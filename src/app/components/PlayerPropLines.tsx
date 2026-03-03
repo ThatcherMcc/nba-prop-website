@@ -108,10 +108,17 @@ export default function PlayerPropLines({ propLines, seasonStats }: Props) {
             }
           }
 
+          const isHighEdge = lineDiff != null && Math.abs(lineDiff) >= 1.5;
+          const highEdgeClass = isHighEdge
+            ? lineDiff! > 0
+              ? "border-l-4 border-l-emerald-500 bg-emerald-500/5"
+              : "border-l-4 border-l-rose-500 bg-rose-500/5"
+            : "";
+
           return (
             <div
               key={line.marketCode}
-              className="bg-zinc-800/50 border border-white/5 rounded-xl p-4 hover:border-white/10 transition-colors"
+              className={`bg-zinc-800/50 border border-white/5 rounded-xl p-4 hover:border-white/10 transition-colors ${highEdgeClass}`}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
