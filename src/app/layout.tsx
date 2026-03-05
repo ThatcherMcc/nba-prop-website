@@ -18,9 +18,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prop Analyzer — NBA player prop trends",
+  title: "PropEdge — NBA player prop trends & analytics",
   description:
-    "See how often NBA players hit over or under a line. Set your prop and last X games to decide if the bet fits past performance.",
+    "Find your edge with real-time NBA player prop trends, hot streaks, and cold spells. Data-driven prop betting analytics updated daily.",
 };
 
 export const viewport: Viewport = {

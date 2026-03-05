@@ -5,7 +5,7 @@ export default function Footer() {
         <div className="flex items-center gap-2 text-sm text-zinc-500">
           <span className="bg-blue-600 p-1 rounded text-xs">&#127936;</span>
           <span className="font-bold text-zinc-400">
-            PROP<span className="text-blue-500">ANALYZER</span>
+            PROP<span className="text-blue-500">EDGE</span>
           </span>
           <span className="text-zinc-600">&middot;</span>
           <span>Built for smarter bets</span>

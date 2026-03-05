@@ -6,7 +6,7 @@ import Fuse from "fuse.js";
 
 const MAX_RESULTS = 8;
 const MAX_RECENT = 5;
-const RECENT_KEY = "propanalyzer-recent-searches";
+const RECENT_KEY = "propedge-recent-searches";
 
 function getRecentSearches(): string[] {
   if (typeof window === "undefined") return [];

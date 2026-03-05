@@ -28,7 +28,7 @@ export default function NavBar() {
             <span className="bg-blue-600 p-1 md:p-1.5 rounded-lg text-xs md:text-sm">
               &#127936;
             </span>
-            PROP<span className="text-blue-500">ANALYZER</span>
+            PROP<span className="text-blue-500">EDGE</span>
           </Link>
         </div>
 
