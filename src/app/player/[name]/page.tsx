@@ -12,8 +12,6 @@ import {
 import PlayerPageContent from "@/app/components/PlayerPageContent";
 import { PLAYER_STAT_NAMES } from "@/db/schema";
 
-export const dynamic = "force-dynamic";
-
 export default async function PlayerPage({
   params,
   searchParams,

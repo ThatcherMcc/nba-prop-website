@@ -8,15 +8,24 @@ interface Props {
   todaysGame?: TodaysGame | null;
 }
 
-type SortKey = "games" | "avgPts" | "avgReb" | "avgAst" | "avgPra";
+type SortKey = "games" | "avgPts" | "avgReb" | "avgAst" | "avgPra" | "avgStl" | "avgBlk" | "avgTov";
 
-const COLUMNS: { key: SortKey; label: string }[] = [
+const COLUMNS: { key: SortKey; label: string; hiddenMobile?: boolean }[] = [
   { key: "games", label: "GP" },
   { key: "avgPts", label: "PTS" },
   { key: "avgReb", label: "REB" },
   { key: "avgAst", label: "AST" },
   { key: "avgPra", label: "PRA" },
+  { key: "avgStl", label: "STL", hiddenMobile: true },
+  { key: "avgBlk", label: "BLK", hiddenMobile: true },
+  { key: "avgTov", label: "TOV", hiddenMobile: true },
 ];
+
+function formatLastPlayed(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr + "T00:00:00");
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
 
 export default function PlayerMatchups({ matchups, todaysGame }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("avgPts");
@@ -24,7 +33,7 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
 
   if (matchups.length === 0) {
     return (
-      <div className="text-zinc-500 text-sm text-center py-8">
+      <div className="text-pe-text-faint text-sm text-center py-8">
         No matchup data available.
       </div>
     );
@@ -57,23 +66,23 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
     <div className="space-y-4">
       {/* Today's Matchup highlight */}
       {todaysMatchup && todaysGame && (
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+        <div className="bg-pe-accent/10 border border-pe-accent/20 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-black text-blue-400 uppercase tracking-widest">
+            <span className="text-xs font-black text-pe-accent uppercase tracking-widest">
               Today&apos;s Matchup
             </span>
-            <span className="text-[10px] text-zinc-500">
+            <span className="text-[10px] text-pe-text-faint">
               {todaysGame.isHome ? "Home" : "Away"} vs {todaysMatchup.opponentCode}
             </span>
           </div>
           <div className="grid grid-cols-5 gap-3 text-center">
-            {COLUMNS.map(({ key, label }) => {
+            {COLUMNS.filter((c) => !c.hiddenMobile).map(({ key, label }) => {
               const val = todaysMatchup[key] as number;
               const isAboveAvg = key === "avgPts" && val - weightedAvgPts >= 2;
               const isBelowAvg = key === "avgPts" && weightedAvgPts - val >= 2;
               return (
                 <div key={key}>
-                  <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                  <div className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
                     {label}
                   </div>
                   <div
@@ -82,7 +91,7 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
                         ? "text-emerald-400"
                         : isBelowAvg
                           ? "text-red-400"
-                          : "text-white"
+                          : "text-pe-text-primary"
                     }`}
                   >
                     {key === "games" ? val : val.toFixed(1)}
@@ -97,17 +106,18 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
       <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-white/10">
+          <tr className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest border-b border-pe-border/10">
             <th className="text-left py-2 px-2">Team</th>
-            {COLUMNS.map(({ key, label }) => (
+            <th className="text-right py-2 px-2 text-pe-text-faint">Last</th>
+            {COLUMNS.map(({ key, label, hiddenMobile }) => (
               <th
                 key={key}
-                className="text-right py-2 px-2 cursor-pointer hover:text-zinc-300 transition-colors select-none"
+                className={`text-right py-2 px-2 cursor-pointer hover:text-pe-text-secondary transition-colors select-none${hiddenMobile ? " hidden sm:table-cell" : ""}`}
                 onClick={() => handleSort(key)}
               >
                 {label}
                 {sortKey === key && (
-                  <span className="ml-0.5 text-blue-400">
+                  <span className="ml-0.5 text-pe-accent">
                     {sortDesc ? " ↓" : " ↑"}
                   </span>
                 )}
@@ -123,23 +133,26 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
                 ? "text-emerald-400"
                 : ptsAboveAvg <= -2
                   ? "text-red-400"
-                  : "text-zinc-100";
+                  : "text-pe-text-body";
             return (
               <tr
                 key={m.opponentCode}
-                className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                className="border-b border-pe-border/5 hover:bg-pe-surface-2/10 transition-colors"
               >
                 <td className="py-2.5 px-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-zinc-100">
+                    <span className="font-bold text-pe-text-body">
                       {m.opponentCode}
                     </span>
-                    <span className="text-zinc-500 text-xs hidden sm:inline">
+                    <span className="text-pe-text-faint text-xs hidden sm:inline">
                       {m.opponentName}
                     </span>
                   </div>
                 </td>
-                <td className="text-right py-2.5 px-2 text-zinc-400">
+                <td className="text-right py-2.5 px-2 text-pe-text-faint text-xs">
+                  {formatLastPlayed(m.lastPlayed)}
+                </td>
+                <td className="text-right py-2.5 px-2 text-pe-text-muted">
                   {m.games}
                 </td>
                 <td className={`text-right py-2.5 px-2 font-semibold ${ptsColor}`}>
@@ -151,14 +164,23 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
                     </span>
                   )}
                 </td>
-                <td className="text-right py-2.5 px-2 text-zinc-300">
+                <td className="text-right py-2.5 px-2 text-pe-text-secondary">
                   {m.avgReb.toFixed(1)}
                 </td>
-                <td className="text-right py-2.5 px-2 text-zinc-300">
+                <td className="text-right py-2.5 px-2 text-pe-text-secondary">
                   {m.avgAst.toFixed(1)}
                 </td>
-                <td className="text-right py-2.5 px-2 text-zinc-300 font-medium">
+                <td className="text-right py-2.5 px-2 text-pe-text-secondary font-medium">
                   {m.avgPra.toFixed(1)}
+                </td>
+                <td className="text-right py-2.5 px-2 text-pe-text-muted hidden sm:table-cell">
+                  {m.avgStl.toFixed(1)}
+                </td>
+                <td className="text-right py-2.5 px-2 text-pe-text-muted hidden sm:table-cell">
+                  {m.avgBlk.toFixed(1)}
+                </td>
+                <td className="text-right py-2.5 px-2 text-pe-text-muted hidden sm:table-cell">
+                  {m.avgTov.toFixed(1)}
                 </td>
               </tr>
             );
@@ -170,21 +192,21 @@ export default function PlayerMatchups({ matchups, todaysGame }: Props) {
       {sorted.length >= 3 && (
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-sm">
-            <span className="text-zinc-400">Best matchup: </span>
+            <span className="text-pe-text-muted">Best matchup: </span>
             <span className="text-emerald-400 font-bold">
               {sorted[0].avgPts.toFixed(1)} PTS vs {sorted[0].opponentCode}
             </span>
-            <span className="text-zinc-500 text-xs ml-1">
+            <span className="text-pe-text-faint text-xs ml-1">
               ({sorted[0].games}G)
             </span>
           </div>
           <div className="px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm">
-            <span className="text-zinc-400">Toughest matchup: </span>
+            <span className="text-pe-text-muted">Toughest matchup: </span>
             <span className="text-red-400 font-bold">
               {sorted[sorted.length - 1].avgPts.toFixed(1)} PTS vs{" "}
               {sorted[sorted.length - 1].opponentCode}
             </span>
-            <span className="text-zinc-500 text-xs ml-1">
+            <span className="text-pe-text-faint text-xs ml-1">
               ({sorted[sorted.length - 1].games}G)
             </span>
           </div>

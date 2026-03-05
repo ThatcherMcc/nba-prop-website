@@ -91,7 +91,7 @@ export default function PlayerEdgeFinder({ data, stat }: Props) {
 
   if (!analysis) {
     return (
-      <div className="text-zinc-500 text-sm text-center py-8">
+      <div className="text-pe-text-faint text-sm text-center py-8">
         No game data to analyze.
       </div>
     );
@@ -110,11 +110,11 @@ export default function PlayerEdgeFinder({ data, stat }: Props) {
     <div className="space-y-6">
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-zinc-800/50 rounded-xl px-4 py-3 text-center">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+        <div className="bg-pe-surface-2/50 rounded-xl px-4 py-3 text-center">
+          <div className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
             Season Avg
           </div>
-          <div className="text-2xl font-black text-white mt-1">
+          <div className="text-2xl font-black text-pe-text-primary mt-1">
             {analysis.avg.toFixed(1)}
           </div>
         </div>
@@ -144,7 +144,7 @@ export default function PlayerEdgeFinder({ data, stat }: Props) {
 
       {/* Line-by-line hit rate table */}
       <div>
-        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">
+        <h4 className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest mb-3">
           Hit Rate by Line — {STAT_DISPLAY[stat] ?? stat.toUpperCase()}
         </h4>
         <div className="space-y-1">
@@ -162,27 +162,27 @@ export default function PlayerEdgeFinder({ data, stat }: Props) {
               <div
                 key={line}
                 className={`relative flex items-center gap-3 py-1.5 px-3 rounded-lg transition-colors ${
-                  isSweet ? "bg-blue-500/10 border border-blue-500/20" : "border border-transparent hover:bg-white/[0.02]"
+                  isSweet ? "bg-pe-accent/10 border border-pe-accent/20" : "border border-transparent hover:bg-pe-surface-2/10"
                 }`}
               >
                 {isSweet && (
-                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 bg-blue-500 text-[8px] font-black text-white px-1 py-0.5 rounded leading-none">
+                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 bg-pe-accent text-[8px] font-black text-pe-text-primary px-1 py-0.5 rounded leading-none">
                     EDGE
                   </span>
                 )}
-                <div className="w-12 text-right text-sm font-mono text-zinc-300 shrink-0">
+                <div className="w-12 text-right text-sm font-mono text-pe-text-secondary shrink-0">
                   {line % 1 === 0 ? `${line}.0` : line}
                 </div>
-                <div className="flex-1 h-5 bg-zinc-800 rounded-full overflow-hidden relative">
+                <div className="flex-1 h-5 bg-pe-surface-2 rounded-full overflow-hidden relative">
                   <div
                     className={`h-full ${barColor} rounded-full transition-all duration-300`}
                     style={{ width: `${barWidth}%` }}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white mix-blend-difference">
+                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-pe-text-primary mix-blend-difference">
                     {hitRate.toFixed(0)}% ({overAll}/{total})
                   </div>
                 </div>
-                <div className="w-16 text-right text-xs text-zinc-500 shrink-0">
+                <div className="w-16 text-right text-xs text-pe-text-faint shrink-0">
                   L5: {overRecent5}/{recent5Count}
                 </div>
               </div>

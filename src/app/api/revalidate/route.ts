@@ -1,5 +1,6 @@
 import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeCompare, extractBearerToken } from "@/lib/auth";
 
 const CACHE_TAG = "player-data";
 
@@ -16,17 +17,16 @@ export async function POST(request: NextRequest) {
   const secret = process.env.REVALIDATE_SECRET;
   if (!secret) {
     return NextResponse.json(
-      { error: "Revalidate not configured (missing REVALIDATE_SECRET)" },
+      { error: "Server misconfigured" },
       { status: 500 }
     );
   }
 
-  const authHeader = request.headers.get("authorization");
-  const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const bearer = extractBearerToken(request.headers.get("authorization"));
   const headerSecret = request.headers.get("x-revalidate-secret");
-  const provided = bearer ?? headerSecret;
+  const provided = bearer ?? headerSecret ?? "";
 
-  if (provided !== secret) {
+  if (!provided || !timingSafeCompare(provided, secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

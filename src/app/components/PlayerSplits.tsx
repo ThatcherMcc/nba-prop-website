@@ -14,20 +14,22 @@ const STAT_LABELS: { key: keyof PlayerSplitsType["home"]; label: string }[] = [
   { key: "avgStl", label: "STL" },
   { key: "avgBlk", label: "BLK" },
   { key: "avg3pm", label: "3PM" },
+  { key: "avgFtm", label: "FTM" },
+  { key: "avgFta", label: "FTA" },
   { key: "avgPra", label: "PRA" },
 ];
 
 function diffColor(home: number, away: number) {
   if (home > away) return "text-emerald-400";
   if (home < away) return "text-red-400";
-  return "text-zinc-400";
+  return "text-pe-text-muted";
 }
 
 export default function PlayerSplits({ splits, todaysGame }: Props) {
   const { home, away } = splits;
   if (home.games === 0 && away.games === 0) {
     return (
-      <div className="text-zinc-500 text-sm text-center py-8">
+      <div className="text-pe-text-faint text-sm text-center py-8">
         No split data available.
       </div>
     );
@@ -35,12 +37,12 @@ export default function PlayerSplits({ splits, todaysGame }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4 text-center text-xs font-bold text-zinc-500 uppercase tracking-widest">
+      <div className="grid grid-cols-3 gap-4 text-center text-xs font-bold text-pe-text-faint uppercase tracking-widest">
         <div className="flex items-center gap-2 justify-center">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           Home ({home.games}G)
           {todaysGame?.isHome && (
-            <span className="bg-blue-500 text-[8px] font-black text-white px-1.5 py-0.5 rounded leading-none normal-case tracking-normal">
+            <span className="bg-pe-accent text-[8px] font-black text-pe-text-primary px-1.5 py-0.5 rounded leading-none normal-case tracking-normal">
               TODAY
             </span>
           )}
@@ -50,7 +52,7 @@ export default function PlayerSplits({ splits, todaysGame }: Props) {
           <span className="w-2 h-2 rounded-full bg-sky-500" />
           Away ({away.games}G)
           {todaysGame && !todaysGame.isHome && (
-            <span className="bg-blue-500 text-[8px] font-black text-white px-1.5 py-0.5 rounded leading-none normal-case tracking-normal">
+            <span className="bg-pe-accent text-[8px] font-black text-pe-text-primary px-1.5 py-0.5 rounded leading-none normal-case tracking-normal">
               TODAY
             </span>
           )}
@@ -64,7 +66,7 @@ export default function PlayerSplits({ splits, todaysGame }: Props) {
         return (
           <div
             key={key}
-            className="grid grid-cols-3 gap-4 items-center text-center py-2 border-b border-white/5 last:border-0"
+            className="grid grid-cols-3 gap-4 items-center text-center py-2 border-b border-pe-border/5 last:border-0"
           >
             <div className="space-y-0.5">
               <span className={`text-lg font-bold ${diffColor(h, a)}`}>
@@ -76,7 +78,7 @@ export default function PlayerSplits({ splits, todaysGame }: Props) {
                 </div>
               )}
             </div>
-            <div className="text-sm font-semibold text-zinc-300">{label}</div>
+            <div className="text-sm font-semibold text-pe-text-secondary">{label}</div>
             <div className="space-y-0.5">
               <span className={`text-lg font-bold ${diffColor(a, h)}`}>
                 {a.toFixed(1)}
