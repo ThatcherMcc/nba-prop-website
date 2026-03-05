@@ -169,23 +169,6 @@ export default function HomepageContent({
         data={featuredPlayerData}
       />
 
-      {/* SEO content section */}
-      <section className="mt-16 mb-8 max-w-3xl">
-        <h2 className="text-xl font-bold text-pe-text-secondary mb-4">
-          NBA Player Prop Analytics — Powered by Data
-        </h2>
-        <div className="space-y-3 text-sm text-pe-text-muted leading-relaxed">
-          <p>
-            PropEdge tracks over 515 NBA players across 26 stat categories, updated daily with the latest game data from Basketball Reference. Whether you&apos;re researching points, rebounds, assists, threes, or steals, every prop trend is backed by real box-score data.
-          </p>
-          <p>
-            Our hot streak and cold spell detection compares each player&apos;s recent performance against their season averages. When a player beats their season average in their last five games, they show up on the hot list. When they fall short, they land on the cold list. Trending players are those on sustained multi-game runs that signal a shift in performance.
-          </p>
-          <p>
-            Every player page includes a full game log, home and away splits, matchup history, and prop line overlays. Use the edge finder to compare a player&apos;s recent output against specific prop lines and see hit rates at a glance. PropEdge is free, fast, and built for anyone who wants to bet smarter with data.
-          </p>
-        </div>
-      </section>
     </>
   );
 }
