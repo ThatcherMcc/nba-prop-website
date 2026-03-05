@@ -57,7 +57,7 @@ export default function FeaturedPlayer({ playerName, data }: FeaturedPlayerProps
             <h2 className="text-lg font-black uppercase tracking-wide text-yellow-400">
               GOAT Updates
             </h2>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-pe-text-faint">
               Year 22 and still cooking — The King&apos;s court is in session
             </p>
           </div>
@@ -72,20 +72,20 @@ export default function FeaturedPlayer({ playerName, data }: FeaturedPlayerProps
 
       {/* Quick stats bar */}
       <div className="flex flex-wrap gap-3 mb-5">
-        <div className="bg-zinc-900/80 border border-yellow-500/20 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
-          <p className="text-xl font-black text-white">{avgPts}</p>
+        <div className="bg-pe-surface-1/80 border border-yellow-500/20 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
+          <p className="text-xl font-black text-pe-text-primary">{avgPts}</p>
           <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-400/70">PTS</p>
         </div>
-        <div className="bg-zinc-900/80 border border-yellow-500/20 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
-          <p className="text-xl font-black text-white">{avgAst}</p>
+        <div className="bg-pe-surface-1/80 border border-yellow-500/20 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
+          <p className="text-xl font-black text-pe-text-primary">{avgAst}</p>
           <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-400/70">AST</p>
         </div>
-        <div className="bg-zinc-900/80 border border-yellow-500/20 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
-          <p className="text-xl font-black text-white">{avgReb}</p>
+        <div className="bg-pe-surface-1/80 border border-yellow-500/20 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
+          <p className="text-xl font-black text-pe-text-primary">{avgReb}</p>
           <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-400/70">REB</p>
         </div>
-        <div className="bg-zinc-900/80 border border-yellow-500/20 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
-          <p className="text-xl font-black text-white">{hitRate}%</p>
+        <div className="bg-pe-surface-1/80 border border-yellow-500/20 rounded-xl px-4 py-2.5 text-center min-w-[100px]">
+          <p className="text-xl font-black text-pe-text-primary">{hitRate}%</p>
           <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-400/70">HIT RATE</p>
         </div>
       </div>
@@ -93,7 +93,7 @@ export default function FeaturedPlayer({ playerName, data }: FeaturedPlayerProps
       {/* Main content */}
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          <div className="bg-zinc-900 border border-yellow-500/20 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="bg-pe-surface-1 border border-yellow-500/20 rounded-2xl overflow-hidden shadow-2xl">
             <div className="aspect-square bg-gradient-to-b from-yellow-600/20 to-transparent relative">
               <Image
                 src="/LebronPic.png"
@@ -105,7 +105,7 @@ export default function FeaturedPlayer({ playerName, data }: FeaturedPlayerProps
             <div className="p-4 border-t border-yellow-500/20">
               <p className="text-sm font-bold text-yellow-400">{playerName}</p>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-zinc-500">PTS · Line</span>
+                <span className="text-xs text-pe-text-faint">PTS · Line</span>
                 <input
                   type="number"
                   value={propLine}
@@ -113,11 +113,11 @@ export default function FeaturedPlayer({ playerName, data }: FeaturedPlayerProps
                     const v = parseFloat(e.target.value);
                     if (!isNaN(v) && v >= 0) setPropLine(v);
                   }}
-                  className="w-16 bg-zinc-800 border border-yellow-500/30 rounded-md px-2 py-0.5 text-xs text-white text-center outline-none focus:ring-1 focus:ring-yellow-500/50"
+                  className="w-16 bg-pe-surface-2 border border-yellow-500/30 rounded-md px-2 py-0.5 text-xs text-pe-text-primary text-center outline-none focus:ring-1 focus:ring-yellow-500/50"
                   step={0.5}
                   min={0}
                 />
-                <span className="text-xs text-zinc-500">· Last {played.length} games</span>
+                <span className="text-xs text-pe-text-faint">· Last {played.length} games</span>
               </div>
             </div>
           </div>
@@ -129,7 +129,7 @@ export default function FeaturedPlayer({ playerName, data }: FeaturedPlayerProps
           />
         </div>
         <div className="col-span-12 lg:col-span-8">
-          <div className="bg-zinc-900 border border-yellow-500/20 rounded-2xl p-6 shadow-2xl h-full min-h-[500px]">
+          <div className="bg-pe-surface-1 border border-yellow-500/20 rounded-2xl p-6 shadow-2xl h-full min-h-[500px]">
             <PlayerChartDisplay
               data={data}
               statKey={FEATURED_STAT}

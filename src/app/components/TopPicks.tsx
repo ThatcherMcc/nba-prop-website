@@ -56,19 +56,19 @@ export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">&#x1F3AF;</span>
         <div>
-          <h2 className="text-lg font-black uppercase tracking-wide text-white">
+          <h2 className="text-lg font-black uppercase tracking-wide text-pe-text-primary">
             Top Picks — Over
           </h2>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-pe-text-faint">
             Highest over hit rates at {formatPropDate(propDate)} book lines (last 10 games, 60%+)
           </p>
         </div>
       </div>
 
-      <div className="bg-zinc-900/60 border border-white/5 rounded-2xl overflow-hidden">
+      <div className="bg-pe-surface-1/60 border border-pe-border/5 rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-white/10">
+            <tr className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest border-b border-pe-border/10">
               <th className="text-left py-3 px-4">Player</th>
               <th className="text-left py-3 px-3">Stat</th>
               <th className="text-right py-3 px-3">Line</th>
@@ -92,13 +92,13 @@ export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
               return (
                 <tr
                   key={`${p.playerName}-${p.marketCode}-${i}`}
-                  className={`border-b border-white/5 hover:bg-white/[0.03] transition-colors cursor-pointer ${hiddenOnMobileWhenCollapsed}`}
+                  className={`border-b border-pe-border/5 hover:bg-pe-surface-2/20 transition-colors cursor-pointer ${hiddenOnMobileWhenCollapsed}`}
                   onClick={() =>
                     onSelectPlayer?.(p.playerName, statKey, p.bookLine)
                   }
                 >
                   <td className="py-4 md:py-3 px-4">
-                    <span className="text-base md:text-sm font-bold text-white">
+                    <span className="text-base md:text-sm font-bold text-pe-text-primary">
                       {p.playerName}
                     </span>
                   </td>
@@ -109,10 +109,10 @@ export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
                       {p.marketCode}
                     </span>
                   </td>
-                  <td className="text-right py-4 md:py-3 px-3 text-base md:text-sm text-zinc-300 font-mono">
+                  <td className="text-right py-4 md:py-3 px-3 text-base md:text-sm text-pe-text-secondary font-mono">
                     {p.bookLine}
                   </td>
-                  <td className="text-right py-4 md:py-3 px-3 text-base md:text-sm text-zinc-400 hidden sm:table-cell">
+                  <td className="text-right py-4 md:py-3 px-3 text-base md:text-sm text-pe-text-muted hidden sm:table-cell">
                     {p.overCount}/{p.gamesChecked}
                   </td>
                   <td className={`text-right py-4 md:py-3 px-3 text-base md:text-sm font-bold ${hitColor}`}>
@@ -120,7 +120,7 @@ export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
                   </td>
                   <td className="text-right py-4 md:py-3 px-4 hidden sm:table-cell">
                     <div className="inline-flex items-center gap-2 w-24">
-                      <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 bg-pe-surface-2 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
                             p.hitRate >= 80 ? "bg-emerald-500" : p.hitRate >= 70 ? "bg-emerald-600" : "bg-amber-500"
@@ -140,7 +140,7 @@ export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="w-full py-3 md:py-2 text-base md:text-sm font-bold text-zinc-400 hover:text-white border-t border-white/5 transition-colors"
+            className="w-full py-3 md:py-2 text-base md:text-sm font-bold text-pe-text-muted hover:text-pe-text-primary border-t border-pe-border/5 transition-colors"
           >
             {expanded ? "Show less" : `Show all ${picks.length} picks`}
           </button>

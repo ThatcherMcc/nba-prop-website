@@ -18,6 +18,25 @@ import TrendingPlayers from "./TrendingPlayers";
 import FeaturedPlayer from "./FeaturedPlayer";
 import TopPicks from "./TopPicks";
 import UnderPicks from "./UnderPicks";
+import { useThemeLayout } from "./ThemeLayoutContext";
+import HomepageLayoutSpotlight from "./HomepageLayoutSpotlight";
+import HomepageLayoutEditorial from "./HomepageLayoutEditorial";
+import HomepageLayoutActionBoard from "./HomepageLayoutActionBoard";
+import HomepageLayoutTickerFeed from "./HomepageLayoutTickerFeed";
+
+export interface HomepageContentProps {
+  featuredPlayerName?: string;
+  featuredPlayerData?: PlayerGameLog[];
+  overSeasonAvgLast5?: OverSeasonAvgLast5Type[];
+  underSeasonAvgLast5?: UnderSeasonAvgLast5[];
+  trendingPlayers?: TrendingPlayer[];
+  topPicks?: TopPick[];
+  underPicks?: UnderPick[];
+  propDate?: string | null;
+  backtestResults?: BacktestResult;
+  lastUpdated?: string | null;
+  hasError?: boolean;
+}
 
 export default function HomepageContent({
   featuredPlayerName = "LeBron James",
@@ -45,6 +64,7 @@ export default function HomepageContent({
   hasError?: boolean;
 }) {
   const router = useRouter();
+  const { layoutVariant } = useThemeLayout();
 
   const goToPlayer = (
     name: string,
@@ -66,6 +86,28 @@ export default function HomepageContent({
     underSeasonAvgLast5.length === 0 &&
     trendingPlayers.length === 0;
 
+  const allProps: HomepageContentProps = {
+    featuredPlayerName,
+    featuredPlayerData,
+    overSeasonAvgLast5,
+    underSeasonAvgLast5,
+    trendingPlayers,
+    topPicks,
+    underPicks,
+    propDate,
+    backtestResults,
+    lastUpdated,
+    hasError,
+  };
+
+  if (layoutVariant === "spotlight")
+    return <HomepageLayoutSpotlight {...allProps} goToPlayer={goToPlayer} />;
+  if (layoutVariant === "editorial")
+    return <HomepageLayoutEditorial {...allProps} goToPlayer={goToPlayer} />;
+  if (layoutVariant === "action-board")
+    return <HomepageLayoutActionBoard {...allProps} goToPlayer={goToPlayer} />;
+  if (layoutVariant === "ticker-feed")
+    return <HomepageLayoutTickerFeed {...allProps} goToPlayer={goToPlayer} />;
   return (
     <>
       <HomeHero lastUpdated={lastUpdated} />
@@ -77,7 +119,7 @@ export default function HomepageContent({
       )}
 
       {!hasError && allDataEmpty && (
-        <div className="bg-zinc-800/50 border border-white/5 rounded-xl p-6 mb-8 text-center text-zinc-400 text-sm">
+        <div className="bg-pe-surface-2/50 border border-pe-border/5 rounded-xl p-6 mb-8 text-center text-pe-text-muted text-sm">
           No games scheduled today. Check back tomorrow for fresh picks.
         </div>
       )}
@@ -120,7 +162,7 @@ export default function HomepageContent({
       />
 
       {/* Divider */}
-      <div className="border-t border-white/5 my-10" />
+      <div className="border-t border-pe-border/5 my-10" />
 
       <FeaturedPlayer
         playerName={featuredPlayerName}

@@ -61,41 +61,41 @@ export default function BacktestResults({ data }: { data: BacktestResult }) {
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">&#x1F4CA;</span>
         <div>
-          <h2 className="text-lg font-black uppercase tracking-wide text-white">
+          <h2 className="text-lg font-black uppercase tracking-wide text-pe-text-primary">
             Yesterday&apos;s Results
           </h2>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-pe-text-faint">
             How our picks performed on {formatted}
           </p>
         </div>
       </div>
 
       {/* Summary banner */}
-      <div className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 mb-3">
+      <div className="bg-pe-surface-1/60 border border-pe-border/5 rounded-2xl p-4 mb-3">
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-baseline gap-2">
             <span className={`text-3xl font-black ${winRateColor}`}>
               {winRate}%
             </span>
-            <span className="text-sm text-zinc-500">Win Rate</span>
+            <span className="text-sm text-pe-text-faint">Win Rate</span>
           </div>
-          <div className="h-8 w-px bg-white/10" />
+          <div className="h-8 w-px bg-pe-border/10" />
           <div className="text-sm">
             <span className="text-emerald-400 font-bold">{totalWins}W</span>
-            <span className="text-zinc-600 mx-1">-</span>
+            <span className="text-pe-text-faint mx-1">-</span>
             <span className="text-red-400 font-bold">{totalLosses}L</span>
           </div>
-          <div className="h-px w-full sm:h-8 sm:w-px bg-white/10" />
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs text-zinc-500">
+          <div className="h-px w-full sm:h-8 sm:w-px bg-pe-border/10" />
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-xs text-pe-text-faint">
             <span>
               Over:{" "}
-              <span className="text-zinc-300 font-medium">
+              <span className="text-pe-text-secondary font-medium">
                 {overWins}-{overLosses}
               </span>
             </span>
             <span>
               Under:{" "}
-              <span className="text-zinc-300 font-medium">
+              <span className="text-pe-text-secondary font-medium">
                 {underWins}-{underLosses}
               </span>
             </span>
@@ -104,10 +104,10 @@ export default function BacktestResults({ data }: { data: BacktestResult }) {
       </div>
 
       {/* Results table */}
-      <div className="bg-zinc-900/60 border border-white/5 rounded-2xl overflow-hidden">
+      <div className="bg-pe-surface-1/60 border border-pe-border/5 rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-white/10">
+            <tr className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest border-b border-pe-border/10">
               <th className="text-left py-3 px-4">Player</th>
               <th className="text-left py-3 px-3">Side</th>
               <th className="text-left py-3 px-3">Stat</th>
@@ -126,10 +126,10 @@ export default function BacktestResults({ data }: { data: BacktestResult }) {
               return (
                 <tr
                   key={`${p.playerName}-${p.marketCode}-${p.side}-${i}`}
-                  className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
+                  className="border-b border-pe-border/5 hover:bg-pe-surface-2/20 transition-colors"
                 >
                   <td className="py-3 px-4">
-                    <span className="font-bold text-white">
+                    <span className="font-bold text-pe-text-primary">
                       {p.playerName}
                     </span>
                   </td>
@@ -151,23 +151,23 @@ export default function BacktestResults({ data }: { data: BacktestResult }) {
                       {p.marketCode}
                     </span>
                   </td>
-                  <td className="text-right py-3 px-3 text-zinc-300 font-mono">
+                  <td className="text-right py-3 px-3 text-pe-text-secondary font-mono">
                     {p.bookLine}
                   </td>
                   <td
                     className={`text-right py-3 px-3 font-mono font-bold ${
                       isDnp
-                        ? "text-zinc-600"
+                        ? "text-pe-text-faint"
                         : isWin
                           ? "text-emerald-400"
                           : isLoss
                             ? "text-red-400"
-                            : "text-zinc-400"
+                            : "text-pe-text-muted"
                     }`}
                   >
                     {isDnp ? "—" : p.actualValue}
                   </td>
-                  <td className="text-right py-3 px-3 text-zinc-500 text-xs">
+                  <td className="text-right py-3 px-3 text-pe-text-faint text-xs">
                     {p.hitRate}%
                   </td>
                   <td className="text-right py-3 px-4">
@@ -182,12 +182,12 @@ export default function BacktestResults({ data }: { data: BacktestResult }) {
                       </span>
                     )}
                     {p.result === "push" && (
-                      <span className="text-zinc-500 font-bold text-xs">
+                      <span className="text-pe-text-faint font-bold text-xs">
                         &#x2014; P
                       </span>
                     )}
                     {isDnp && (
-                      <span className="text-zinc-600 text-xs">DNP</span>
+                      <span className="text-pe-text-faint text-xs">DNP</span>
                     )}
                   </td>
                 </tr>
@@ -200,7 +200,7 @@ export default function BacktestResults({ data }: { data: BacktestResult }) {
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="w-full py-2.5 text-xs font-bold text-zinc-400 hover:text-white border-t border-white/5 transition-colors"
+            className="w-full py-2.5 text-xs font-bold text-pe-text-muted hover:text-pe-text-primary border-t border-pe-border/5 transition-colors"
           >
             {expanded
               ? "Show less"

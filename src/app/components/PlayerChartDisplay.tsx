@@ -55,12 +55,12 @@ function ChartTooltip(
   if (!active || !payload?.length) return null;
   const entry = payload[0].payload;
   return (
-    <div className="rounded-lg border border-white/20 bg-zinc-900 px-3 py-2 text-sm shadow-xl">
-      <div className="font-medium text-zinc-300">{label ?? entry.displayDate}</div>
+    <div className="rounded-lg border border-pe-border/20 bg-pe-surface-1 px-3 py-2 text-sm shadow-xl">
+      <div className="font-medium text-pe-text-secondary">{label ?? entry.displayDate}</div>
       {entry.isDnp ? (
-        <div className="font-bold text-zinc-400">DNP</div>
+        <div className="font-bold text-pe-text-muted">DNP</div>
       ) : (
-        <div className="font-bold text-white">{entry.value}</div>
+        <div className="font-bold text-pe-text-primary">{entry.value}</div>
       )}
     </div>
   );
@@ -95,24 +95,24 @@ export default function PlayerChartDisplay({ data, statKey, propLine, compact = 
     : "text-slate-400 text-xs font-bold uppercase tracking-widest mb-4";
 
   return (
-    <div className={`p-4 bg-[#1e1e1e] border border-white/5 rounded-2xl shadow-2xl w-full ${compact ? "h-[280px]" : "h-[450px]"}`}>
+    <div className={`p-4 bg-pe-surface-3 border border-pe-border/5 rounded-2xl shadow-2xl w-full ${compact ? "h-[280px]" : "h-[450px]"}`}>
       <h3 className={titleClass}>
         Last {data.length} Games: {statKey.toUpperCase()}
       </h3>
-      
+
       <ResponsiveContainer width="100%" height={compact ? "85%" : "90%"}>
         <BarChart data={formattedData} margin={{ top: 6, right: 6, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={COLORS.GRID} />
-          
+
           <XAxis
             dataKey="displayDate"
             axisLine={false}
             tickLine={false}
             tick={{ fill: COLORS.TEXT, fontSize: compact ? 8 : 10 }}
-            interval={Math.floor(formattedData.length / 10)} 
+            interval={Math.floor(formattedData.length / 10)}
             dy={10}
           />
-          
+
           <YAxis
             axisLine={false}
             tickLine={false}
@@ -124,9 +124,9 @@ export default function PlayerChartDisplay({ data, statKey, propLine, compact = 
             cursor={{ fill: "rgba(255,255,255,0.05)" }}
           />
 
-          <Bar 
-            dataKey="value" 
-            radius={[4, 4, 0, 0]} 
+          <Bar
+            dataKey="value"
+            radius={[4, 4, 0, 0]}
             barSize={Math.min(compact ? 20 : 32, Math.max(4, (compact ? 400 : 800) / formattedData.length))}
           >
             {formattedData.map((entry, index) => (

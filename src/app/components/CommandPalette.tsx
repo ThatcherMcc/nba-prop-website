@@ -147,14 +147,14 @@ export default function CommandPalette({
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-lg mx-4 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg mx-4 bg-pe-surface-1 border border-pe-border/10 rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Search players"
       >
         {/* Search input */}
-        <div className="flex items-center gap-3 px-4 border-b border-white/10">
-          <span className="text-zinc-500 text-lg">&#128269;</span>
+        <div className="flex items-center gap-3 px-4 border-b border-pe-border/10">
+          <span className="text-pe-text-faint text-lg">&#128269;</span>
           <input
             ref={inputRef}
             type="text"
@@ -162,11 +162,11 @@ export default function CommandPalette({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 bg-transparent py-4 text-sm text-white placeholder:text-zinc-500 outline-none"
+            className="flex-1 bg-transparent py-4 text-sm text-pe-text-primary placeholder:text-pe-text-faint outline-none"
             autoComplete="off"
             spellCheck={false}
           />
-          <kbd className="hidden sm:inline-flex items-center rounded border border-white/10 bg-zinc-800 px-1.5 py-0.5 text-xs text-zinc-500">
+          <kbd className="hidden sm:inline-flex items-center rounded border border-pe-border/10 bg-pe-surface-2 px-1.5 py-0.5 text-xs text-pe-text-faint">
             ESC
           </kbd>
         </div>
@@ -175,7 +175,7 @@ export default function CommandPalette({
         {displayItems.length > 0 && (
           <div ref={listRef} className="max-h-80 overflow-y-auto py-2">
             {isShowingRecent && (
-              <div className="px-4 py-1.5 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+              <div className="px-4 py-1.5 text-xs font-medium text-pe-text-faint uppercase tracking-wider">
                 Recent
               </div>
             )}
@@ -187,11 +187,11 @@ export default function CommandPalette({
                 onMouseEnter={() => setSelectedIndex(i)}
                 className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-colors ${
                   i === selectedIndex
-                    ? "bg-blue-600/20 text-white"
-                    : "text-zinc-300 hover:bg-white/5"
+                    ? "bg-pe-accent/20 text-pe-text-primary"
+                    : "text-pe-text-secondary hover:bg-pe-surface-2/30"
                 }`}
               >
-                <span className="text-zinc-500">&#127936;</span>
+                <span className="text-pe-text-faint">&#127936;</span>
                 {name}
               </button>
             ))}
@@ -201,34 +201,34 @@ export default function CommandPalette({
         {/* No-query empty state */}
         {query.trim().length === 0 && displayItems.length === 0 && (
           <div className="px-4 py-8 text-center space-y-1">
-            <p className="text-sm text-zinc-500">Start typing a player name</p>
-            <p className="text-xs text-zinc-600">515+ NBA players available</p>
+            <p className="text-sm text-pe-text-faint">Start typing a player name</p>
+            <p className="text-xs text-pe-text-faint">515+ NBA players available</p>
           </div>
         )}
 
         {/* Empty state */}
         {query.trim().length > 0 && results.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-zinc-500">
+          <div className="px-4 py-8 text-center text-sm text-pe-text-faint">
             No players found for &ldquo;{query}&rdquo;
           </div>
         )}
 
         {/* Footer hint */}
-        <div className="px-4 py-2.5 border-t border-white/5 flex items-center gap-4 text-xs text-zinc-600">
+        <div className="px-4 py-2.5 border-t border-pe-border/5 flex items-center gap-4 text-xs text-pe-text-faint">
           <span>
-            <kbd className="border border-white/10 bg-zinc-800 px-1 py-0.5 rounded text-zinc-500">
+            <kbd className="border border-pe-border/10 bg-pe-surface-2 px-1 py-0.5 rounded text-pe-text-faint">
               &#8593;&#8595;
             </kbd>{" "}
             navigate
           </span>
           <span>
-            <kbd className="border border-white/10 bg-zinc-800 px-1 py-0.5 rounded text-zinc-500">
+            <kbd className="border border-pe-border/10 bg-pe-surface-2 px-1 py-0.5 rounded text-pe-text-faint">
               &#8629;
             </kbd>{" "}
             select
           </span>
           <span>
-            <kbd className="border border-white/10 bg-zinc-800 px-1 py-0.5 rounded text-zinc-500">
+            <kbd className="border border-pe-border/10 bg-pe-surface-2 px-1 py-0.5 rounded text-pe-text-faint">
               esc
             </kbd>{" "}
             close

@@ -6,6 +6,7 @@ import NavBar from "./components/NavBar";
 import Footer from "./components/Footer";
 import MobileTabBar from "./components/MobileTabBar";
 import CommandPaletteProvider from "./components/CommandPaletteProvider";
+import ThemeLayoutProvider from "./components/ThemeLayoutContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,16 +41,18 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-[#09090b] text-zinc-100 selection:bg-blue-500/30`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-pe-bg text-pe-text-body`}
       >
-        <CommandPaletteProvider playerNames={playerNames}>
-          <NavBar />
-          <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 pb-24 md:pb-8">
-            {children}
-          </main>
-          <Footer />
-          <MobileTabBar />
-        </CommandPaletteProvider>
+        <ThemeLayoutProvider>
+          <CommandPaletteProvider playerNames={playerNames}>
+            <NavBar />
+            <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 pb-24 md:pb-8">
+              {children}
+            </main>
+            <Footer />
+            <MobileTabBar />
+          </CommandPaletteProvider>
+        </ThemeLayoutProvider>
       </body>
     </html>
   );

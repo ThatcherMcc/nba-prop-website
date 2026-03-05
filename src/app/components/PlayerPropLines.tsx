@@ -38,16 +38,16 @@ function formatOdds(odds: number | null): string {
 }
 
 function oddsColor(odds: number | null): string {
-  if (odds == null) return "text-zinc-500";
+  if (odds == null) return "text-pe-text-faint";
   if (odds >= 100) return "text-emerald-400";
   if (odds <= -150) return "text-red-400";
-  return "text-zinc-300";
+  return "text-pe-text-secondary";
 }
 
 export default function PlayerPropLines({ propLines, seasonStats }: Props) {
   if (propLines.length === 0) {
     return (
-      <div className="text-zinc-500 text-sm text-center py-8">
+      <div className="text-pe-text-faint text-sm text-center py-8">
         No prop lines available for this player yet.
       </div>
     );
@@ -66,10 +66,10 @@ export default function PlayerPropLines({ propLines, seasonStats }: Props) {
     <div>
       {gameDate && (
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+          <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
             Lines for
           </span>
-          <span className="text-xs font-bold text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded">
+          <span className="text-xs font-bold text-pe-text-secondary bg-pe-surface-2 px-2 py-0.5 rounded">
             {new Date(gameDate + "T00:00:00").toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
@@ -118,14 +118,14 @@ export default function PlayerPropLines({ propLines, seasonStats }: Props) {
           return (
             <div
               key={line.marketCode}
-              className={`bg-zinc-800/50 border border-white/5 rounded-xl p-4 hover:border-white/10 transition-colors ${highEdgeClass}`}
+              className={`bg-pe-surface-2/50 border border-pe-border/5 rounded-xl p-4 hover:border-pe-border/10 transition-colors ${highEdgeClass}`}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-black text-white uppercase">
+                  <span className="text-sm font-black text-pe-text-primary uppercase">
                     {line.marketCode}
                   </span>
-                  <span className="text-[10px] text-zinc-500">
+                  <span className="text-[10px] text-pe-text-faint">
                     {line.marketName}
                   </span>
                 </div>
@@ -141,11 +141,11 @@ export default function PlayerPropLines({ propLines, seasonStats }: Props) {
               <div className="space-y-2">
                 {/* Book line */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
                     Book
                   </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-lg font-black text-white">
+                    <span className="text-lg font-black text-pe-text-primary">
                       {hasBookLine ? line.bookLine : "—"}
                     </span>
                     <span
@@ -158,11 +158,11 @@ export default function PlayerPropLines({ propLines, seasonStats }: Props) {
 
                 {/* Fair line */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
                     Fair
                   </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-zinc-400">
+                    <span className="text-sm font-bold text-pe-text-muted">
                       {hasFairLine ? line.fairLine : "—"}
                     </span>
                     <span
@@ -175,19 +175,19 @@ export default function PlayerPropLines({ propLines, seasonStats }: Props) {
 
                 {/* Season average comparison */}
                 {seasonAvg != null && hasBookLine && (
-                  <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                  <div className="flex items-center justify-between pt-1 border-t border-pe-border/5">
+                    <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
                       Avg
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-zinc-400">
+                      <span className="text-sm font-bold text-pe-text-muted">
                         {seasonAvg}
                       </span>
                       {(() => {
                         const diff = +(seasonAvg - line.bookLine!).toFixed(1);
                         if (Math.abs(diff) < 0.5)
                           return (
-                            <span className="text-[10px] text-zinc-600">
+                            <span className="text-[10px] text-pe-text-faint">
                               = line
                             </span>
                           );

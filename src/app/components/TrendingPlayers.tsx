@@ -20,10 +20,10 @@ export default function TrendingPlayers({
       <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl">🚀</span>
         <div>
-          <h2 className="text-lg font-black uppercase tracking-wide text-white">
+          <h2 className="text-lg font-black uppercase tracking-wide text-pe-text-primary">
             Trending Up
           </h2>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-pe-text-faint">
             Last 3 games avg above previous 3 — click to analyze
           </p>
         </div>
@@ -38,9 +38,9 @@ export default function TrendingPlayers({
             onClick={() =>
               p.playerName && onSelectPlayer?.(p.playerName, p.last3AvgPts)
             }
-            className="flex flex-col items-start gap-2 rounded-xl bg-zinc-900/60 border border-white/5 border-l-4 border-l-amber-500 px-5 py-4 transition-all hover:bg-amber-500/10 focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-left cursor-pointer"
+            className="flex flex-col items-start gap-2 rounded-xl bg-pe-surface-1/60 border border-pe-border/5 border-l-4 border-l-amber-500 px-5 py-4 transition-all hover:bg-amber-500/10 focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-left cursor-pointer"
           >
-            <span className="text-base font-bold text-white truncate w-full">
+            <span className="text-base font-bold text-pe-text-primary truncate w-full">
               {p.playerName ?? "—"}
             </span>
             <span className="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full">
@@ -48,15 +48,15 @@ export default function TrendingPlayers({
             </span>
             <div className="w-full space-y-0.5">
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-500">Last 3</span>
-                <span className="font-bold text-white">{p.last3AvgPts}</span>
+                <span className="text-pe-text-faint">Last 3</span>
+                <span className="font-bold text-pe-text-primary">{p.last3AvgPts}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-500">Prev 3</span>
-                <span className="text-zinc-400">{p.prev3AvgPts}</span>
+                <span className="text-pe-text-faint">Prev 3</span>
+                <span className="text-pe-text-muted">{p.prev3AvgPts}</span>
               </div>
-              <div className="flex justify-between text-sm pt-1 border-t border-white/5">
-                <span className="text-zinc-500">Diff</span>
+              <div className="flex justify-between text-sm pt-1 border-t border-pe-border/5">
+                <span className="text-pe-text-faint">Diff</span>
                 <span className="font-bold text-amber-400">+{p.diff}</span>
               </div>
             </div>
@@ -74,9 +74,9 @@ export default function TrendingPlayers({
               const p = players[mobileIndex];
               if (p?.playerName) onSelectPlayer?.(p.playerName, p.last3AvgPts);
             }}
-            className="w-full flex flex-col items-start gap-2 rounded-xl bg-zinc-900/60 border border-white/5 border-l-4 border-l-amber-500 px-5 py-5 text-left"
+            className="w-full flex flex-col items-start gap-2 rounded-xl bg-pe-surface-1/60 border border-pe-border/5 border-l-4 border-l-amber-500 px-5 py-5 text-left"
           >
-            <span className="text-lg font-bold text-white truncate w-full">
+            <span className="text-lg font-bold text-pe-text-primary truncate w-full">
               {players[mobileIndex]?.playerName ?? "—"}
             </span>
             <span className="inline-flex items-center gap-1.5 bg-amber-500/15 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-full">
@@ -84,19 +84,19 @@ export default function TrendingPlayers({
             </span>
             <div className="w-full space-y-1">
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-500">Last 3</span>
-                <span className="font-bold text-white text-base">
+                <span className="text-pe-text-faint">Last 3</span>
+                <span className="font-bold text-pe-text-primary text-base">
                   {players[mobileIndex]?.last3AvgPts}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-zinc-500">Prev 3</span>
-                <span className="text-zinc-400">
+                <span className="text-pe-text-faint">Prev 3</span>
+                <span className="text-pe-text-muted">
                   {players[mobileIndex]?.prev3AvgPts}
                 </span>
               </div>
-              <div className="flex justify-between text-sm pt-1 border-t border-white/5">
-                <span className="text-zinc-500">Diff</span>
+              <div className="flex justify-between text-sm pt-1 border-t border-pe-border/5">
+                <span className="text-pe-text-faint">Diff</span>
                 <span className="font-bold text-amber-400">
                   +{players[mobileIndex]?.diff}
                 </span>
@@ -109,7 +109,7 @@ export default function TrendingPlayers({
             <button
               type="button"
               onClick={() => setMobileIndex((i) => Math.max(0, i - 1))}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-zinc-800/80 border border-white/10 flex items-center justify-center text-white text-sm active:bg-zinc-700"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-pe-surface-2/80 border border-pe-border/10 flex items-center justify-center text-pe-text-primary text-sm active:bg-zinc-700"
               aria-label="Previous player"
             >
               ‹
@@ -123,7 +123,7 @@ export default function TrendingPlayers({
               onClick={() =>
                 setMobileIndex((i) => Math.min(players.length - 1, i + 1))
               }
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-zinc-800/80 border border-white/10 flex items-center justify-center text-white text-sm active:bg-zinc-700"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-pe-surface-2/80 border border-pe-border/10 flex items-center justify-center text-pe-text-primary text-sm active:bg-zinc-700"
               aria-label="Next player"
             >
               ›
@@ -143,7 +143,7 @@ export default function TrendingPlayers({
             >
               <span
                 className={`w-2 h-2 rounded-full transition-colors ${
-                  i === mobileIndex ? "bg-amber-400" : "bg-zinc-700"
+                  i === mobileIndex ? "bg-amber-400" : "bg-pe-text-faint"
                 }`}
               />
             </button>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import Link from "next/link";
 
 import dynamic from "next/dynamic";
 import type { PlayerGameLog, PLAYER_STAT_TYPE } from "@/db/schema";
@@ -192,7 +191,7 @@ export default function PlayerPageContent({
   return (
     <div>
       {loading && (
-          <div className="flex gap-3 text-blue-400 font-medium animate-pulse mb-4">
+          <div className="flex gap-3 text-pe-accent font-medium animate-pulse mb-4">
             <span className="w-2 h-2 bg-blue-400 rounded-full" />
             Loading games...
           </div>
@@ -201,10 +200,6 @@ export default function PlayerPageContent({
         {!loading && playerData.length === 0 && (
           <div className="mt-10 p-8 rounded-2xl bg-amber-500/5 border border-amber-500/20 text-amber-500 text-center">
             No recent game data found for <span className="font-bold">{playerName}</span>.
-            <br />
-            <Link href="/" className="text-blue-400 hover:underline mt-2 inline-block">
-              ← Back to home
-            </Link>
           </div>
         )}
 
@@ -213,11 +208,11 @@ export default function PlayerPageContent({
             {/* Player header with season stats */}
             <div className="mt-4 mb-2">
               <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-                <h2 className="text-3xl font-black tracking-tight text-white">
+                <h2 className="text-3xl font-black tracking-tight text-pe-text-primary">
                   {playerName}
                 </h2>
                 {seasonStats && (
-                  <div className="flex items-center gap-2 text-xs font-medium text-zinc-500">
+                  <div className="flex items-center gap-2 text-xs font-medium text-pe-text-faint">
                     <span>{seasonStats.games} games this season</span>
                   </div>
                 )}
@@ -236,12 +231,12 @@ export default function PlayerPageContent({
                   ] as const).map(({ label, value }) => (
                     <div
                       key={label}
-                      className="flex items-center gap-1.5 bg-zinc-900 border border-white/10 rounded-lg px-3 py-1.5"
+                      className="flex items-center gap-1.5 bg-pe-surface-1 border border-pe-border/10 rounded-lg px-3 py-1.5"
                     >
-                      <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                      <span className="text-pe-text-faint text-[10px] font-bold uppercase tracking-widest">
                         {label}
                       </span>
-                      <span className="text-white font-bold text-sm">
+                      <span className="text-pe-text-primary font-bold text-sm">
                         {value}
                       </span>
                     </div>
@@ -259,10 +254,10 @@ export default function PlayerPageContent({
 
             <div className="grid grid-cols-12 gap-4 md:gap-8 mt-4">
               <div className="col-span-12 lg:col-span-4 space-y-4 md:space-y-6">
-                <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl overflow-hidden shadow-2xl">
                   <div className="p-6 space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                      <label className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
                         Last how many games?
                       </label>
                       <div className="flex gap-2 flex-wrap">
@@ -273,8 +268,8 @@ export default function PlayerPageContent({
                             onClick={() => setGameCount(n)}
                             className={`px-4 py-3 md:px-3 md:py-2 rounded-lg text-base md:text-sm font-medium transition-colors min-w-[48px] ${
                               gameCount === n
-                                ? "bg-blue-600 text-white"
-                                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 border border-white/10"
+                                ? "bg-pe-accent-strong text-pe-text-primary"
+                                : "bg-pe-surface-2 text-pe-text-muted hover:bg-pe-surface-2/70 border border-pe-border/10"
                             }`}
                           >
                             {n}
@@ -283,13 +278,13 @@ export default function PlayerPageContent({
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Chart view</label>
-                      <div className="flex rounded-lg overflow-hidden border border-white/10 bg-zinc-800">
+                      <label className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">Chart view</label>
+                      <div className="flex rounded-lg overflow-hidden border border-pe-border/10 bg-pe-surface-2">
                         <button
                           type="button"
                           onClick={() => setViewMode("single")}
                           className={`flex-1 px-3 py-3 md:py-2 text-base md:text-sm font-medium transition-colors ${
-                            viewMode === "single" ? "bg-blue-600 text-white" : "text-zinc-400 hover:bg-zinc-700"
+                            viewMode === "single" ? "bg-pe-accent-strong text-pe-text-primary" : "text-pe-text-muted hover:bg-pe-surface-2/70"
                           }`}
                         >
                           Single stat
@@ -298,7 +293,7 @@ export default function PlayerPageContent({
                           type="button"
                           onClick={() => setViewMode("multi")}
                           className={`flex-1 px-3 py-3 md:py-2 text-base md:text-sm font-medium transition-colors ${
-                            viewMode === "multi" ? "bg-blue-600 text-white" : "text-zinc-400 hover:bg-zinc-700"
+                            viewMode === "multi" ? "bg-pe-accent-strong text-pe-text-primary" : "text-pe-text-muted hover:bg-pe-surface-2/70"
                           }`}
                         >
                           Multi-stat
@@ -308,11 +303,11 @@ export default function PlayerPageContent({
                     {viewMode === "single" && (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5 col-span-2">
-                          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Stat</label>
+                          <label className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">Stat</label>
                           <select
                             value={selectedStat}
                             onChange={(e) => setSelectedStat(e.target.value as PLAYER_STAT_TYPE)}
-                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm outline-none focus:border-blue-500"
+                            className="w-full bg-pe-surface-2 border border-pe-border/10 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm outline-none focus:border-pe-accent"
                           >
                             {PLAYER_STAT_NAMES.map((stat) => (
                               <option key={stat} value={stat}>{stat.toUpperCase()}</option>
@@ -320,7 +315,7 @@ export default function PlayerPageContent({
                           </select>
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Prop line</label>
+                          <label className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">Prop line</label>
                           <input
                             type="number"
                             step="0.5"
@@ -328,10 +323,10 @@ export default function PlayerPageContent({
                             value={propLineInput}
                             onChange={handlePropLineChange}
                             placeholder="e.g. 25.5"
-                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm outline-none focus:border-blue-500 placeholder:text-zinc-500"
+                            className="w-full bg-pe-surface-2 border border-pe-border/10 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm outline-none focus:border-pe-accent placeholder:text-pe-text-faint"
                           />
                           {getBookLineForStat(selectedStat) != null && (
-                            <p className="text-[10px] text-blue-400/70">
+                            <p className="text-[10px] text-pe-accent/70">
                               Book line for {STAT_TO_MARKET[selectedStat]}
                             </p>
                           )}
@@ -341,7 +336,7 @@ export default function PlayerPageContent({
                     {viewMode === "multi" && (
                       <>
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Stats (3 charts)</label>
+                          <label className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">Stats (3 charts)</label>
                           <div className="grid grid-cols-3 gap-2">
                             {([0, 1, 2] as const).map((i) => (
                               <select
@@ -355,7 +350,7 @@ export default function PlayerPageContent({
                                     return next;
                                   });
                                 }}
-                                className="w-full bg-zinc-800 border border-white/10 rounded-lg px-2 py-3 md:py-1.5 text-base md:text-xs outline-none focus:border-blue-500"
+                                className="w-full bg-pe-surface-2 border border-pe-border/10 rounded-lg px-2 py-3 md:py-1.5 text-base md:text-xs outline-none focus:border-pe-accent"
                               >
                                 {PLAYER_STAT_NAMES.map((stat) => (
                                   <option key={stat} value={stat}>{stat.toUpperCase()}</option>
@@ -365,7 +360,7 @@ export default function PlayerPageContent({
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Prop line (all charts)</label>
+                          <label className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">Prop line (all charts)</label>
                           <input
                             type="number"
                             step="0.5"
@@ -373,7 +368,7 @@ export default function PlayerPageContent({
                             value={propLineInput}
                             onChange={handlePropLineChange}
                             placeholder="e.g. 25.5"
-                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm outline-none focus:border-blue-500 placeholder:text-zinc-500"
+                            className="w-full bg-pe-surface-2 border border-pe-border/10 rounded-lg px-3 py-3 md:py-2 text-base md:text-sm outline-none focus:border-pe-accent placeholder:text-pe-text-faint"
                           />
                         </div>
                       </>
@@ -391,7 +386,7 @@ export default function PlayerPageContent({
               </div>
               <div className="col-span-12 lg:col-span-8">
                 {viewMode === "single" && (
-                  <div className="bg-zinc-900 border border-white/10 rounded-2xl p-4 md:p-6 shadow-2xl h-full min-h-[300px] md:min-h-[500px]">
+                  <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl p-4 md:p-6 shadow-2xl h-full min-h-[300px] md:min-h-[500px]">
                     <PlayerChartDisplay
                       data={playerData}
                       statKey={selectedStat}
@@ -404,7 +399,7 @@ export default function PlayerPageContent({
                     {multiStats.map((statKey) => (
                       <div
                         key={statKey}
-                        className="bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-2xl min-h-[320px] flex flex-col"
+                        className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl p-4 shadow-2xl min-h-[320px] flex flex-col"
                       >
                         <PlayerChartDisplay
                           data={playerData}
@@ -421,12 +416,12 @@ export default function PlayerPageContent({
 
             {/* Edge Analytics Section */}
             <div className="col-span-12 mt-4">
-              <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+              <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl shadow-2xl overflow-hidden">
                 <div className="relative">
                 <div
                   ref={tabsRef}
                   onScroll={handleTabScroll}
-                  className="flex items-center gap-1 border-b border-white/10 px-2 overflow-x-auto no-scrollbar"
+                  className="flex items-center gap-1 border-b border-pe-border/10 px-2 overflow-x-auto no-scrollbar"
                 >
                   {(
                     [
@@ -443,19 +438,19 @@ export default function PlayerPageContent({
                       onClick={() => setAnalyticsTab(key)}
                       className={`px-4 py-4 md:py-3 text-base md:text-sm font-medium transition-colors relative whitespace-nowrap ${
                         analyticsTab === key
-                          ? "text-white"
-                          : "text-zinc-500 hover:text-zinc-300"
+                          ? "text-pe-text-primary"
+                          : "text-pe-text-faint hover:text-pe-text-secondary"
                       }`}
                     >
                       {label}
                       {analyticsTab === key && (
-                        <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-500 rounded-full" />
+                        <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-pe-accent rounded-full" />
                       )}
                     </button>
                   ))}
                 </div>
                 {showTabFade && (
-                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-zinc-900 to-transparent pointer-events-none z-10" />
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-pe-surface-1 to-transparent pointer-events-none z-10" />
                 )}
                 </div>
 

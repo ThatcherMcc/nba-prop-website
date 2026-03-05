@@ -62,7 +62,7 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
 
   if (data.length === 0) {
     return (
-      <div className="text-zinc-500 text-sm text-center py-8">
+      <div className="text-pe-text-faint text-sm text-center py-8">
         No games to display.
       </div>
     );
@@ -72,14 +72,14 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm whitespace-nowrap">
         <thead>
-          <tr className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-white/10">
+          <tr className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest border-b border-pe-border/10">
             <th
-              className="text-left py-2 px-2 cursor-pointer hover:text-zinc-300 select-none sticky left-0 bg-zinc-900 z-10"
+              className="text-left py-2 px-2 cursor-pointer hover:text-pe-text-secondary select-none sticky left-0 bg-pe-surface-1 z-10"
               onClick={() => handleSort("gameDate")}
             >
               Date
               {sortKey === "gameDate" && (
-                <span className="ml-0.5 text-blue-400">{sortDesc ? " ↓" : " ↑"}</span>
+                <span className="ml-0.5 text-pe-accent">{sortDesc ? " ↓" : " ↑"}</span>
               )}
             </th>
             <th className="text-left py-2 px-2">OPP</th>
@@ -88,14 +88,14 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
             {VISIBLE_STATS.map(({ key, label }) => (
               <th
                 key={key}
-                className={`text-right py-2 px-2 cursor-pointer hover:text-zinc-300 select-none ${
-                  key === highlightStat ? "text-blue-400" : ""
+                className={`text-right py-2 px-2 cursor-pointer hover:text-pe-text-secondary select-none ${
+                  key === highlightStat ? "text-pe-accent" : ""
                 }`}
                 onClick={() => handleSort(key)}
               >
                 {label}
                 {sortKey === key && (
-                  <span className="ml-0.5 text-blue-400">{sortDesc ? " ↓" : " ↑"}</span>
+                  <span className="ml-0.5 text-pe-accent">{sortDesc ? " ↓" : " ↑"}</span>
                 )}
               </th>
             ))}
@@ -111,34 +111,34 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
             return (
               <tr
                 key={`${game.gameDate}-${i}`}
-                className={`border-b border-white/5 transition-colors ${
+                className={`border-b border-pe-border/5 transition-colors ${
                   dnp
                     ? "opacity-40"
                     : isOver
                       ? "hover:bg-emerald-500/5"
                       : isUnder
                         ? "hover:bg-red-500/5"
-                        : "hover:bg-white/[0.02]"
+                        : "hover:bg-pe-surface-2/10"
                 }`}
               >
-                <td className="py-2 px-2 text-zinc-400 sticky left-0 bg-zinc-900 z-10">
+                <td className="py-2 px-2 text-pe-text-muted sticky left-0 bg-pe-surface-1 z-10">
                   {formatDate(game.gameDate)}
                 </td>
                 <td className="py-2 px-2">
                   {game.opponent == null ? (
-                    <span className="text-zinc-600">—</span>
+                    <span className="text-pe-text-faint">—</span>
                   ) : game.location === "@" ? (
-                    <span className="text-zinc-500">@{game.opponent}</span>
+                    <span className="text-pe-text-faint">@{game.opponent}</span>
                   ) : (
-                    <span className="text-zinc-400">vs {game.opponent}</span>
+                    <span className="text-pe-text-muted">vs {game.opponent}</span>
                   )}
                 </td>
-                <td className="py-2 px-2 text-zinc-400">
+                <td className="py-2 px-2 text-pe-text-muted">
                   {dnp ? "—" : game.mp ?? "—"}
                 </td>
                 <td className="py-2 px-1 text-center">
                   {dnp ? (
-                    <span className="text-zinc-600 text-[10px]">DNP</span>
+                    <span className="text-pe-text-faint text-[10px]">DNP</span>
                   ) : propLine > 0 ? (
                     isOver ? (
                       <span className="text-emerald-400 font-bold text-xs">O</span>
@@ -148,7 +148,7 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
                       <span className="text-amber-400 font-bold text-xs">P</span>
                     )
                   ) : (
-                    <span className="text-zinc-700">—</span>
+                    <span className="text-pe-text-faint">—</span>
                   )}
                 </td>
                 {VISIBLE_STATS.map(({ key }) => {
@@ -162,12 +162,12 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
                         : val < propLine
                           ? "text-red-400"
                           : "text-amber-400"
-                      : "text-zinc-300";
+                      : "text-pe-text-secondary";
                   return (
                     <td
                       key={key}
                       className={`text-right py-2 px-2 ${cellColor} ${
-                        isHighlighted ? "bg-white/[0.02]" : ""
+                        isHighlighted ? "bg-pe-surface-2/10" : ""
                       }`}
                     >
                       {dnp ? "—" : val}
@@ -183,7 +183,7 @@ export default function GameLogTable({ data, propLine, highlightStat }: Props) {
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="w-full py-3 md:py-2 text-base md:text-sm text-zinc-500 hover:text-white transition-colors border-t border-white/5"
+          className="w-full py-3 md:py-2 text-base md:text-sm text-pe-text-faint hover:text-pe-text-primary transition-colors border-t border-pe-border/5"
         >
           Show all {sorted.length} games
         </button>
