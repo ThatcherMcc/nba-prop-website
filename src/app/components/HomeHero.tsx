@@ -40,13 +40,13 @@ export default function HomeHero({
 
       <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-3">
         <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">
-          Find Your Edge
+          Find Your Edge on NBA Player Props
         </span>
       </h1>
 
       <p className="text-pe-text-muted text-base md:text-lg max-w-2xl mb-6">
-        Real-time player trends, hot streaks & cold spells — built for smarter bets.
-        Pick a player and see the numbers that matter.
+        Track real-time NBA player prop trends, hot streaks, and cold spells — all updated daily.
+        Data-driven analytics built for smarter prop bets across points, rebounds, assists, and more.
       </p>
 
       <div className="flex flex-wrap gap-3">
