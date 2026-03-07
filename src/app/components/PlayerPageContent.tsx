@@ -7,7 +7,7 @@ import type { PlayerGameLog, PLAYER_STAT_TYPE } from "@/db/schema";
 import { PLAYER_STAT_NAMES } from "@/db/schema";
 import { getPlayerData } from "@/lib/data";
 import { isDnpMinutes } from "@/lib/dnp";
-import type { PlayerLastGameStatus, PlayerSplits as PlayerSplitsType, PlayerMatchup, PlayerPropLine, TodaysGame } from "@/lib/data";
+import type { PlayerLastGameStatus, PlayerSplits as PlayerSplitsType, PlayerMatchup, PlayerPropLine, TodaysGame, TeamDefensiveRating } from "@/lib/data";
 import PlayerSplits from "./PlayerSplits";
 import PlayerMatchups from "./PlayerMatchups";
 import PlayerEdgeFinder from "./PlayerEdgeFinder";
@@ -52,6 +52,7 @@ interface PlayerPageContentProps {
   matchups?: PlayerMatchup[] | null;
   propLines?: PlayerPropLine[] | null;
   todaysGame?: TodaysGame | null;
+  defensiveRatings?: TeamDefensiveRating[] | null;
 }
 
 export default function PlayerPageContent({
@@ -65,6 +66,7 @@ export default function PlayerPageContent({
   matchups = null,
   propLines = null,
   todaysGame = null,
+  defensiveRatings = null,
 }: PlayerPageContentProps) {
   const [gameCount, setGameCount] = useState(initialGameCount);
   const [playerData, setPlayerData] = useState<PlayerGameLog[]>(initialData);
@@ -164,6 +166,12 @@ export default function PlayerPageContent({
     };
   }, [splits]);
 
+  // Opponent defensive rating for today's game
+  const opponentRating = useMemo(() => {
+    if (!todaysGame || !defensiveRatings || defensiveRatings.length === 0) return null;
+    return defensiveRatings.find((r) => r.teamCode === todaysGame.opponentCode) ?? null;
+  }, [todaysGame, defensiveRatings]);
+
   const primaryStat = viewMode === "multi" ? multiStats[0] : selectedStat;
   const playedGames = useMemo(
     () => playerData.filter((g) => !isDnpMinutes(g.mp)),
@@ -188,6 +196,41 @@ export default function PlayerPageContent({
     };
   }, [playedGames, primaryStat, numericPropLine]);
 
+  const [copied, setCopied] = useState(false);
+
+  const encodedName = encodeURIComponent(playerName);
+  const playerUrl = `https://propedge.bet/player/${encodedName}`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(playerUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for browsers that block clipboard API
+      const el = document.createElement("textarea");
+      el.value = playerUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleTwitterShare = () => {
+    const text = encodeURIComponent(
+      `Check out ${playerName}'s prop trends on PropEdge`
+    );
+    const url = encodeURIComponent(playerUrl);
+    window.open(
+      `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
   return (
     <div>
       {loading && (
@@ -208,9 +251,48 @@ export default function PlayerPageContent({
             {/* Player header with season stats */}
             <div className="mt-4 mb-2">
               <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-                <h2 className="text-3xl font-black tracking-tight text-pe-text-primary">
-                  {playerName}
-                </h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-black tracking-tight text-pe-text-primary">
+                    {playerName}
+                  </h2>
+                  {/* Share buttons */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleTwitterShare}
+                      aria-label="Share on X (Twitter)"
+                      className="p-2 rounded-lg bg-pe-surface-2 border border-pe-border/10 text-pe-text-faint hover:text-pe-text-primary transition-colors"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                    </button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        aria-label="Copy link to player page"
+                        className="p-2 rounded-lg bg-pe-surface-2 border border-pe-border/10 text-pe-text-faint hover:text-pe-text-primary transition-colors"
+                      >
+                        {copied ? (
+                          <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        )}
+                      </button>
+                      {copied && (
+                        <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-pe-surface-2 border border-pe-border/10 px-2 py-1 text-[10px] font-medium text-emerald-400 pointer-events-none">
+                          Copied!
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 {seasonStats && (
                   <div className="flex items-center gap-2 text-xs font-medium text-pe-text-faint">
                     <span>{seasonStats.games} games this season</span>
@@ -459,10 +541,16 @@ export default function PlayerPageContent({
                     <PlayerPropLines
                       propLines={propLines ?? []}
                       seasonStats={seasonStats}
+                      opponentRating={opponentRating}
                     />
                   )}
                   {analyticsTab === "edge" && (
-                    <PlayerEdgeFinder data={initialData} stat={primaryStat} />
+                    <PlayerEdgeFinder
+                      data={initialData}
+                      stat={primaryStat}
+                      opponentRating={opponentRating}
+                      opponentName={todaysGame?.opponentName ?? null}
+                    />
                   )}
                   {analyticsTab === "splits" && splits && (
                     <PlayerSplits splits={splits} todaysGame={todaysGame} />

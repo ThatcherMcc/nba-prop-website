@@ -628,6 +628,7 @@ export const getTopPicks = unstable_cache(
           JOIN prop_markets pm ON pm.market_id = pp.market_id
           WHERE g.game_date = (SELECT target_date FROM prop_date)
             AND pp.book_line IS NOT NULL
+            AND pm.market_code NOT IN ('FTM', 'TOV')
         ),
         ranked_games AS (
           SELECT s.player_id,
@@ -767,6 +768,7 @@ export const getUnderPicks = unstable_cache(
           JOIN prop_markets pm ON pm.market_id = pp.market_id
           WHERE g.game_date = (SELECT target_date FROM prop_date)
             AND pp.book_line IS NOT NULL
+            AND pm.market_code NOT IN ('FTM', 'TOV')
         ),
         ranked_games AS (
           SELECT s.player_id,
@@ -924,6 +926,7 @@ export const getBacktestResults = unstable_cache(
           CROSS JOIN target_date td
           WHERE g.game_date = td.dt
             AND pp.book_line IS NOT NULL
+            AND pm.market_code NOT IN ('FTM', 'TOV')
         ),
         ranked_games AS (
           SELECT s.player_id,
@@ -1424,6 +1427,7 @@ export const getPlayerPropLines = unstable_cache(
         JOIN games g ON g.game_id = pp.game_id
         WHERE LOWER(p.player_name) = LOWER(${playerName})
           AND pp.game_id = (SELECT game_id FROM best_game)
+          AND pm.market_code NOT IN ('FTM', 'TOV')
         ORDER BY pm.market_id
       `);
 
@@ -1549,6 +1553,7 @@ export type TodaysPlayer = {
   praLine: number | null;
   homeTeam: string;
   awayTeam: string;
+  playerTeam: string | null;
 };
 
 /**
@@ -1566,6 +1571,7 @@ export const getTodaysPlayers = unstable_cache(
       pra_line: string | null;
       home_team: string;
       away_team: string;
+      player_team: string | null;
     };
 
     try {
@@ -1578,15 +1584,24 @@ export const getTodaysPlayers = unstable_cache(
           MAX(pp.book_line) FILTER (WHERE pm.market_code = 'AST')::text AS ast_line,
           MAX(pp.book_line) FILTER (WHERE pm.market_code = 'PRA')::text AS pra_line,
           ht.team_code AS home_team,
-          at.team_code AS away_team
+          at.team_code AS away_team,
+          pt.team_code AS player_team
         FROM player_props pp
         JOIN players p ON p.player_id = pp.player_id
         JOIN games g ON g.game_id = pp.game_id
         JOIN prop_markets pm ON pm.market_id = pp.market_id
         JOIN teams ht ON ht.team_id = g.home_team_id
         JOIN teams at ON at.team_id = g.away_team_id
+        LEFT JOIN LATERAL (
+          SELECT pgs.team_id
+          FROM player_game_stats pgs
+          WHERE pgs.player_id = p.player_id
+          ORDER BY pgs.gamelog_id DESC
+          LIMIT 1
+        ) latest_team ON true
+        LEFT JOIN teams pt ON pt.team_id = latest_team.team_id
         WHERE g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
-        GROUP BY p.player_name, ht.team_code, at.team_code
+        GROUP BY p.player_name, ht.team_code, at.team_code, pt.team_code
         ORDER BY MAX(pp.book_line) FILTER (WHERE pm.market_code = 'PTS') DESC NULLS LAST
       `);
 
@@ -1602,6 +1617,7 @@ export const getTodaysPlayers = unstable_cache(
         praLine: r.pra_line != null ? Number(r.pra_line) : null,
         homeTeam: r.home_team,
         awayTeam: r.away_team,
+        playerTeam: r.player_team ?? null,
       }));
     } catch (error) {
       console.error("Database Error (getTodaysPlayers):", error);
@@ -1632,5 +1648,595 @@ export const getLastDataUpdate = unstable_cache(
     }
   },
   ["getLastDataUpdate"],
+  { tags: ["player-data"] }
+);
+
+// --- Weekly Insights ("The Edge") ---
+
+export type InsightWeekSummary = {
+  weekStart: string;
+  gameDates: number;
+};
+
+export type WeeklyRecapPick = BacktestPick & {
+  gameDate: string;
+  margin: number | null;
+};
+
+export type DailyBreakdown = {
+  date: string;
+  wins: number;
+  losses: number;
+  pushes: number;
+};
+
+export type WeeklyRecap = {
+  weekStart: string;
+  weekEnd: string;
+  wins: number;
+  losses: number;
+  pushes: number;
+  dnps: number;
+  winRate: number;
+  picks: WeeklyRecapPick[];
+  dailyBreakdown: DailyBreakdown[];
+};
+
+export type WeeklyPlayerPerformance = {
+  playerName: string;
+  gamesPlayed: number;
+  weekAvgPts: number;
+  seasonAvgPts: number;
+  diff: number;
+};
+
+/** Internal helper: run backtest grading for a specific game date */
+async function backtestForDate(targetDate: string): Promise<BacktestResult> {
+  type Row = {
+    player_name: string;
+    market_code: string;
+    market_name: string;
+    book_line: string;
+    games_checked: number;
+    pick_count: number;
+    hit_rate: number;
+    side: string;
+    actual_value: number | null;
+    result: string;
+    game_date: string;
+  };
+
+  try {
+    const result = await db.execute<Row>(sql`
+      WITH target_date AS (
+        SELECT ${targetDate}::date AS dt
+      ),
+      target_props AS (
+        SELECT pp.player_id, pm.market_code, pm.market_name, pp.book_line, pp.game_id
+        FROM player_props pp
+        JOIN games g ON g.game_id = pp.game_id
+        JOIN prop_markets pm ON pm.market_id = pp.market_id
+        CROSS JOIN target_date td
+        WHERE g.game_date = td.dt
+          AND pp.book_line IS NOT NULL
+      ),
+      ranked_games AS (
+        SELECT s.player_id,
+          s.points, s.total_rebounds, s.assists, s.steals, s.blocks,
+          s.three_pointers_made, s.free_throws_made, s.turnovers, s.pts_reb_ast,
+          ROW_NUMBER() OVER (PARTITION BY s.player_id ORDER BY g.game_date DESC) AS rn
+        FROM player_game_stats s
+        JOIN games g ON g.game_id = s.game_id
+        CROSS JOIN target_date td
+        WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          AND g.game_date < td.dt
+          AND s.player_id IN (SELECT DISTINCT player_id FROM target_props)
+      ),
+      last_10 AS (
+        SELECT * FROM ranked_games WHERE rn <= 10
+      ),
+      hit_rates AS (
+        SELECT
+          tp.player_id, tp.market_code, tp.market_name, tp.book_line, tp.game_id,
+          COUNT(*)::int AS games_checked,
+          COUNT(*) FILTER (WHERE
+            CASE tp.market_code
+              WHEN 'PTS' THEN l.points
+              WHEN 'REB' THEN l.total_rebounds
+              WHEN 'AST' THEN l.assists
+              WHEN 'STL' THEN l.steals
+              WHEN 'BLK' THEN l.blocks
+              WHEN 'FG3' THEN l.three_pointers_made
+              WHEN 'FTM' THEN l.free_throws_made
+              WHEN 'TOV' THEN l.turnovers
+              WHEN 'PRA' THEN l.pts_reb_ast
+              WHEN 'PR' THEN l.points + l.total_rebounds
+              WHEN 'PA' THEN l.points + l.assists
+              WHEN 'RA' THEN l.total_rebounds + l.assists
+              WHEN 'SB' THEN l.steals + l.blocks
+            END > tp.book_line
+          )::int AS over_count,
+          COUNT(*) FILTER (WHERE
+            CASE tp.market_code
+              WHEN 'PTS' THEN l.points
+              WHEN 'REB' THEN l.total_rebounds
+              WHEN 'AST' THEN l.assists
+              WHEN 'STL' THEN l.steals
+              WHEN 'BLK' THEN l.blocks
+              WHEN 'FG3' THEN l.three_pointers_made
+              WHEN 'FTM' THEN l.free_throws_made
+              WHEN 'TOV' THEN l.turnovers
+              WHEN 'PRA' THEN l.pts_reb_ast
+              WHEN 'PR' THEN l.points + l.total_rebounds
+              WHEN 'PA' THEN l.points + l.assists
+              WHEN 'RA' THEN l.total_rebounds + l.assists
+              WHEN 'SB' THEN l.steals + l.blocks
+            END < tp.book_line
+          )::int AS under_count
+        FROM target_props tp
+        JOIN last_10 l ON l.player_id = tp.player_id
+        GROUP BY tp.player_id, tp.market_code, tp.market_name, tp.book_line, tp.game_id
+        HAVING COUNT(*) >= 5
+      ),
+      over_ranked AS (
+        SELECT p.player_name, h.player_id, h.market_code, h.market_name,
+          h.book_line, h.game_id, h.games_checked, h.over_count AS pick_count,
+          ROUND((h.over_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
+          'over'::text AS side,
+          ROW_NUMBER() OVER (
+            PARTITION BY h.player_id
+            ORDER BY (h.over_count::numeric / h.games_checked) DESC, h.book_line DESC
+          ) AS player_rn
+        FROM hit_rates h
+        JOIN players p ON p.player_id = h.player_id
+        WHERE h.over_count::numeric / h.games_checked >= 0.6
+          AND h.book_line > 1.5
+      ),
+      under_ranked AS (
+        SELECT p.player_name, h.player_id, h.market_code, h.market_name,
+          h.book_line, h.game_id, h.games_checked, h.under_count AS pick_count,
+          ROUND((h.under_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
+          'under'::text AS side,
+          ROW_NUMBER() OVER (
+            PARTITION BY h.player_id
+            ORDER BY (h.under_count::numeric / h.games_checked) DESC, h.book_line DESC
+          ) AS player_rn
+        FROM hit_rates h
+        JOIN players p ON p.player_id = h.player_id
+        WHERE h.under_count::numeric / h.games_checked >= 0.6
+          AND NOT (h.market_code IN ('BLK', 'STL') AND h.book_line <= 0.5)
+          AND h.book_line > 1.5
+      ),
+      all_picks AS (
+        (SELECT player_name, player_id, market_code, market_name, book_line, game_id,
+          games_checked, pick_count, hit_rate, side
+        FROM over_ranked WHERE player_rn <= 2
+        ORDER BY hit_rate DESC, book_line DESC
+        LIMIT 25)
+        UNION ALL
+        (SELECT player_name, player_id, market_code, market_name, book_line, game_id,
+          games_checked, pick_count, hit_rate, side
+        FROM under_ranked WHERE player_rn <= 2
+        ORDER BY hit_rate DESC, book_line DESC
+        LIMIT 25)
+      ),
+      actual AS (
+        SELECT DISTINCT s.player_id, s.game_id,
+          s.points, s.total_rebounds, s.assists, s.steals, s.blocks,
+          s.three_pointers_made, s.free_throws_made, s.turnovers, s.pts_reb_ast
+        FROM player_game_stats s
+        JOIN all_picks ap ON ap.player_id = s.player_id AND ap.game_id = s.game_id
+        WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+      ),
+      with_actual AS (
+        SELECT ap.player_name, ap.market_code, ap.market_name,
+          ap.book_line, ap.games_checked, ap.pick_count, ap.hit_rate, ap.side,
+          CASE ap.market_code
+            WHEN 'PTS' THEN a.points
+            WHEN 'REB' THEN a.total_rebounds
+            WHEN 'AST' THEN a.assists
+            WHEN 'STL' THEN a.steals
+            WHEN 'BLK' THEN a.blocks
+            WHEN 'FG3' THEN a.three_pointers_made
+            WHEN 'FTM' THEN a.free_throws_made
+            WHEN 'TOV' THEN a.turnovers
+            WHEN 'PRA' THEN a.pts_reb_ast
+            WHEN 'PR' THEN a.points + a.total_rebounds
+            WHEN 'PA' THEN a.points + a.assists
+            WHEN 'RA' THEN a.total_rebounds + a.assists
+            WHEN 'SB' THEN a.steals + a.blocks
+          END AS actual_value
+        FROM all_picks ap
+        LEFT JOIN actual a ON a.player_id = ap.player_id AND a.game_id = ap.game_id
+      )
+      SELECT player_name, market_code, market_name,
+        book_line::text AS book_line, games_checked, pick_count, hit_rate, side,
+        actual_value,
+        CASE
+          WHEN actual_value IS NULL THEN 'dnp'
+          WHEN side = 'over' AND actual_value > book_line THEN 'win'
+          WHEN side = 'under' AND actual_value < book_line THEN 'win'
+          WHEN actual_value = book_line THEN 'push'
+          ELSE 'loss'
+        END AS result,
+        (SELECT dt FROM target_date)::text AS game_date
+      FROM with_actual
+      ORDER BY side, hit_rate DESC, book_line DESC
+    `);
+
+    const rows: Row[] =
+      "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+    return {
+      gameDate: targetDate,
+      picks: rows.map((r) => ({
+        playerName: r.player_name,
+        marketCode: r.market_code,
+        marketName: r.market_name,
+        bookLine: Number(r.book_line),
+        gamesChecked: Number(r.games_checked),
+        pickCount: Number(r.pick_count),
+        hitRate: Number(r.hit_rate),
+        side: r.side as "over" | "under",
+        actualValue: r.actual_value != null ? Number(r.actual_value) : null,
+        result: r.result as "win" | "loss" | "push" | "dnp",
+      })),
+    };
+  } catch (error) {
+    console.error(`Database Error (backtestForDate ${targetDate}):`, error);
+    return { gameDate: targetDate, picks: [] };
+  }
+}
+
+/** List weeks that have graded prop data (newest first) */
+export const getAvailableInsightWeeks = unstable_cache(
+  async (): Promise<InsightWeekSummary[]> => {
+    type Row = { week_start: string; game_dates: number };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT
+          date_trunc('week', g.game_date)::date::text AS week_start,
+          COUNT(DISTINCT g.game_date)::int AS game_dates
+        FROM games g
+        WHERE g.game_date < (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+          AND EXISTS (
+            SELECT 1 FROM player_props pp
+            WHERE pp.game_id = g.game_id AND pp.book_line IS NOT NULL
+          )
+          AND EXISTS (
+            SELECT 1 FROM player_game_stats s
+            WHERE s.game_id = g.game_id
+              AND COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          )
+        GROUP BY date_trunc('week', g.game_date)
+        ORDER BY week_start DESC
+      `);
+
+      const rows = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      return rows.map((r) => ({
+        weekStart: r.week_start,
+        gameDates: Number(r.game_dates),
+      }));
+    } catch (error) {
+      console.error("Database Error (getAvailableInsightWeeks):", error);
+      return [];
+    }
+  },
+  ["getAvailableInsightWeeks"],
+  { tags: ["player-data"] }
+);
+
+/** Full weekly recap: run backtest for each game date in the week, aggregate results */
+export const getWeeklyRecap = unstable_cache(
+  async (weekStart: string): Promise<WeeklyRecap | null> => {
+    type DateRow = { dt: string };
+
+    try {
+      // 1. Find all completed game dates in this week with prop data
+      const datesResult = await db.execute<DateRow>(sql`
+        SELECT DISTINCT g.game_date::text AS dt
+        FROM games g
+        WHERE g.game_date >= ${weekStart}::date
+          AND g.game_date < ${weekStart}::date + INTERVAL '7 days'
+          AND g.game_date < (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+          AND EXISTS (
+            SELECT 1 FROM player_props pp
+            WHERE pp.game_id = g.game_id AND pp.book_line IS NOT NULL
+          )
+          AND EXISTS (
+            SELECT 1 FROM player_game_stats s
+            WHERE s.game_id = g.game_id
+              AND COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          )
+        ORDER BY dt
+      `);
+
+      const dates =
+        "rows" in datesResult && Array.isArray(datesResult.rows)
+          ? datesResult.rows.map((r) => r.dt)
+          : [];
+
+      if (dates.length === 0) return null;
+
+      // 2. Run backtest for each date in parallel
+      const results = await Promise.all(dates.map((d) => backtestForDate(d)));
+
+      // 3. Aggregate all picks with game date and margin
+      const allPicks: WeeklyRecapPick[] = results.flatMap((r, i) =>
+        r.picks.map((p) => ({
+          ...p,
+          gameDate: dates[i],
+          margin:
+            p.actualValue != null
+              ? p.side === "over"
+                ? p.actualValue - p.bookLine
+                : p.bookLine - p.actualValue
+              : null,
+        }))
+      );
+
+      const wins = allPicks.filter((p) => p.result === "win").length;
+      const losses = allPicks.filter((p) => p.result === "loss").length;
+      const pushes = allPicks.filter((p) => p.result === "push").length;
+      const dnps = allPicks.filter((p) => p.result === "dnp").length;
+      const decided = wins + losses;
+
+      // 4. Daily breakdown
+      const dailyMap = new Map<string, DailyBreakdown>();
+      for (const pick of allPicks) {
+        const day = dailyMap.get(pick.gameDate) ?? {
+          date: pick.gameDate,
+          wins: 0,
+          losses: 0,
+          pushes: 0,
+        };
+        if (pick.result === "win") day.wins++;
+        else if (pick.result === "loss") day.losses++;
+        else if (pick.result === "push") day.pushes++;
+        dailyMap.set(pick.gameDate, day);
+      }
+
+      // Compute week end (weekStart + 6 days)
+      const wsDate = new Date(weekStart + "T00:00:00");
+      wsDate.setDate(wsDate.getDate() + 6);
+      const weekEnd = wsDate.toISOString().slice(0, 10);
+
+      return {
+        weekStart,
+        weekEnd,
+        wins,
+        losses,
+        pushes,
+        dnps,
+        winRate: decided > 0 ? Math.round((wins / decided) * 100) : 0,
+        picks: allPicks,
+        dailyBreakdown: Array.from(dailyMap.values()).sort((a, b) =>
+          a.date.localeCompare(b.date)
+        ),
+      };
+    } catch (error) {
+      console.error("Database Error (getWeeklyRecap):", error);
+      return null;
+    }
+  },
+  ["getWeeklyRecap"],
+  { tags: ["player-data"] }
+);
+
+/** Players who outperformed their season average during the given week */
+export const getWeeklyHotPlayers = unstable_cache(
+  async (weekStart: string, limit = 10): Promise<WeeklyPlayerPerformance[]> => {
+    type Row = {
+      player_name: string;
+      games_played: number;
+      week_avg_pts: string | number;
+      season_avg_pts: string | number;
+      diff: string | number;
+    };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        WITH week_stats AS (
+          SELECT s.player_id,
+            COUNT(*)::int AS games_played,
+            AVG(s.points) AS week_avg_pts
+          FROM player_game_stats s
+          JOIN games g ON g.game_id = s.game_id
+          WHERE g.game_date >= ${weekStart}::date
+            AND g.game_date < ${weekStart}::date + INTERVAL '7 days'
+            AND COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          GROUP BY s.player_id
+          HAVING COUNT(*) >= 2
+        ),
+        season_avg AS (
+          SELECT s.player_id, AVG(s.points) AS season_avg_pts
+          FROM player_game_stats s
+          WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          GROUP BY s.player_id
+          HAVING AVG(s.points) >= 5
+        )
+        SELECT p.player_name,
+          ws.games_played,
+          ROUND(ws.week_avg_pts::numeric, 1) AS week_avg_pts,
+          ROUND(sa.season_avg_pts::numeric, 1) AS season_avg_pts,
+          ROUND((ws.week_avg_pts - sa.season_avg_pts)::numeric, 1) AS diff
+        FROM week_stats ws
+        JOIN season_avg sa ON sa.player_id = ws.player_id
+        JOIN players p ON p.player_id = ws.player_id
+        WHERE ws.week_avg_pts > sa.season_avg_pts
+        ORDER BY (ws.week_avg_pts - sa.season_avg_pts) DESC
+        LIMIT ${limit}
+      `);
+
+      const rows = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      return rows.map((r) => ({
+        playerName: r.player_name,
+        gamesPlayed: Number(r.games_played),
+        weekAvgPts: Number(r.week_avg_pts),
+        seasonAvgPts: Number(r.season_avg_pts),
+        diff: Number(r.diff),
+      }));
+    } catch (error) {
+      console.error("Database Error (getWeeklyHotPlayers):", error);
+      return [];
+    }
+  },
+  ["getWeeklyHotPlayers"],
+  { tags: ["player-data"] }
+);
+
+/** Players who underperformed their season average during the given week */
+export const getWeeklyColdPlayers = unstable_cache(
+  async (weekStart: string, limit = 10): Promise<WeeklyPlayerPerformance[]> => {
+    type Row = {
+      player_name: string;
+      games_played: number;
+      week_avg_pts: string | number;
+      season_avg_pts: string | number;
+      diff: string | number;
+    };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        WITH week_stats AS (
+          SELECT s.player_id,
+            COUNT(*)::int AS games_played,
+            AVG(s.points) AS week_avg_pts
+          FROM player_game_stats s
+          JOIN games g ON g.game_id = s.game_id
+          WHERE g.game_date >= ${weekStart}::date
+            AND g.game_date < ${weekStart}::date + INTERVAL '7 days'
+            AND COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          GROUP BY s.player_id
+          HAVING COUNT(*) >= 2
+        ),
+        season_avg AS (
+          SELECT s.player_id, AVG(s.points) AS season_avg_pts
+          FROM player_game_stats s
+          WHERE COALESCE(LOWER(TRIM(s.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')
+          GROUP BY s.player_id
+          HAVING AVG(s.points) >= 5
+        )
+        SELECT p.player_name,
+          ws.games_played,
+          ROUND(ws.week_avg_pts::numeric, 1) AS week_avg_pts,
+          ROUND(sa.season_avg_pts::numeric, 1) AS season_avg_pts,
+          ROUND((ws.week_avg_pts - sa.season_avg_pts)::numeric, 1) AS diff
+        FROM week_stats ws
+        JOIN season_avg sa ON sa.player_id = ws.player_id
+        JOIN players p ON p.player_id = ws.player_id
+        WHERE ws.week_avg_pts < sa.season_avg_pts
+        ORDER BY (ws.week_avg_pts - sa.season_avg_pts) ASC
+        LIMIT ${limit}
+      `);
+
+      const rows = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      return rows.map((r) => ({
+        playerName: r.player_name,
+        gamesPlayed: Number(r.games_played),
+        weekAvgPts: Number(r.week_avg_pts),
+        seasonAvgPts: Number(r.season_avg_pts),
+        diff: Number(r.diff),
+      }));
+    } catch (error) {
+      console.error("Database Error (getWeeklyColdPlayers):", error);
+      return [];
+    }
+  },
+  ["getWeeklyColdPlayers"],
+  { tags: ["player-data"] }
+);
+
+// --- Team defensive ratings (opponent weakness overlay) ---
+
+export type TeamDefensiveRating = {
+  teamCode: string;
+  teamName: string;
+  gamesPlayed: number;
+  oppPts: number;
+  oppReb: number;
+  oppAst: number;
+  opp3p: number;
+  oppFt: number;
+  oppStl: number;
+  oppBlk: number;
+  oppTov: number;
+  oppFgPct: number;
+  /** Rank 1 = allows fewest, 30 = allows most (for stat-specific ranking) */
+  ranks: Record<string, number>;
+};
+
+export const getTeamDefensiveRatings = unstable_cache(
+  async (): Promise<TeamDefensiveRating[]> => {
+    type Row = {
+      team_code: string;
+      team_name: string;
+      games_played: number;
+      opp_pts: number;
+      opp_trb: number;
+      opp_ast: number;
+      opp_3p: number;
+      opp_ft: number;
+      opp_stl: number;
+      opp_blk: number;
+      opp_tov: number;
+      opp_fg_pct: number;
+    };
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT
+          t.team_code,
+          t.team_name,
+          tdr.games_played::int AS games_played,
+          tdr.opp_pts::float AS opp_pts,
+          tdr.opp_trb::float AS opp_trb,
+          tdr.opp_ast::float AS opp_ast,
+          tdr.opp_3p::float AS opp_3p,
+          tdr.opp_ft::float AS opp_ft,
+          tdr.opp_stl::float AS opp_stl,
+          tdr.opp_blk::float AS opp_blk,
+          tdr.opp_tov::float AS opp_tov,
+          tdr.opp_fg_pct::float AS opp_fg_pct
+        FROM team_defensive_ratings tdr
+        JOIN teams t ON t.team_id = tdr.team_id
+        ORDER BY tdr.opp_pts ASC
+      `);
+
+      const rows: Row[] = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+      // Compute per-stat rankings (1 = best defense / fewest allowed)
+      const statKeys = ["opp_pts", "opp_trb", "opp_ast", "opp_3p", "opp_ft", "opp_stl", "opp_blk", "opp_tov", "opp_fg_pct"] as const;
+      const rankings: Record<string, Record<string, number>> = {};
+
+      for (const stat of statKeys) {
+        const sorted = [...rows].sort((a, b) => (a[stat] ?? 0) - (b[stat] ?? 0));
+        sorted.forEach((row, idx) => {
+          if (!rankings[row.team_code]) rankings[row.team_code] = {};
+          rankings[row.team_code][stat] = idx + 1;
+        });
+      }
+
+      return rows.map((r) => ({
+        teamCode: r.team_code,
+        teamName: r.team_name,
+        gamesPlayed: r.games_played ?? 0,
+        oppPts: r.opp_pts ?? 0,
+        oppReb: r.opp_trb ?? 0,
+        oppAst: r.opp_ast ?? 0,
+        opp3p: r.opp_3p ?? 0,
+        oppFt: r.opp_ft ?? 0,
+        oppStl: r.opp_stl ?? 0,
+        oppBlk: r.opp_blk ?? 0,
+        oppTov: r.opp_tov ?? 0,
+        oppFgPct: r.opp_fg_pct ?? 0,
+        ranks: rankings[r.team_code] ?? {},
+      }));
+    } catch (error) {
+      console.error("Database Error (getTeamDefensiveRatings):", error);
+      return [];
+    }
+  },
+  ["getTeamDefensiveRatings"],
   { tags: ["player-data"] }
 );

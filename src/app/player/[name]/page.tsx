@@ -9,6 +9,7 @@ import {
   getPlayerMatchups,
   getPlayerPropLines,
   getPlayerTodaysGame,
+  getTeamDefensiveRatings,
 } from "@/lib/data";
 import PlayerPageContent from "@/app/components/PlayerPageContent";
 import { PLAYER_STAT_NAMES } from "@/db/schema";
@@ -59,13 +60,14 @@ export default async function PlayerPage({
   const initialPropLine = lineParam != null ? parseFloat(lineParam) : undefined;
   const initialPropLineValid = initialPropLine != null && !Number.isNaN(initialPropLine);
 
-  const [initialData, lastGameStatus, splits, matchups, propLines, todaysGame] = await Promise.all([
+  const [initialData, lastGameStatus, splits, matchups, propLines, todaysGame, defensiveRatings] = await Promise.all([
     getPlayerData(playerName, initialGameCount),
     getPlayerLastGameStatus(playerName),
     getPlayerSplits(playerName),
     getPlayerMatchups(playerName),
     getPlayerPropLines(playerName),
     getPlayerTodaysGame(playerName),
+    getTeamDefensiveRatings(),
   ]);
 
   return (
@@ -80,6 +82,7 @@ export default async function PlayerPage({
       matchups={matchups}
       propLines={propLines}
       todaysGame={todaysGame}
+      defensiveRatings={defensiveRatings}
     />
   );
 }

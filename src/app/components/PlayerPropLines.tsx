@@ -1,6 +1,6 @@
 "use client";
 
-import type { PlayerPropLine } from "@/lib/data";
+import type { PlayerPropLine, TeamDefensiveRating } from "@/lib/data";
 
 interface Props {
   propLines: PlayerPropLine[];
@@ -13,7 +13,26 @@ interface Props {
     fg3: number;
     pra: number;
   } | null;
+  opponentRating?: TeamDefensiveRating | null;
+  opponentName?: string | null;
 }
+
+// Map market codes to defensive rating keys and rank keys
+const MARKET_TO_DEF: Record<string, { key: keyof TeamDefensiveRating; rankKey: string; label: string }> = {
+  PTS: { key: "oppPts", rankKey: "opp_pts", label: "PPG allowed" },
+  REB: { key: "oppReb", rankKey: "opp_trb", label: "RPG allowed" },
+  AST: { key: "oppAst", rankKey: "opp_ast", label: "APG allowed" },
+  FG3: { key: "opp3p", rankKey: "opp_3p", label: "3PM allowed" },
+  FTM: { key: "oppFt", rankKey: "opp_ft", label: "FTM allowed" },
+  STL: { key: "oppStl", rankKey: "opp_stl", label: "SPG allowed" },
+  BLK: { key: "oppBlk", rankKey: "opp_blk", label: "BPG allowed" },
+  TOV: { key: "oppTov", rankKey: "opp_tov", label: "TO forced" },
+  PRA: { key: "oppPts", rankKey: "opp_pts", label: "PPG allowed" },
+  PR: { key: "oppPts", rankKey: "opp_pts", label: "PPG allowed" },
+  PA: { key: "oppPts", rankKey: "opp_pts", label: "PPG allowed" },
+  RA: { key: "oppReb", rankKey: "opp_trb", label: "RPG allowed" },
+  SB: { key: "oppStl", rankKey: "opp_stl", label: "SPG allowed" },
+};
 
 // Map market_code → season stat key
 const MARKET_TO_STAT: Record<string, string> = {
@@ -44,7 +63,7 @@ function oddsColor(odds: number | null): string {
   return "text-pe-text-secondary";
 }
 
-export default function PlayerPropLines({ propLines, seasonStats }: Props) {
+export default function PlayerPropLines({ propLines, seasonStats, opponentRating }: Props) {
   if (propLines.length === 0) {
     return (
       <div className="text-pe-text-faint text-sm text-center py-8">
@@ -207,6 +226,40 @@ export default function PlayerPropLines({ propLines, seasonStats }: Props) {
                     </div>
                   </div>
                 )}
+
+                {/* Opponent defensive weakness */}
+                {opponentRating && (() => {
+                  const def = MARKET_TO_DEF[line.marketCode];
+                  if (!def) return null;
+                  const val = opponentRating[def.key] as number;
+                  const rank = opponentRating.ranks[def.rankKey] ?? 0;
+                  if (!val || !rank) return null;
+                  const isWeak = rank >= 21; // bottom 10 defense
+                  const isStrong = rank <= 10; // top 10 defense
+                  return (
+                    <div className="flex items-center justify-between pt-1 border-t border-pe-border/5">
+                      <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
+                        vs {opponentRating.teamCode}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-pe-text-muted">
+                          {val.toFixed(1)} {def.label}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            isWeak
+                              ? "text-emerald-400 bg-emerald-500/10"
+                              : isStrong
+                                ? "text-red-400 bg-red-500/10"
+                                : "text-pe-text-faint bg-pe-surface-2"
+                          }`}
+                        >
+                          {rank}{rank === 1 ? "st" : rank === 2 ? "nd" : rank === 3 ? "rd" : "th"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           );

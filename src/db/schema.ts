@@ -124,6 +124,86 @@ export const playerProps = pgTable(
   ]
 );
 
+export const teamDefensiveRatings = pgTable(
+  "team_defensive_ratings",
+  {
+    ratingId: serial("rating_id").primaryKey(),
+    teamId: integer("team_id").notNull().references(() => teams.teamId),
+    season: varchar("season", { length: 9 }).notNull().default("2025-2026"),
+    gamesPlayed: integer("games_played"),
+    oppFg: numeric("opp_fg"),
+    oppFga: numeric("opp_fga"),
+    oppFgPct: numeric("opp_fg_pct"),
+    opp3p: numeric("opp_3p"),
+    opp3pa: numeric("opp_3pa"),
+    opp3pPct: numeric("opp_3p_pct"),
+    opp2p: numeric("opp_2p"),
+    opp2pa: numeric("opp_2pa"),
+    opp2pPct: numeric("opp_2p_pct"),
+    oppFt: numeric("opp_ft"),
+    oppFta: numeric("opp_fta"),
+    oppFtPct: numeric("opp_ft_pct"),
+    oppOrb: numeric("opp_orb"),
+    oppDrb: numeric("opp_drb"),
+    oppTrb: numeric("opp_trb"),
+    oppAst: numeric("opp_ast"),
+    oppStl: numeric("opp_stl"),
+    oppBlk: numeric("opp_blk"),
+    oppTov: numeric("opp_tov"),
+    oppPf: numeric("opp_pf"),
+    oppPts: numeric("opp_pts"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("unq_team_season_rating").on(table.teamId, table.season),
+  ]
+);
+
+export const nbaAdvancedTeamStats = pgTable(
+  "nba_advanced_team_stats",
+  {
+    statId: serial("stat_id").primaryKey(),
+    teamId: integer("team_id").notNull().references(() => teams.teamId),
+    season: varchar("season", { length: 9 }).notNull().default("2025-26"),
+    gp: integer("gp"),
+    w: integer("w"),
+    l: integer("l"),
+    wPct: numeric("w_pct"),
+    offRating: numeric("off_rating"),
+    defRating: numeric("def_rating"),
+    netRating: numeric("net_rating"),
+    eOffRating: numeric("e_off_rating"),
+    eDefRating: numeric("e_def_rating"),
+    eNetRating: numeric("e_net_rating"),
+    pace: numeric("pace"),
+    tsPct: numeric("ts_pct"),
+    efgPct: numeric("efg_pct"),
+    astPct: numeric("ast_pct"),
+    astTo: numeric("ast_to"),
+    astRatio: numeric("ast_ratio"),
+    orebPct: numeric("oreb_pct"),
+    drebPct: numeric("dreb_pct"),
+    rebPct: numeric("reb_pct"),
+    tmTovPct: numeric("tm_tov_pct"),
+    pie: numeric("pie"),
+    offRatingRank: integer("off_rating_rank"),
+    defRatingRank: integer("def_rating_rank"),
+    netRatingRank: integer("net_rating_rank"),
+    paceRank: integer("pace_rank"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("unq_adv_team_season").on(table.teamId, table.season),
+  ]
+);
+
+export const subscribers = pgTable("subscribers", {
+  subscriberId: serial("subscriber_id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  subscribedAt: timestamp("subscribed_at", { withTimezone: true }).defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+});
+
 // --- UI-facing type: flat game log shape (mapped from player_game_stats + games + players) ---
 
 export type PlayerGameLog = {

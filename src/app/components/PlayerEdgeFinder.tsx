@@ -2,12 +2,27 @@
 
 import { useMemo } from "react";
 import type { PlayerGameLog, PLAYER_STAT_TYPE } from "@/db/schema";
+import type { TeamDefensiveRating } from "@/lib/data";
 import { isDnpMinutes } from "@/lib/dnp";
 
 interface Props {
   data: PlayerGameLog[];
   stat: PLAYER_STAT_TYPE;
+  opponentRating?: TeamDefensiveRating | null;
+  opponentName?: string | null;
 }
+
+// Map stat keys to defensive rating fields
+const STAT_TO_DEF: Partial<Record<PLAYER_STAT_TYPE, { key: keyof TeamDefensiveRating; rankKey: string; label: string }>> = {
+  pts: { key: "oppPts", rankKey: "opp_pts", label: "PPG" },
+  trb: { key: "oppReb", rankKey: "opp_trb", label: "RPG" },
+  ast: { key: "oppAst", rankKey: "opp_ast", label: "APG" },
+  fg3: { key: "opp3p", rankKey: "opp_3p", label: "3PM/G" },
+  ft: { key: "oppFt", rankKey: "opp_ft", label: "FTM/G" },
+  stl: { key: "oppStl", rankKey: "opp_stl", label: "SPG" },
+  blk: { key: "oppBlk", rankKey: "opp_blk", label: "BPG" },
+  tov: { key: "oppTov", rankKey: "opp_tov", label: "TO/G" },
+};
 
 const STAT_DISPLAY: Record<string, string> = {
   pts: "Points", trb: "Rebounds", ast: "Assists", stl: "Steals",
@@ -31,7 +46,7 @@ function generateLines(avg: number): number[] {
   return [...new Set(lines)].sort((a, b) => a - b);
 }
 
-export default function PlayerEdgeFinder({ data, stat }: Props) {
+export default function PlayerEdgeFinder({ data, stat, opponentRating, opponentName }: Props) {
   const analysis = useMemo(() => {
     const played = data.filter((g) => !isDnpMinutes(g.mp));
     if (played.length === 0) return null;
@@ -141,6 +156,51 @@ export default function PlayerEdgeFinder({ data, stat }: Props) {
           {STAT_DISPLAY[stat] ?? stat.toUpperCase()}
         </div>
       )}
+
+      {/* Opponent weakness callout */}
+      {opponentRating && (() => {
+        const def = STAT_TO_DEF[stat];
+        if (!def) return null;
+        const val = opponentRating[def.key] as number;
+        const rank = opponentRating.ranks[def.rankKey] ?? 0;
+        if (!val || !rank) return null;
+        const isWeak = rank >= 21;
+        const ordinal = rank === 1 ? "st" : rank === 2 ? "nd" : rank === 3 ? "rd" : "th";
+        return (
+          <div
+            className={`px-4 py-3 rounded-xl border text-sm ${
+              isWeak
+                ? "bg-emerald-500/10 border-emerald-500/20"
+                : rank <= 10
+                  ? "bg-red-500/10 border-red-500/20"
+                  : "bg-pe-surface-2/50 border-pe-border/10"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-pe-text-secondary font-medium">
+                vs {opponentName ?? opponentRating.teamCode}
+              </span>
+              <span
+                className={`font-bold ${
+                  isWeak ? "text-emerald-400" : rank <= 10 ? "text-red-400" : "text-pe-text-muted"
+                }`}
+              >
+                {val.toFixed(1)} {def.label} allowed ({rank}{ordinal})
+              </span>
+            </div>
+            {isWeak && (
+              <p className="text-emerald-400/80 text-xs mt-1">
+                Weak defense — opponents feast on {def.label.toLowerCase()} against this team
+              </p>
+            )}
+            {rank <= 10 && (
+              <p className="text-red-400/80 text-xs mt-1">
+                Strong defense — tough matchup for {def.label.toLowerCase()}
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Line-by-line hit rate table */}
       <div>
