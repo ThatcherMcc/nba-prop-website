@@ -22,6 +22,7 @@ const SITE_URL = "https://propedge.bet";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  manifest: "/site.webmanifest",
   title: {
     default: "PropEdge — NBA Player Prop Trends & Analytics",
     template: "%s | PropEdge",
