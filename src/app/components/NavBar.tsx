@@ -62,6 +62,16 @@ export default function NavBar() {
               Home
             </Link>
             <Link
+              href="/slate"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
+                pathname === "/slate"
+                  ? "bg-pe-accent/20 text-pe-accent"
+                  : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
+              }`}
+            >
+              Slate
+            </Link>
+            <Link
               href="/analytics"
               className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
                 pathname === "/analytics"
@@ -70,6 +80,16 @@ export default function NavBar() {
               }`}
             >
               Analytics
+            </Link>
+            <Link
+              href="/insights"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
+                pathname.startsWith("/insights")
+                  ? "bg-pe-accent/20 text-pe-accent"
+                  : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
+              }`}
+            >
+              The Edge
             </Link>
             <Link
               href="/profile"
