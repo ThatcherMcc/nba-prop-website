@@ -16,6 +16,7 @@ export default function Footer() {
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-pe-text-faint">
             <Link href="/" className="hover:text-pe-text-secondary transition-colors">Home</Link>
             <Link href="/analytics" className="hover:text-pe-text-secondary transition-colors">Analytics</Link>
+            <Link href="/insights" className="hover:text-pe-text-secondary transition-colors">The Edge</Link>
             <Link href="/player/LeBron%20James" className="hover:text-pe-text-secondary transition-colors">LeBron James</Link>
             <Link href="/player/Stephen%20Curry" className="hover:text-pe-text-secondary transition-colors">Stephen Curry</Link>
             <Link href="/player/Luka%20Doncic" className="hover:text-pe-text-secondary transition-colors">Luka Doncic</Link>

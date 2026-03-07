@@ -436,6 +436,56 @@ export function YesterdayScorecard({
   );
 }
 
+// ── Streak Badge ─────────────────────────────────────────────────────────────
+
+function StreakBadge({ card, variant }: { card: HotCard; variant: PlayerRowVariant }) {
+  if (variant === "hot") {
+    const overCount = card.overCount ?? 0;
+    const seasonAvg = card.seasonAvgPts ?? 0;
+    const isSignificant = seasonAvg > 0 && card.diff >= seasonAvg * 0.2;
+    if (overCount === 5 && isSignificant) {
+      return (
+        <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">
+          Fire — 5 game streak
+        </span>
+      );
+    }
+    if (overCount >= 4) {
+      return (
+        <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">
+          Hot — {overCount} straight
+        </span>
+      );
+    }
+    return null;
+  }
+
+  if (variant === "cold") {
+    const underCount = card.underCount ?? 0;
+    if (underCount >= 4) {
+      return (
+        <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">
+          Slumping — {underCount} straight
+        </span>
+      );
+    }
+    return null;
+  }
+
+  if (variant === "trending") {
+    if (card.diff >= 5) {
+      return (
+        <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">
+          Surging +{card.diff.toFixed(1)} PPG
+        </span>
+      );
+    }
+    return null;
+  }
+
+  return null;
+}
+
 // ── Player Scroll Cards ─────────────────────────────────────────────────────
 
 export function PlayerScrollCard({
@@ -472,6 +522,8 @@ export function PlayerScrollCard({
   const bottomLabel = isTrending ? "Prev 3" : "Season";
   const bottomValue = isTrending ? card.prev3AvgPts?.toFixed(1) ?? "\u2014" : card.seasonAvgPts?.toFixed(1) ?? "\u2014";
 
+  const streakBadge = <StreakBadge card={card} variant={variant} />;
+
   return (
     <button
       type="button"
@@ -480,6 +532,7 @@ export function PlayerScrollCard({
       aria-label={`Analyze ${card.playerName ?? "player"}`}
     >
       <p className="font-bold text-pe-text-primary text-sm leading-tight truncate w-full">{card.playerName ?? "\u2014"}</p>
+      {streakBadge}
       <span className={`inline-flex w-fit items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeCls}`}>
         {badgeText}
       </span>

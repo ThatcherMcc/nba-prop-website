@@ -19,10 +19,11 @@ import {
   formatRelativeTimeShort,
 } from "./homepage-shared";
 import type { SortDir } from "./homepage-shared";
+import ParlayBuilder from "./ParlayBuilder";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Tab = "over" | "under" | "results" | "hot" | "cold" | "trending";
+type Tab = "over" | "under" | "results" | "hot" | "cold" | "trending" | "parlay";
 
 interface AnalyticsPageContentProps {
   overSeasonAvgLast5: OverSeasonAvgLast5[];
@@ -44,6 +45,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "hot", label: "Hot" },
   { id: "cold", label: "Cold" },
   { id: "trending", label: "Trending" },
+  { id: "parlay", label: "Parlay Builder" },
 ];
 
 // ── Tab badge color helper ───────────────────────────────────────────────────
@@ -53,11 +55,13 @@ function badgeClass(tab: Tab, isActive: boolean): string {
     if (tab === "hot") return "bg-emerald-500 text-white";
     if (tab === "cold") return "bg-sky-500 text-white";
     if (tab === "trending") return "bg-amber-500 text-white";
+    if (tab === "parlay") return "bg-violet-500 text-white";
     return "bg-pe-accent text-white";
   }
   if (tab === "hot") return "bg-emerald-500/15 text-emerald-400";
   if (tab === "cold") return "bg-sky-500/15 text-sky-400";
   if (tab === "trending") return "bg-amber-500/15 text-amber-400";
+  if (tab === "parlay") return "bg-violet-500/15 text-violet-400";
   return "bg-pe-surface-2 text-pe-text-faint";
 }
 
@@ -484,6 +488,7 @@ export default function AnalyticsPageContent({
     hot: overSeasonAvgLast5.length,
     cold: underSeasonAvgLast5.length,
     trending: trendingPlayers.length,
+    parlay: 0,
   };
 
   return (
@@ -550,6 +555,9 @@ export default function AnalyticsPageContent({
           )}
           {activeTab === "trending" && (
             <TrendingTable data={trendingPlayers} goToPlayer={goToPlayer} />
+          )}
+          {activeTab === "parlay" && (
+            <ParlayBuilder topPicks={topPicks} underPicks={underPicks} />
           )}
         </div>
       </div>

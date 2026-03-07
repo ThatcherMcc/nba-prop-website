@@ -1,4 +1,6 @@
+import Link from "next/link";
 import HomepageContent from "@/app/components/HomepageContent";
+import EmailCapture from "@/app/components/EmailCapture";
 import {
   getPlayerData,
   getPlayersOverSeasonAvgLast5,
@@ -76,6 +78,31 @@ export default async function Page() {
         lastUpdated={lastUpdated}
         hasError={hasError}
       />
+
+      {/* The Edge CTA */}
+      <section className="mt-12 mb-6">
+        <div className="bg-pe-surface-1/60 border border-pe-border/5 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-black uppercase tracking-wide text-pe-text-primary mb-1">
+              The Edge — Weekly Prop Recaps
+            </h2>
+            <p className="text-sm text-pe-text-faint">
+              See how our picks performed each week. Win rates, best hits, worst misses, and trending players.
+            </p>
+          </div>
+          <Link
+            href="/insights"
+            className="shrink-0 bg-pe-accent hover:bg-pe-accent/80 text-white font-bold rounded-xl px-5 py-2.5 text-sm transition-colors"
+          >
+            View Recaps
+          </Link>
+        </div>
+      </section>
+
+      {/* Email capture */}
+      <div className="mb-12">
+        <EmailCapture />
+      </div>
 
       {/* Server-rendered SEO content — visible to crawlers */}
       <section className="mt-16 mb-8 max-w-3xl">
