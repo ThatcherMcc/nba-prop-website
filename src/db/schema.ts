@@ -9,6 +9,7 @@ import {
   boolean,
   numeric,
   timestamp,
+  text,
 } from "drizzle-orm/pg-core";
 
 // --- Neon schema (see directives/infrastructure/neon_schema.md) ---
@@ -219,6 +220,30 @@ export const nbaAdvancedTeamStats = pgTable(
   },
   (table) => [
     unique("unq_adv_team_season").on(table.teamId, table.season),
+  ]
+);
+
+export const mlBacktestResults = pgTable(
+  "ml_backtest_results",
+  {
+    id: serial("id").primaryKey(),
+    gameDate: date("game_date").notNull(),
+    playerName: text("player_name").notNull(),
+    marketCode: text("market_code").notNull(),
+    prediction: text("prediction").notNull(),
+    bookLine: numeric("book_line"),
+    pOver: numeric("p_over"),
+    confidence: numeric("confidence"),
+    actualValue: numeric("actual_value"),
+    hit: boolean("hit"),
+    avgLast5: numeric("avg_last_5"),
+    oppDefRank: integer("opp_def_rank"),
+    pickRank: integer("pick_rank").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("ml_backtest_results_game_date_player_name_market_code_key").on(table.gameDate, table.playerName, table.marketCode),
+    index("idx_ml_backtest_date").on(table.gameDate),
   ]
 );
 

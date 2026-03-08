@@ -49,11 +49,11 @@ export const getPlayerExists = unstable_cache(
 );
 
 // Only include games where the player actually played (exclude DNP).
-// Excluded values (case-insensitive, trimmed): '', 'inactive', 'inact', 'did n', '0', '0:00'.
+// Excluded values (case-insensitive, trimmed): '', 'inactive', 'inact', 'did n', '0', '0:00', 'not w', 'suspe'.
 // Keep .cursor/rules/nba-prop-website.mdc and @/lib/dnp.ts in sync if adding values.
 import { isDnpMinutes } from "@/lib/dnp";
 
-const PLAYED_ONLY = sql`COALESCE(LOWER(TRIM(player_game_stats.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00')`;
+const PLAYED_ONLY = sql`COALESCE(LOWER(TRIM(player_game_stats.minutes_played)), '') NOT IN ('', 'inactive', 'inact', 'did n', '0', '0:00', 'not w', 'suspe')`;
 
 // --- Hottest hands: most points in each player's most recent game ---
 export type HotScorerLastGame = {
