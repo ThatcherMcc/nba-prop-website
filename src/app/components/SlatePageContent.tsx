@@ -178,9 +178,27 @@ function statDefenseInfo(
   return { allowed, rank, verdict: defVerdict(rank, total) };
 }
 
+// ── Confidence bar ──────────────────────────────────────────────────────────
+
+function ConfidenceBar({ value, isOver }: { value: number; isOver: boolean }) {
+  const pct = Math.round(value * 100);
+  const width = Math.max(pct, 8);
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 rounded-full bg-pe-surface-2/60 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${isOver ? "bg-emerald-500/70" : "bg-red-400/70"}`}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+      <span className={`text-xs font-bold tabular-nums w-8 text-right ${isOver ? "text-emerald-400" : "text-red-400"}`}>
+        {pct}%
+      </span>
+    </div>
+  );
+}
+
 // ── Player Row ──────────────────────────────────────────────────────────────
-// Grid layout: Name | PTS | REB | AST | Edges
-// Consistent column widths so everything aligns across players
 
 function PlayerRow({
   player,
@@ -225,20 +243,17 @@ function PlayerRow({
     }),
     ...qualifiedMlPicks.map((ml) => {
       const isOver = ml.prediction === "OVER";
-      const pct = isOver
-        ? Math.round(ml.pOver * 100)
-        : Math.round((1 - ml.pOver) * 100);
       return (
         <span
           key={`ml-${ml.marketCode}`}
-          className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+          className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
             isOver
               ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
               : "bg-red-500/10 text-red-400 border-red-500/25"
           }`}
         >
-          <span className="text-[9px] opacity-60 font-mono">ML</span>
-          {ml.marketCode} {ml.prediction} {pct}%
+          <span className="text-[9px] opacity-60 font-mono">AI</span>
+          {ml.prediction === "OVER" ? "O" : "U"} {ml.marketCode} {ml.bookLine}
         </span>
       );
     }),
@@ -250,7 +265,6 @@ function PlayerRow({
         hasEdge ? "bg-emerald-500/[0.03]" : ""
       }`}
     >
-      {/* Top row: Name + stat lines */}
       <div className="flex items-center gap-x-2.5 min-w-0">
         <Link
           href={`/player/${encodeURIComponent(player.playerName)}`}
@@ -271,7 +285,6 @@ function PlayerRow({
         </div>
       </div>
 
-      {/* Bottom row: Edge badges (only when present) */}
       {hasEdge && (
         <div className="flex flex-wrap gap-1">
           {allBadges}
@@ -309,15 +322,9 @@ function TeamColumn({
 }) {
   if (players.length === 0) return null;
 
-  const edgeCount = new Set(
-    topPicks
-      .filter((p) => players.some((pl) => pl.playerName === p.playerName))
-      .map((p) => p.playerName)
-  ).size;
-
   return (
     <div className="flex flex-col min-w-0">
-      {/* Row 1: Team name + edge count */}
+      {/* Team header */}
       <div className="flex items-center gap-2 px-3 py-1.5 bg-pe-surface-2/30">
         <span className="text-xs font-black uppercase tracking-tight text-pe-text-primary">
           {teamCode}
@@ -325,14 +332,9 @@ function TeamColumn({
         <span className="text-[11px] text-pe-text-faint">
           {players.length} players
         </span>
-        {edgeCount > 0 && (
-          <span className="text-[11px] font-bold text-emerald-400 ml-auto">
-            {edgeCount} edge{edgeCount !== 1 ? "s" : ""}
-          </span>
-        )}
       </div>
 
-      {/* Row 2: Opponent defense allowed stats */}
+      {/* Opponent defense allowed stats */}
       {opponentRating && (
         <div className="flex items-center gap-2.5 px-3 py-1 bg-pe-surface-2/15 border-b border-pe-border/5">
           <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-wider">
@@ -410,34 +412,22 @@ function GameCard({
   const open = forceOpen !== null ? forceOpen : localOpen;
 
   const total = defensiveRatings.length;
-  const playerNames = new Set(group.players.map((p) => p.playerName));
-  const picksForGame = topPicks.filter((p) => playerNames.has(p.playerName));
-  const edgeCount = new Set(picksForGame.map((p) => p.playerName)).size;
-
   const { home, away } = splitByTeam(group.players, group.homeTeam, group.awayTeam);
   const homeRating = getDefRating(defensiveRatings, group.homeTeam);
   const awayRating = getDefRating(defensiveRatings, group.awayTeam);
 
   return (
     <div className="bg-pe-surface-1/60 border border-pe-border/10 rounded-2xl overflow-hidden">
-      {/* Matchup header */}
       <button
         type="button"
         onClick={() => setLocalOpen((prev) => !prev)}
         className="w-full flex items-center justify-between px-4 py-2.5 bg-pe-surface-2/30 hover:bg-pe-surface-2/50 transition-colors text-left cursor-pointer"
       >
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-black uppercase tracking-tight text-pe-text-primary">
-            {group.awayTeam}{" "}
-            <span className="text-pe-text-faint font-normal text-xs">@</span>{" "}
-            {group.homeTeam}
-          </h2>
-          {edgeCount > 0 && (
-            <span className="text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full">
-              {edgeCount} edge{edgeCount !== 1 ? "s" : ""}
-            </span>
-          )}
-        </div>
+        <h2 className="text-sm font-black uppercase tracking-tight text-pe-text-primary">
+          {group.awayTeam}{" "}
+          <span className="text-pe-text-faint font-normal text-xs">@</span>{" "}
+          {group.homeTeam}
+        </h2>
         <svg
           className={`w-4 h-4 text-pe-text-faint transition-transform ${open ? "rotate-180" : ""}`}
           viewBox="0 0 24 24"
@@ -451,14 +441,13 @@ function GameCard({
         </svg>
       </button>
 
-      {/* Side-by-side on desktop, stacked on mobile */}
       {open && (
         <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-pe-border/10">
           <div className="lg:border-r lg:border-pe-border/10">
             <TeamColumn
               teamCode={group.awayTeam}
               players={away}
-              topPicks={picksForGame}
+              topPicks={topPicks}
               mlPredictions={mlPredictions}
               opponentRating={homeRating}
               opponentCode={group.homeTeam}
@@ -469,7 +458,7 @@ function GameCard({
             <TeamColumn
               teamCode={group.homeTeam}
               players={home}
-              topPicks={picksForGame}
+              topPicks={topPicks}
               mlPredictions={mlPredictions}
               opponentRating={awayRating}
               opponentCode={group.awayTeam}
@@ -484,15 +473,10 @@ function GameCard({
 
 // ── Prop AI Section ─────────────────────────────────────────────────────────
 
-const CONFIDENCE_TIERS = [
-  { label: "High Confidence", min: 0.20, color: "emerald" },
-  { label: "Moderate", min: 0.10, color: "amber" },
-] as const;
-
 function PropAiSection({ mlPredictions }: { mlPredictions: MlPrediction[] }) {
   const [expanded, setExpanded] = useState(true);
 
-  // Top 20 picks by confidence, max 2 per player for variety
+  // Top 20 picks by confidence, max 2 per player
   const sorted = mlPredictions
     .filter((ml) => ml.confidence >= 0.10)
     .sort((a, b) => b.confidence - a.confidence);
@@ -507,16 +491,6 @@ function PropAiSection({ mlPredictions }: { mlPredictions: MlPrediction[] }) {
   }
 
   if (top20.length === 0) return null;
-
-  // Group into tiers
-  const tiers = CONFIDENCE_TIERS.map((tier) => ({
-    ...tier,
-    picks: top20.filter(
-      (ml) =>
-        ml.confidence >= tier.min &&
-        (tier.min === 0.20 || ml.confidence < 0.20)
-    ),
-  })).filter((t) => t.picks.length > 0);
 
   return (
     <div className="bg-pe-surface-1/60 border border-pe-border/10 rounded-2xl overflow-hidden mb-4">
@@ -548,91 +522,60 @@ function PropAiSection({ mlPredictions }: { mlPredictions: MlPrediction[] }) {
 
       {expanded && (
         <div>
-          {tiers.map((tier) => (
-            <div key={tier.label}>
-              <div className="px-4 py-1.5 bg-pe-surface-2/20 border-t border-pe-border/5">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                  tier.color === "emerald" ? "text-emerald-400" : "text-amber-400"
-                }`}>
-                  {tier.label} — {tier.picks.length} picks
-                </span>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-pe-border/5">
+            {top20.map((ml) => {
+              const isOver = ml.prediction === "OVER";
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-pe-border/5">
-                {tier.picks.map((ml) => {
-                  const isOver = ml.prediction === "OVER";
-                  const prob = isOver
-                    ? Math.round(ml.pOver * 100)
-                    : Math.round((1 - ml.pOver) * 100);
+              return (
+                <div
+                  key={`${ml.playerName}-${ml.marketCode}`}
+                  className="flex items-center gap-3 px-4 py-3 bg-pe-surface-1/80 hover:bg-pe-surface-2/40 transition-colors"
+                >
+                  {/* Direction indicator — the decision */}
+                  <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs ${
+                    isOver
+                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
+                      : "bg-red-500/12 text-red-400 border border-red-500/25"
+                  }`}>
+                    {isOver ? "OVR" : "UND"}
+                  </div>
 
-                  return (
-                    <div
-                      key={`${ml.playerName}-${ml.marketCode}`}
-                      className="flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-pe-surface-1/80 hover:bg-pe-surface-2/40 transition-colors"
-                    >
-                      {/* Pick badge */}
-                      <div className={`shrink-0 flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl border-2 ${
-                        isOver
-                          ? "border-emerald-500/30 bg-emerald-500/10"
-                          : "border-red-500/25 bg-red-500/8"
-                      }`}>
-                        <div className="text-center leading-tight">
-                          <div className={`text-[10px] sm:text-[11px] font-black ${isOver ? "text-emerald-400" : "text-red-400"}`}>
-                            {ml.prediction === "OVER" ? "OVR" : "UND"}
-                          </div>
-                          <div className="text-[14px] sm:text-[15px] font-black text-pe-text-primary">
-                            {ml.bookLine}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Player + details */}
-                      <div className="flex-1 min-w-0">
-                        <Link
-                          href={`/player/${encodeURIComponent(ml.playerName)}`}
-                          className="text-[13px] sm:text-sm font-bold text-pe-text-primary hover:text-pe-accent transition-colors block truncate"
-                        >
-                          {ml.playerName}
-                        </Link>
-                        <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 flex-wrap">
-                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                            getStatBadgeColor(ml.marketCode)
-                          }`}>
-                            {ml.marketCode}
-                          </span>
-                          <span className="text-[10px] sm:text-[11px] text-pe-text-faint">
-                            L5: <span className="font-bold text-pe-text-muted">{ml.avgLast5 != null ? ml.avgLast5.toFixed(1) : "—"}</span>
-                          </span>
-                          {ml.oppDefRank != null && (
-                            <span className={`text-[10px] sm:text-[11px] ${
-                              ml.oppDefRank >= 21 ? "text-emerald-400" : ml.oppDefRank <= 9 ? "text-red-400" : "text-pe-text-faint"
-                            }`}>
-                              Def: <span className="font-bold">{ordinal(ml.oppDefRank)}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Confidence */}
-                      <div className="shrink-0 text-right">
-                        <div className={`text-base sm:text-lg font-black ${isOver ? "text-emerald-400" : "text-red-400"}`}>
-                          {prob}%
-                        </div>
-                        <div className="text-[9px] sm:text-[10px] text-pe-text-faint">conf</div>
-                      </div>
+                  {/* Core info — player, stat, line */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Link
+                        href={`/player/${encodeURIComponent(ml.playerName)}`}
+                        className="text-sm font-bold text-pe-text-primary hover:text-pe-accent transition-colors truncate"
+                      >
+                        {ml.playerName}
+                      </Link>
+                      <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border ${getStatBadgeColor(ml.marketCode)}`}>
+                        {ml.marketCode}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+
+                    {/* Confidence bar — visual, not just a number */}
+                    <ConfidenceBar value={ml.confidence} isOver={isOver} />
+                  </div>
+
+                  {/* The line — the number that matters */}
+                  <div className="shrink-0 text-right">
+                    <div className="text-lg font-black text-pe-text-primary tabular-nums">
+                      {ml.bookLine}
+                    </div>
+                    <div className="text-[10px] text-pe-text-faint">line</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
           {/* Track record link */}
           <Link
             href="/track-record"
             className="flex items-center justify-center gap-2 py-3 border-t border-pe-border/10 text-xs font-bold text-blue-400 hover:text-blue-300 hover:bg-blue-500/5 transition-colors"
           >
-            View full track record — 75.7% hit rate over 19 days
+            View full track record
             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
