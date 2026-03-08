@@ -6,9 +6,10 @@ import { useCommandPalette } from "./CommandPaletteProvider";
 
 const tabs = [
   { key: "home", label: "Home", href: "/", icon: "\u2302" },
-  { key: "slate", label: "Slate", href: "/slate", icon: "\u{1F3C0}" },
-  { key: "search", label: "Search", href: null, icon: "\u{1F50D}" },
   { key: "analytics", label: "Analytics", href: "/analytics", icon: "\u{1F4CA}" },
+  { key: "slate", label: "The Edge", href: "/slate", icon: "\u{1F3C0}" },
+  { key: "search", label: "Search", href: null, icon: "\u{1F50D}" },
+  { key: "profile", label: "Profile", href: "/profile", icon: "\u{1F464}" },
 ] as const;
 
 export default function MobileTabBar() {
@@ -25,11 +26,13 @@ export default function MobileTabBar() {
           const isActive =
             tab.key === "home"
               ? pathname === "/"
-              : tab.key === "slate"
-                ? pathname === "/slate"
-                : tab.key === "analytics"
-                  ? pathname === "/analytics"
-                  : false;
+              : tab.key === "analytics"
+                ? pathname === "/analytics"
+                : tab.key === "slate"
+                  ? pathname === "/slate" || pathname === "/track-record"
+                  : tab.key === "profile"
+                    ? pathname === "/profile"
+                    : false;
 
           if (tab.key === "search") {
             return (
