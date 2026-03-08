@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import type { TopPick, UnderPick } from "@/lib/data";
 import { StatBadge, hitRateTextClass } from "./homepage-shared";
+import { trackEvent, EVENTS } from "@/lib/analytics";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -314,10 +315,20 @@ function PayoutSummary({
       </div>
 
       {/* Disclaimer */}
-      <p className="text-[10px] text-pe-text-faint leading-relaxed border-t border-pe-border/5 pt-2">
-        Hit rates are historical. Standard -110 odds assumed for each leg.
-        Combined probability is a mathematical product of individual hit rates.
-      </p>
+      <div className="border-t border-pe-border/5 pt-2 space-y-1">
+        <p className="text-[10px] text-pe-text-faint leading-relaxed">
+          Hit rates reflect historical trends only and are not predictions or guarantees. Payout estimates assume standard -110 juice per leg. PropEdge is for entertainment purposes only — gamble responsibly.
+        </p>
+        <p className="text-[10px] text-pe-text-faint">
+          Gambling Problem?{" "}
+          <a
+            href="tel:18005224700"
+            className="underline hover:text-pe-text-muted transition-colors"
+          >
+            Call 1-800-522-4700
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
@@ -462,20 +473,24 @@ export default function ParlayBuilder({
     );
     if (conflict) return;
 
-    setParlayLegs((prev) => [
-      ...prev,
-      {
-        id,
-        playerName: pick.playerName,
-        marketCode: pick.marketCode,
-        marketName: pick.marketName,
-        bookLine: pick.bookLine,
-        hitRate: pick.hitRate,
-        direction: pick.direction,
-        gamesChecked: pick.gamesChecked,
-        hitCount: pick.hitCount,
-      },
-    ]);
+    setParlayLegs((prev) => {
+      const next = [
+        ...prev,
+        {
+          id,
+          playerName: pick.playerName,
+          marketCode: pick.marketCode,
+          marketName: pick.marketName,
+          bookLine: pick.bookLine,
+          hitRate: pick.hitRate,
+          direction: pick.direction,
+          gamesChecked: pick.gamesChecked,
+          hitCount: pick.hitCount,
+        },
+      ];
+      trackEvent(EVENTS.PARLAY_BUILD, { legs: next.length });
+      return next;
+    });
   }
 
   function removeLeg(id: string) {

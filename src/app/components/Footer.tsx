@@ -15,12 +15,9 @@ export default function Footer() {
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-pe-text-faint">
             <Link href="/" className="hover:text-pe-text-secondary transition-colors">Home</Link>
+            <Link href="/slate" className="hover:text-pe-text-secondary transition-colors">Slate</Link>
             <Link href="/analytics" className="hover:text-pe-text-secondary transition-colors">Analytics</Link>
             <Link href="/insights" className="hover:text-pe-text-secondary transition-colors">The Edge</Link>
-            <Link href="/player/LeBron%20James" className="hover:text-pe-text-secondary transition-colors">LeBron James</Link>
-            <Link href="/player/Stephen%20Curry" className="hover:text-pe-text-secondary transition-colors">Stephen Curry</Link>
-            <Link href="/player/Luka%20Doncic" className="hover:text-pe-text-secondary transition-colors">Luka Doncic</Link>
-            <Link href="/player/Nikola%20Jokic" className="hover:text-pe-text-secondary transition-colors">Nikola Jokic</Link>
             <a
               href="https://www.basketball-reference.com"
               target="_blank"
@@ -31,10 +28,28 @@ export default function Footer() {
             </a>
           </nav>
         </div>
-        <p className="text-xs text-pe-text-faint">
-          Data updated daily from Basketball Reference. Not financial advice.
-          Gamble responsibly.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <p className="text-xs text-pe-text-faint">
+            Data updated daily from Basketball Reference. For entertainment
+            purposes only &mdash; not financial or betting advice. Must be 21+.
+            If you or someone you know has a gambling problem, call the
+            National Council on Problem Gambling helpline:{" "}
+            <a
+              href="tel:18005224700"
+              className="underline underline-offset-2 hover:text-pe-text-muted transition-colors"
+            >
+              1-800-522-4700
+            </a>
+            .
+          </p>
+          <nav className="flex items-center gap-3 text-xs text-pe-text-faint flex-shrink-0">
+            <Link href="/terms" className="hover:text-pe-text-secondary transition-colors">Terms</Link>
+            <span aria-hidden="true">&middot;</span>
+            <Link href="/privacy" className="hover:text-pe-text-secondary transition-colors">Privacy</Link>
+            <span aria-hidden="true">&middot;</span>
+            <Link href="/responsible-gambling" className="hover:text-pe-text-secondary transition-colors">Responsible Gambling</Link>
+          </nav>
+        </div>
       </div>
     </footer>
   );

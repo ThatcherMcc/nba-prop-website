@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCommandPalette } from "./CommandPaletteProvider";
+import type { Session } from "next-auth";
 
-export default function NavBar() {
+interface NavBarProps {
+  session: Session | null;
+}
+
+export default function NavBar({ session }: NavBarProps) {
   const pathname = usePathname();
   const { openPalette } = useCommandPalette();
+
+  const user = session?.user;
 
   return (
     <nav className="border-b border-pe-border/10 bg-pe-bg/80 backdrop-blur-md sticky top-0 z-50">
@@ -91,16 +99,40 @@ export default function NavBar() {
             >
               Insights
             </Link>
-            <Link
-              href="/profile"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
-                pathname === "/profile"
-                  ? "bg-pe-accent/20 text-pe-accent"
-                  : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
-              }`}
-            >
-              Profile
-            </Link>
+
+            {/* Profile / Sign In */}
+            {user ? (
+              <Link
+                href="/profile"
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
+                  pathname === "/profile"
+                    ? "bg-pe-accent/20 text-pe-accent"
+                    : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
+                }`}
+                aria-label="Profile"
+              >
+                {user.image ? (
+                  <Image
+                    src={user.image}
+                    alt={user.name ?? "Profile"}
+                    width={24}
+                    height={24}
+                    className="rounded-full w-6 h-6 object-cover"
+                  />
+                ) : (
+                  <span className="w-6 h-6 rounded-full bg-pe-accent/20 text-pe-accent text-xs font-bold flex items-center justify-center">
+                    {(user.name ?? user.email ?? "?")[0].toUpperCase()}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link
+                href="/auth/sign-in"
+                className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors bg-pe-accent/20 text-pe-accent hover:bg-pe-accent/30"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { auth } from "@/lib/auth";
 import ProfilePageContent from "@/app/components/ProfilePageContent";
 
 export const metadata: Metadata = {
@@ -6,6 +7,7 @@ export const metadata: Metadata = {
   description: "Customize your PropEdge experience.",
 };
 
-export default function ProfilePage() {
-  return <ProfilePageContent />;
+export default async function ProfilePage() {
+  const session = await auth();
+  return <ProfilePageContent session={session} />;
 }

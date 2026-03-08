@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { TopPick } from "@/lib/data";
+import BetButton from "./BetButton";
 
 const MARKET_TO_STAT: Record<string, string> = {
   PTS: "pts", REB: "trb", AST: "ast", STL: "stl", BLK: "blk",
@@ -75,6 +76,7 @@ export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
               <th className="text-right py-3 px-3 hidden sm:table-cell">Over</th>
               <th className="text-right py-3 px-3">Hit Rate</th>
               <th className="text-right py-3 px-4 hidden sm:table-cell">Confidence</th>
+              <th className="text-right py-3 px-4">Bet</th>
             </tr>
           </thead>
           <tbody>
@@ -129,6 +131,9 @@ export default function TopPicks({ picks, propDate, onSelectPlayer }: Props) {
                         />
                       </div>
                     </div>
+                  </td>
+                  <td className="py-4 md:py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                    <BetButton playerName={p.playerName} marketCode={p.marketCode} compact />
                   </td>
                 </tr>
               );

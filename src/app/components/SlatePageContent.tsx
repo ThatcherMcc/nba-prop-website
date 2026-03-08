@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import type { TodaysPlayer, TopPick, TeamDefensiveRating, MlPrediction } from "@/lib/data";
 import { formatRelativeTimeShort } from "./homepage-shared";
+import UpgradeGate from "./UpgradeGate";
+import BetButton from "./BetButton";
+import PickShareButton from "./PickShareButton";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -13,6 +16,7 @@ interface SlatePageContentProps {
   lastUpdated: string | null;
   propDate: string | null;
   mlPredictions: MlPrediction[];
+  userTier: string;
 }
 
 interface GameGroup {
@@ -206,12 +210,14 @@ function PlayerRow({
   mlPicks,
   opponentRating,
   total,
+  userTier,
 }: {
   player: TodaysPlayer;
   picks: TopPick[];
   mlPicks: MlPrediction[];
   opponentRating: TeamDefensiveRating | null;
   total: number;
+  userTier: string;
 }) {
   const qualifiedMlPicks = mlPicks
     .filter((ml) => ml.confidence >= 0.10)
@@ -220,44 +226,43 @@ function PlayerRow({
 
   const hasEdge = picks.length > 0 || qualifiedMlPicks.length > 0;
 
-  const allBadges = [
-    ...picks.map((pick) => {
-      const signal = pickSignal(pick, opponentRating, total);
-      return (
-        <span
-          key={`${pick.marketCode}-${pick.bookLine}`}
-          className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
-            pick.hitRate >= 80
-              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-              : "bg-amber-500/10 text-amber-400 border-amber-500/25"
-          }`}
-        >
-          {pick.marketCode} {pick.bookLine} {pick.hitRate}%
-          {signal && (
-            <span className={`${signal.color} font-mono`}>
-              {signal.icon}{signal.label}
-            </span>
-          )}
-        </span>
-      );
-    }),
-    ...qualifiedMlPicks.map((ml) => {
-      const isOver = ml.prediction === "OVER";
-      return (
-        <span
-          key={`ml-${ml.marketCode}`}
-          className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
-            isOver
-              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-              : "bg-red-500/10 text-red-400 border-red-500/25"
-          }`}
-        >
-          <span className="text-[9px] opacity-60 font-mono">AI</span>
-          {ml.prediction === "OVER" ? "O" : "U"} {ml.marketCode} {ml.bookLine}
-        </span>
-      );
-    }),
-  ];
+  const statBadges = picks.map((pick) => {
+    const signal = pickSignal(pick, opponentRating, total);
+    return (
+      <span
+        key={`${pick.marketCode}-${pick.bookLine}`}
+        className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+          pick.hitRate >= 80
+            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+            : "bg-amber-500/10 text-amber-400 border-amber-500/25"
+        }`}
+      >
+        {pick.marketCode} {pick.bookLine} {pick.hitRate}%
+        {signal && (
+          <span className={`${signal.color} font-mono`}>
+            {signal.icon}{signal.label}
+          </span>
+        )}
+      </span>
+    );
+  });
+
+  const mlBadges = qualifiedMlPicks.map((ml) => {
+    const isOver = ml.prediction === "OVER";
+    return (
+      <span
+        key={`ml-${ml.marketCode}`}
+        className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+          isOver
+            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+            : "bg-red-500/10 text-red-400 border-red-500/25"
+        }`}
+      >
+        <span className="text-[9px] opacity-60 font-mono">AI</span>
+        {ml.prediction === "OVER" ? "O" : "U"} {ml.marketCode} {ml.bookLine}
+      </span>
+    );
+  });
 
   return (
     <div
@@ -282,12 +287,23 @@ function PlayerRow({
           <span className="text-[13px] font-mono text-pe-text-primary tabular-nums w-[38px] text-right shrink-0">
             <span className="text-[10px] text-pe-text-faint mr-0.5">A</span>{player.astLine ?? "—"}
           </span>
+          <BetButton playerName={player.playerName} marketCode="PTS" compact />
         </div>
       </div>
 
       {hasEdge && (
         <div className="flex flex-wrap gap-1">
-          {allBadges}
+          {statBadges}
+          {mlBadges.length > 0 && (
+            <UpgradeGate
+              userTier={userTier}
+              requiredTier="pro"
+              blurContent={true}
+              featureName="AI Confidence Scores"
+            >
+              <div className="flex flex-wrap gap-1">{mlBadges}</div>
+            </UpgradeGate>
+          )}
         </div>
       )}
     </div>
@@ -311,6 +327,7 @@ function TeamColumn({
   opponentRating,
   opponentCode,
   total,
+  userTier,
 }: {
   teamCode: string;
   players: TodaysPlayer[];
@@ -319,6 +336,7 @@ function TeamColumn({
   opponentRating: TeamDefensiveRating | null;
   opponentCode: string;
   total: number;
+  userTier: string;
 }) {
   if (players.length === 0) return null;
 
@@ -365,6 +383,7 @@ function TeamColumn({
           <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-wider w-[42px] text-right shrink-0">PTS</span>
           <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-wider w-[38px] text-right shrink-0">REB</span>
           <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-wider w-[38px] text-right shrink-0">AST</span>
+          <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-wider shrink-0">Bet</span>
         </div>
       </div>
 
@@ -384,6 +403,7 @@ function TeamColumn({
             mlPicks={mlPicksForPlayer}
             opponentRating={opponentRating}
             total={total}
+            userTier={userTier}
           />
         );
       })}
@@ -400,6 +420,7 @@ function GameCard({
   defensiveRatings,
   defaultOpen,
   forceOpen,
+  userTier,
 }: {
   group: GameGroup;
   topPicks: TopPick[];
@@ -407,6 +428,7 @@ function GameCard({
   defensiveRatings: TeamDefensiveRating[];
   defaultOpen: boolean;
   forceOpen: boolean | null;
+  userTier: string;
 }) {
   const [localOpen, setLocalOpen] = useState(defaultOpen);
   const open = forceOpen !== null ? forceOpen : localOpen;
@@ -452,6 +474,7 @@ function GameCard({
               opponentRating={homeRating}
               opponentCode={group.homeTeam}
               total={total}
+              userTier={userTier}
             />
           </div>
           <div className="border-t border-pe-border/5 lg:border-t-0">
@@ -463,6 +486,7 @@ function GameCard({
               opponentRating={awayRating}
               opponentCode={group.awayTeam}
               total={total}
+              userTier={userTier}
             />
           </div>
         </div>
@@ -473,7 +497,13 @@ function GameCard({
 
 // ── Prop AI Section ─────────────────────────────────────────────────────────
 
-function PropAiSection({ mlPredictions }: { mlPredictions: MlPrediction[] }) {
+function PropAiSection({
+  mlPredictions,
+  userTier,
+}: {
+  mlPredictions: MlPrediction[];
+  userTier: string;
+}) {
   const [expanded, setExpanded] = useState(true);
 
   // Top 20 picks by confidence, max 2 per player
@@ -522,52 +552,74 @@ function PropAiSection({ mlPredictions }: { mlPredictions: MlPrediction[] }) {
 
       {expanded && (
         <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-pe-border/5">
-            {top20.map((ml) => {
-              const isOver = ml.prediction === "OVER";
+          <UpgradeGate
+            userTier={userTier}
+            requiredTier="pro"
+            blurContent={true}
+            featureName="AI Confidence Scores"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-pe-border/5">
+              {top20.map((ml) => {
+                const isOver = ml.prediction === "OVER";
 
-              return (
-                <div
-                  key={`${ml.playerName}-${ml.marketCode}`}
-                  className="flex items-center gap-3 px-4 py-3 bg-pe-surface-1/80 hover:bg-pe-surface-2/40 transition-colors"
-                >
-                  {/* Direction indicator — the decision */}
-                  <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs ${
-                    isOver
-                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
-                      : "bg-red-500/12 text-red-400 border border-red-500/25"
-                  }`}>
-                    {isOver ? "OVR" : "UND"}
-                  </div>
-
-                  {/* Core info — player, stat, line */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Link
-                        href={`/player/${encodeURIComponent(ml.playerName)}`}
-                        className="text-sm font-bold text-pe-text-primary hover:text-pe-accent transition-colors truncate"
-                      >
-                        {ml.playerName}
-                      </Link>
-                      <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border ${getStatBadgeColor(ml.marketCode)}`}>
-                        {ml.marketCode}
-                      </span>
+                return (
+                  <div
+                    key={`${ml.playerName}-${ml.marketCode}`}
+                    className="flex items-center gap-3 px-4 py-3 bg-pe-surface-1/80 hover:bg-pe-surface-2/40 transition-colors"
+                  >
+                    {/* Direction indicator — the decision */}
+                    <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs ${
+                      isOver
+                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
+                        : "bg-red-500/12 text-red-400 border border-red-500/25"
+                    }`}>
+                      {isOver ? "OVR" : "UND"}
                     </div>
 
-                    {/* Confidence bar — visual, not just a number */}
-                    <ConfidenceBar value={ml.confidence} isOver={isOver} />
-                  </div>
+                    {/* Core info — player, stat, line */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Link
+                          href={`/player/${encodeURIComponent(ml.playerName)}`}
+                          className="text-sm font-bold text-pe-text-primary hover:text-pe-accent transition-colors truncate"
+                        >
+                          {ml.playerName}
+                        </Link>
+                        <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border ${getStatBadgeColor(ml.marketCode)}`}>
+                          {ml.marketCode}
+                        </span>
+                      </div>
 
-                  {/* The line — the number that matters */}
-                  <div className="shrink-0 w-12 text-right">
-                    <div className="text-lg font-black text-pe-text-primary tabular-nums">
-                      {ml.bookLine}
+                      {/* Confidence bar — visual, not just a number */}
+                      <ConfidenceBar value={ml.confidence} isOver={isOver} />
                     </div>
-                    <div className="text-[10px] text-pe-text-faint">line</div>
+
+                    {/* The line — the number that matters */}
+                    <div className="shrink-0 text-right">
+                      <div className="text-lg font-black text-pe-text-primary tabular-nums">
+                        {ml.bookLine}
+                      </div>
+                      <div className="text-[10px] text-pe-text-faint mb-1.5">line</div>
+                      <BetButton playerName={ml.playerName} marketCode={ml.marketCode} compact />
+                    </div>
+
+                    {/* Share button */}
+                    <PickShareButton
+                      playerName={ml.playerName}
+                      market={ml.marketCode}
+                      line={ml.bookLine}
+                      direction={ml.prediction as "OVER" | "UNDER"}
+                      confidence={ml.confidence}
+                    />
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          </UpgradeGate>
+
+          {/* Model estimate note */}
+          <div className="px-4 pt-2.5 pb-1">
+            <span className="text-[9px] text-pe-text-faint">Model estimate based on historical data</span>
           </div>
 
           {/* Track record link */}
@@ -594,6 +646,7 @@ export default function SlatePageContent({
   lastUpdated,
   propDate,
   mlPredictions,
+  userTier,
 }: SlatePageContentProps) {
   const gameGroups = groupPlayersByGame(todaysPlayers);
   const hasGames = gameGroups.length > 0;
@@ -609,6 +662,9 @@ export default function SlatePageContent({
           </h1>
           <p className="text-xs text-pe-text-faint mt-0.5">
             {formatSlateDate(propDate)}
+          </p>
+          <p className="text-[10px] text-pe-text-faint mt-1">
+            All picks are for informational and entertainment purposes only. Not gambling advice.
           </p>
         </div>
         {hasGames && (
@@ -639,7 +695,7 @@ export default function SlatePageContent({
       </div>
 
       {/* Prop AI picks */}
-      {hasGames && <PropAiSection mlPredictions={mlPredictions} />}
+      {hasGames && <PropAiSection mlPredictions={mlPredictions} userTier={userTier} />}
 
       {!hasGames ? (
         <div className="bg-pe-surface-1/60 border border-pe-border/10 rounded-2xl p-12 text-center">
@@ -667,6 +723,7 @@ export default function SlatePageContent({
               defensiveRatings={defensiveRatings}
               defaultOpen={i < 3}
               forceOpen={allOpen}
+              userTier={userTier}
             />
           ))}
         </div>

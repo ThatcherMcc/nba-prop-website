@@ -1,6 +1,6 @@
 import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeCompare, extractBearerToken } from "@/lib/auth";
+import { timingSafeCompare, extractBearerToken } from "@/lib/api-auth";
 
 const CACHE_TAG = "player-data";
 

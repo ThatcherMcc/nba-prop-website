@@ -9,6 +9,8 @@ import {
   boolean,
   numeric,
   timestamp,
+  text,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // --- Neon schema (see directives/infrastructure/neon_schema.md) ---
@@ -222,12 +224,83 @@ export const nbaAdvancedTeamStats = pgTable(
   ]
 );
 
+export const mlBacktestResults = pgTable(
+  "ml_backtest_results",
+  {
+    id: serial("id").primaryKey(),
+    gameDate: date("game_date").notNull(),
+    playerName: text("player_name").notNull(),
+    marketCode: text("market_code").notNull(),
+    prediction: text("prediction").notNull(),
+    bookLine: numeric("book_line"),
+    pOver: numeric("p_over"),
+    confidence: numeric("confidence"),
+    actualValue: numeric("actual_value"),
+    hit: boolean("hit"),
+    avgLast5: numeric("avg_last_5"),
+    oppDefRank: integer("opp_def_rank"),
+    pickRank: integer("pick_rank").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("ml_backtest_results_game_date_player_name_market_code_key").on(table.gameDate, table.playerName, table.marketCode),
+    index("idx_ml_backtest_date").on(table.gameDate),
+  ]
+);
+
 export const subscribers = pgTable("subscribers", {
   subscriberId: serial("subscriber_id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   subscribedAt: timestamp("subscribed_at", { withTimezone: true }).defaultNow().notNull(),
   unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
 });
+
+// --- NextAuth (Auth.js) tables ---
+
+export const authUsers = pgTable("auth_users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name"),
+  email: text("email").unique(),
+  emailVerified: timestamp("email_verified", { mode: "date", withTimezone: true }),
+  image: text("image"),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  subscriptionTier: varchar("subscription_tier", { length: 20 }).notNull().default("free"),
+  subscriptionStatus: varchar("subscription_status", { length: 20 }).default("inactive"),
+  subscriptionId: text("subscription_id"),
+  subscriptionCurrentPeriodEnd: timestamp("subscription_current_period_end", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const authAccounts = pgTable("auth_accounts", {
+  userId: text("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  provider: text("provider").notNull(),
+  providerAccountId: text("provider_account_id").notNull(),
+  refresh_token: text("refresh_token"),
+  access_token: text("access_token"),
+  expires_at: integer("expires_at"),
+  token_type: text("token_type"),
+  scope: text("scope"),
+  id_token: text("id_token"),
+  session_state: text("session_state"),
+}, (table) => [
+  primaryKey({ columns: [table.provider, table.providerAccountId] }),
+]);
+
+export const authSessions = pgTable("auth_sessions", {
+  sessionToken: text("session_token").primaryKey(),
+  userId: text("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const authVerificationTokens = pgTable("auth_verification_tokens", {
+  identifier: text("identifier").notNull(),
+  token: text("token").notNull(),
+  expires: timestamp("expires", { mode: "date", withTimezone: true }).notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.identifier, table.token] }),
+]);
 
 // --- UI-facing type: flat game log shape (mapped from player_game_stats + games + players) ---
 

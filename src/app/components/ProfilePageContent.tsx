@@ -1,10 +1,19 @@
 "use client";
 
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   useThemeLayout,
   type ColorTheme,
   type LayoutVariant,
 } from "./ThemeLayoutContext";
+import { signOutAction } from "@/lib/auth-actions";
+import type { Session } from "next-auth";
+
+interface ProfilePageContentProps {
+  session: Session | null;
+}
 
 const COLOR_THEMES: {
   key: ColorTheme;
@@ -32,9 +41,29 @@ const LAYOUT_VARIANTS: {
   { key: "ticker-feed", label: "Ticker + Feed", desc: "Live ticker + card grid" },
 ];
 
-export default function ProfilePageContent() {
+export default function ProfilePageContent({ session }: ProfilePageContentProps) {
   const { colorTheme, layoutVariant, setColorTheme, setLayoutVariant } =
     useThemeLayout();
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const user = session?.user;
+  const userTier = user?.subscriptionTier ?? "free";
+  const userStatus = user?.subscriptionStatus;
+  const hasActiveSubscription =
+    !!user &&
+    userTier !== "free" &&
+    (userStatus === "active" || userStatus === "trialing");
+
+  async function handleManageBilling() {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      setPortalLoading(false);
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -46,19 +75,93 @@ export default function ProfilePageContent() {
         </p>
       </div>
 
-      {/* Sign In — coming soon */}
+      {/* Account section */}
       <section className="mb-8 rounded-2xl bg-pe-surface-1 border border-pe-border/10 p-5">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-pe-surface-2 border border-pe-border/10 flex items-center justify-center text-pe-text-faint text-xl">
-            &#128100;
+        {user ? (
+          /* Signed-in state */
+          <div>
+            <div className="flex items-center gap-4 mb-5">
+              {user.image ? (
+                <Image
+                  src={user.image}
+                  alt={user.name ?? "Profile photo"}
+                  width={48}
+                  height={48}
+                  className="rounded-full w-12 h-12 object-cover border border-pe-border/10"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-pe-accent/20 border border-pe-border/10 flex items-center justify-center text-pe-accent text-lg font-bold">
+                  {(user.name ?? user.email ?? "?")[0].toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                {user.name && (
+                  <p className="text-sm font-bold text-pe-text-primary truncate">
+                    {user.name}
+                  </p>
+                )}
+                {user.email && (
+                  <p className="text-xs text-pe-text-muted truncate">{user.email}</p>
+                )}
+                <p className="text-xs text-pe-text-faint mt-0.5 capitalize">
+                  {userTier === "free" ? "Free plan" : `${userTier} plan`}
+                </p>
+              </div>
+            </div>
+
+            {/* Subscription CTA */}
+            {hasActiveSubscription ? (
+              <button
+                type="button"
+                onClick={handleManageBilling}
+                disabled={portalLoading}
+                className="w-full mb-3 rounded-xl bg-pe-accent/10 border border-pe-accent/20 px-4 py-2.5 text-sm font-semibold text-pe-accent hover:bg-pe-accent/20 transition-colors text-left disabled:opacity-60"
+              >
+                {portalLoading ? "Opening billing portal..." : "Manage subscription"}
+              </button>
+            ) : (
+              <Link
+                href="/pricing"
+                className="w-full mb-3 flex items-center justify-between rounded-xl bg-pe-accent/10 border border-pe-accent/20 px-4 py-2.5 text-sm font-semibold text-pe-accent hover:bg-pe-accent/20 transition-colors"
+              >
+                <span>Upgrade to Pro</span>
+                <span className="text-xs opacity-60">&#8599;</span>
+              </Link>
+            )}
+
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-pe-surface-2 border border-pe-border/10 px-4 py-2.5 text-sm font-semibold text-pe-text-secondary hover:text-pe-text-primary hover:bg-pe-surface-2/80 transition-colors text-left"
+              >
+                Sign out
+              </button>
+            </form>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-pe-text-primary">
-              Sign in &amp; saved preferences
-            </p>
-            <p className="text-xs text-pe-text-faint">Coming soon</p>
+        ) : (
+          /* Signed-out state */
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-pe-surface-2 border border-pe-border/10 flex items-center justify-center text-pe-text-faint text-xl">
+                &#128100;
+              </div>
+              <div>
+                <p className="text-sm font-bold text-pe-text-primary">
+                  Sign in to PropEdge
+                </p>
+                <p className="text-xs text-pe-text-faint">
+                  Access your profile and saved preferences.
+                </p>
+              </div>
+            </div>
+            <a
+              href="/auth/sign-in?callbackUrl=/profile"
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-pe-accent/20 border border-pe-accent/20 px-4 py-2.5 text-sm font-semibold text-pe-accent hover:bg-pe-accent/30 transition-colors"
+            >
+              Sign in
+            </a>
           </div>
-        </div>
+        )}
       </section>
 
       {/* Color Palette */}

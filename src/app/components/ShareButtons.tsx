@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { trackEvent, EVENTS } from "@/lib/analytics";
 
 interface Props {
   url: string;
@@ -11,6 +12,7 @@ export default function ShareButtons({ url, text }: Props) {
   const [copied, setCopied] = useState(false);
 
   function handleTwitterShare() {
+    trackEvent(EVENTS.SHARE_CLICK, { method: "twitter" });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     window.open(tweetUrl, "_blank", "noopener,noreferrer");
   }
@@ -28,6 +30,7 @@ export default function ShareButtons({ url, text }: Props) {
 
     try {
       await navigator.clipboard.writeText(url);
+      trackEvent(EVENTS.SHARE_CLICK, { method: "copy" });
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

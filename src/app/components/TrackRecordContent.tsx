@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { BacktestResult, WeeklyRecap, MlBacktestSummary, MlBacktestPick } from "@/lib/data";
+import ShareButtons from "./ShareButtons";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -463,16 +464,31 @@ export default function TrackRecordContent({
     ? ml.marketBreakdown.reduce((best, m) => m.rate > best.rate && m.picks >= 5 ? m : best)
     : null;
 
+  const shareText = hasML
+    ? `PropEdge AI: ${ml.hitRate}% hit rate on ${ml.totalPicks} picks`
+    : "PropEdge AI — Data-driven NBA prop picks";
+  const shareUrl = "https://propedge.bet/track-record";
+
   return (
     <div className="w-full">
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="text-lg font-black uppercase tracking-tight text-pe-text-primary">
-          Track Record
-        </h1>
-        <p className="text-xs text-pe-text-faint mt-0.5">
-          Model performance graded against real results
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-black uppercase tracking-tight text-pe-text-primary">
+              Track Record
+            </h1>
+            <p className="text-xs text-pe-text-faint mt-0.5">
+              Model performance graded against real results
+            </p>
+          </div>
+          <div className="shrink-0 pt-0.5">
+            <ShareButtons url={shareUrl} text={shareText} />
+          </div>
+        </div>
+        <div className="mt-3 mb-4 px-3 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 text-[10px] text-amber-400 leading-relaxed">
+          Past performance does not guarantee future results. All model outputs are probabilistic estimates, not guaranteed predictions. For entertainment purposes only.
+        </div>
       </div>
 
       {/* Tab switcher */}
