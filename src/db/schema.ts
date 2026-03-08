@@ -10,6 +10,7 @@ import {
   numeric,
   timestamp,
   text,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // --- Neon schema (see directives/infrastructure/neon_schema.md) ---
@@ -253,6 +254,48 @@ export const subscribers = pgTable("subscribers", {
   subscribedAt: timestamp("subscribed_at", { withTimezone: true }).defaultNow().notNull(),
   unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
 });
+
+// --- NextAuth (Auth.js) tables ---
+
+export const authUsers = pgTable("auth_users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name"),
+  email: text("email").unique(),
+  emailVerified: timestamp("email_verified", { mode: "date", withTimezone: true }),
+  image: text("image"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const authAccounts = pgTable("auth_accounts", {
+  userId: text("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  provider: text("provider").notNull(),
+  providerAccountId: text("provider_account_id").notNull(),
+  refresh_token: text("refresh_token"),
+  access_token: text("access_token"),
+  expires_at: integer("expires_at"),
+  token_type: text("token_type"),
+  scope: text("scope"),
+  id_token: text("id_token"),
+  session_state: text("session_state"),
+}, (table) => [
+  primaryKey({ columns: [table.provider, table.providerAccountId] }),
+]);
+
+export const authSessions = pgTable("auth_sessions", {
+  sessionToken: text("session_token").primaryKey(),
+  userId: text("user_id").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date", withTimezone: true }).notNull(),
+});
+
+export const authVerificationTokens = pgTable("auth_verification_tokens", {
+  identifier: text("identifier").notNull(),
+  token: text("token").notNull(),
+  expires: timestamp("expires", { mode: "date", withTimezone: true }).notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.identifier, table.token] }),
+]);
 
 // --- UI-facing type: flat game log shape (mapped from player_game_stats + games + players) ---
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { TodaysPlayer, TopPick, TeamDefensiveRating, MlPrediction } from "@/lib/data";
 import { formatRelativeTimeShort } from "./homepage-shared";
+import PickShareButton from "./PickShareButton";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -220,44 +221,43 @@ function PlayerRow({
 
   const hasEdge = picks.length > 0 || qualifiedMlPicks.length > 0;
 
-  const allBadges = [
-    ...picks.map((pick) => {
-      const signal = pickSignal(pick, opponentRating, total);
-      return (
-        <span
-          key={`${pick.marketCode}-${pick.bookLine}`}
-          className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
-            pick.hitRate >= 80
-              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-              : "bg-amber-500/10 text-amber-400 border-amber-500/25"
-          }`}
-        >
-          {pick.marketCode} {pick.bookLine} {pick.hitRate}%
-          {signal && (
-            <span className={`${signal.color} font-mono`}>
-              {signal.icon}{signal.label}
-            </span>
-          )}
-        </span>
-      );
-    }),
-    ...qualifiedMlPicks.map((ml) => {
-      const isOver = ml.prediction === "OVER";
-      return (
-        <span
-          key={`ml-${ml.marketCode}`}
-          className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
-            isOver
-              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-              : "bg-red-500/10 text-red-400 border-red-500/25"
-          }`}
-        >
-          <span className="text-[9px] opacity-60 font-mono">AI</span>
-          {ml.prediction === "OVER" ? "O" : "U"} {ml.marketCode} {ml.bookLine}
-        </span>
-      );
-    }),
-  ];
+  const statBadges = picks.map((pick) => {
+    const signal = pickSignal(pick, opponentRating, total);
+    return (
+      <span
+        key={`${pick.marketCode}-${pick.bookLine}`}
+        className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+          pick.hitRate >= 80
+            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+            : "bg-amber-500/10 text-amber-400 border-amber-500/25"
+        }`}
+      >
+        {pick.marketCode} {pick.bookLine} {pick.hitRate}%
+        {signal && (
+          <span className={`${signal.color} font-mono`}>
+            {signal.icon}{signal.label}
+          </span>
+        )}
+      </span>
+    );
+  });
+
+  const mlBadges = qualifiedMlPicks.map((ml) => {
+    const isOver = ml.prediction === "OVER";
+    return (
+      <span
+        key={`ml-${ml.marketCode}`}
+        className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+          isOver
+            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+            : "bg-red-500/10 text-red-400 border-red-500/25"
+        }`}
+      >
+        <span className="text-[9px] opacity-60 font-mono">AI</span>
+        {ml.prediction === "OVER" ? "O" : "U"} {ml.marketCode} {ml.bookLine}
+      </span>
+    );
+  });
 
   return (
     <div
@@ -287,7 +287,10 @@ function PlayerRow({
 
       {hasEdge && (
         <div className="flex flex-wrap gap-1">
-          {allBadges}
+          {statBadges}
+          {mlBadges.length > 0 && (
+            <div className="flex flex-wrap gap-1">{mlBadges}</div>
+          )}
         </div>
       )}
     </div>
@@ -473,7 +476,11 @@ function GameCard({
 
 // ── Prop AI Section ─────────────────────────────────────────────────────────
 
-function PropAiSection({ mlPredictions }: { mlPredictions: MlPrediction[] }) {
+function PropAiSection({
+  mlPredictions,
+}: {
+  mlPredictions: MlPrediction[];
+}) {
   const [expanded, setExpanded] = useState(true);
 
   // Top 20 picks by confidence, max 2 per player
@@ -559,15 +566,29 @@ function PropAiSection({ mlPredictions }: { mlPredictions: MlPrediction[] }) {
                   </div>
 
                   {/* The line — the number that matters */}
-                  <div className="shrink-0 w-12 text-right">
+                  <div className="shrink-0 text-right">
                     <div className="text-lg font-black text-pe-text-primary tabular-nums">
                       {ml.bookLine}
                     </div>
-                    <div className="text-[10px] text-pe-text-faint">line</div>
+                    <div className="text-[10px] text-pe-text-faint mb-1.5">line</div>
                   </div>
+
+                  {/* Share button */}
+                  <PickShareButton
+                    playerName={ml.playerName}
+                    market={ml.marketCode}
+                    line={ml.bookLine}
+                    direction={ml.prediction as "OVER" | "UNDER"}
+                    confidence={ml.confidence}
+                  />
                 </div>
               );
             })}
+          </div>
+
+          {/* Model estimate note */}
+          <div className="px-4 pt-2.5 pb-1">
+            <span className="text-[9px] text-pe-text-faint">Model estimate based on historical data</span>
           </div>
 
           {/* Track record link */}
@@ -609,6 +630,9 @@ export default function SlatePageContent({
           </h1>
           <p className="text-xs text-pe-text-faint mt-0.5">
             {formatSlateDate(propDate)}
+          </p>
+          <p className="text-[10px] text-pe-text-faint mt-1">
+            All picks are for informational and entertainment purposes only. Not gambling advice.
           </p>
         </div>
         {hasGames && (

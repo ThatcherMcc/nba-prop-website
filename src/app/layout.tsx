@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getPlayerNames } from "@/lib/data";
+import { auth } from "@/lib/auth";
 import NavBar from "./components/NavBar";
 import Footer from "./components/Footer";
 import MobileTabBar from "./components/MobileTabBar";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import CommandPaletteProvider from "./components/CommandPaletteProvider";
 import ThemeLayoutProvider from "./components/ThemeLayoutContext";
 
@@ -86,7 +88,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const playerNames = await getPlayerNames();
+  const [playerNames, session] = await Promise.all([
+    getPlayerNames(),
+    auth(),
+  ]);
 
   return (
     <html lang="en">
@@ -117,12 +122,13 @@ export default async function RootLayout({
       >
         <ThemeLayoutProvider>
           <CommandPaletteProvider playerNames={playerNames}>
-            <NavBar />
+            <NavBar session={session} />
             <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 pb-24 md:pb-8">
               {children}
             </main>
             <Footer />
-            <MobileTabBar />
+            <MobileTabBar session={session} />
+            <CookieConsentBanner />
           </CommandPaletteProvider>
         </ThemeLayoutProvider>
       </body>
