@@ -2,29 +2,34 @@ import {
   getBacktestResults,
   getAvailableInsightWeeks,
   getWeeklyRecap,
+  getMlBacktestResults,
 } from "@/lib/data";
-import type { BacktestResult, WeeklyRecap } from "@/lib/data";
+import type { BacktestResult, WeeklyRecap, MlBacktestSummary } from "@/lib/data";
 import TrackRecordContent from "@/app/components/TrackRecordContent";
 
 export const metadata = {
-  title: "Track Record",
-  description: "PropEdge historical pick accuracy and performance tracking.",
+  title: "Track Record | PropEdge",
+  description: "PropEdge historical pick accuracy and ML model performance tracking.",
 };
 
 export default async function TrackRecordPage() {
   let recentDay: BacktestResult = { gameDate: "", picks: [] };
   let recentWeek: WeeklyRecap | null = null;
+  let mlBacktest: MlBacktestSummary = {
+    totalPicks: 0, totalHits: 0, hitRate: 0, daysCount: 0, edge: 0,
+    dailyResults: [], marketBreakdown: [], recentPicks: [],
+  };
 
   try {
-    // Fetch most recent graded day and available weeks in parallel
-    const [dayResult, weeks] = await Promise.all([
+    const [dayResult, weeks, mlResult] = await Promise.all([
       getBacktestResults(),
       getAvailableInsightWeeks(),
+      getMlBacktestResults(),
     ]);
 
     recentDay = dayResult;
+    mlBacktest = mlResult;
 
-    // If there are completed weeks, fetch the most recent one
     if (weeks.length > 0) {
       recentWeek = await getWeeklyRecap(weeks[0].weekStart);
     }
@@ -33,6 +38,10 @@ export default async function TrackRecordPage() {
   }
 
   return (
-    <TrackRecordContent recentDay={recentDay} recentWeek={recentWeek} />
+    <TrackRecordContent
+      recentDay={recentDay}
+      recentWeek={recentWeek}
+      mlBacktest={mlBacktest}
+    />
   );
 }
