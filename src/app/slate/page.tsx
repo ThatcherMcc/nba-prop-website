@@ -3,13 +3,14 @@ import {
   getTopPicks,
   getTeamDefensiveRatings,
   getLastDataUpdate,
+  getMlPredictions,
 } from "@/lib/data";
 import SlatePageContent from "@/app/components/SlatePageContent";
 
 export const metadata = {
-  title: "Today's Slate | PropEdge",
+  title: "The Edge | PropEdge",
   description:
-    "Today's NBA games with top prop edges for every matchup.",
+    "Today's NBA games with top prop edges and ML picks for every matchup.",
 };
 
 export default async function SlatePage() {
@@ -21,14 +22,16 @@ export default async function SlatePage() {
   let defensiveRatings: Awaited<ReturnType<typeof getTeamDefensiveRatings>> =
     [];
   let lastUpdated: string | null = null;
+  let mlPredictions: Awaited<ReturnType<typeof getMlPredictions>> = [];
 
   try {
-    [todaysPlayers, topPicks, defensiveRatings, lastUpdated] =
+    [todaysPlayers, topPicks, defensiveRatings, lastUpdated, mlPredictions] =
       await Promise.all([
         getTodaysPlayers(),
         getTopPicks(50),
         getTeamDefensiveRatings(),
         getLastDataUpdate(),
+        getMlPredictions(),
       ]);
   } catch (e) {
     console.error("Slate page data load failed:", e);
@@ -37,10 +40,10 @@ export default async function SlatePage() {
   return (
     <SlatePageContent
       todaysPlayers={todaysPlayers}
-      topPicks={topPicks.picks}
       defensiveRatings={defensiveRatings}
       lastUpdated={lastUpdated}
       propDate={topPicks.propDate}
+      mlPredictions={mlPredictions}
     />
   );
 }
