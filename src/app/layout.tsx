@@ -6,7 +6,7 @@ import { getPlayerNames } from "@/lib/data";
 import { auth } from "@/lib/auth";
 import NavBar from "./components/NavBar";
 import Footer from "./components/Footer";
-import LegalDisclaimerBar from "./components/LegalDisclaimerBar";
+
 import MobileTabBar from "./components/MobileTabBar";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import CommandPaletteProvider from "./components/CommandPaletteProvider";
@@ -137,7 +137,6 @@ export default async function RootLayout({
               {children}
             </main>
             <Footer />
-            <LegalDisclaimerBar />
             <MobileTabBar session={session} />
             <CookieConsentBanner />
           </CommandPaletteProvider>
