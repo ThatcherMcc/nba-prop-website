@@ -1099,6 +1099,166 @@ export const getBacktestResults = unstable_cache(
   { tags: ["player-data"] }
 );
 
+// --- ML Backtest: graded ML model predictions ---
+
+export type MlBacktestPick = {
+  gameDate: string;
+  playerName: string;
+  marketCode: string;
+  prediction: "OVER" | "UNDER";
+  bookLine: number;
+  pOver: number;
+  confidence: number;
+  actualValue: number | null;
+  hit: boolean | null;
+  avgLast5: number | null;
+  oppDefRank: number | null;
+  pickRank: number;
+};
+
+export type MlBacktestDay = {
+  gameDate: string;
+  picks: number;
+  hits: number;
+  losses: number;
+  hitRate: number;
+};
+
+export type MlBacktestSummary = {
+  totalPicks: number;
+  totalHits: number;
+  hitRate: number;
+  daysCount: number;
+  edge: number;
+  dailyResults: MlBacktestDay[];
+  marketBreakdown: { market: string; picks: number; hits: number; rate: number }[];
+  recentPicks: MlBacktestPick[];
+};
+
+export const getMlBacktestResults = unstable_cache(
+  async (): Promise<MlBacktestSummary> => {
+    type Row = {
+      game_date: string;
+      player_name: string;
+      market_code: string;
+      prediction: string;
+      book_line: string;
+      p_over: string;
+      confidence: string;
+      actual_value: number | null;
+      hit: boolean | null;
+      avg_last_5: string | null;
+      opp_def_rank: number | null;
+      pick_rank: number;
+    };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT
+          game_date::text AS game_date,
+          player_name, market_code, prediction,
+          book_line::text AS book_line,
+          p_over::text AS p_over,
+          confidence::text AS confidence,
+          actual_value, hit,
+          avg_last_5::text AS avg_last_5,
+          opp_def_rank, pick_rank
+        FROM ml_backtest_results
+        ORDER BY game_date DESC, pick_rank ASC
+      `);
+
+      const rows: Row[] =
+        "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+      if (rows.length === 0) {
+        return {
+          totalPicks: 0, totalHits: 0, hitRate: 0, daysCount: 0, edge: 0,
+          dailyResults: [], marketBreakdown: [], recentPicks: [],
+        };
+      }
+
+      const picks: MlBacktestPick[] = rows.map((r) => ({
+        gameDate: r.game_date,
+        playerName: r.player_name,
+        marketCode: r.market_code,
+        prediction: r.prediction as "OVER" | "UNDER",
+        bookLine: Number(r.book_line),
+        pOver: Number(r.p_over),
+        confidence: Number(r.confidence),
+        actualValue: r.actual_value != null ? Number(r.actual_value) : null,
+        hit: r.hit,
+        avgLast5: r.avg_last_5 != null ? Number(r.avg_last_5) : null,
+        oppDefRank: r.opp_def_rank,
+        pickRank: r.pick_rank,
+      }));
+
+      // Daily aggregation
+      const dayMap = new Map<string, { hits: number; total: number }>();
+      for (const p of picks) {
+        if (p.hit === null) continue;
+        const d = dayMap.get(p.gameDate) ?? { hits: 0, total: 0 };
+        d.total++;
+        if (p.hit) d.hits++;
+        dayMap.set(p.gameDate, d);
+      }
+      const dailyResults: MlBacktestDay[] = Array.from(dayMap.entries())
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .map(([date, s]) => ({
+          gameDate: date,
+          picks: s.total,
+          hits: s.hits,
+          losses: s.total - s.hits,
+          hitRate: s.total > 0 ? Math.round((s.hits / s.total) * 100) : 0,
+        }));
+
+      // Market aggregation
+      const mktMap = new Map<string, { hits: number; total: number }>();
+      for (const p of picks) {
+        if (p.hit === null) continue;
+        const m = mktMap.get(p.marketCode) ?? { hits: 0, total: 0 };
+        m.total++;
+        if (p.hit) m.hits++;
+        mktMap.set(p.marketCode, m);
+      }
+      const marketBreakdown = Array.from(mktMap.entries())
+        .sort((a, b) => b[1].total - a[1].total)
+        .map(([market, s]) => ({
+          market,
+          picks: s.total,
+          hits: s.hits,
+          rate: s.total > 0 ? Math.round((s.hits / s.total) * 100) : 0,
+        }));
+
+      const totalHits = picks.filter((p) => p.hit === true).length;
+      const totalGraded = picks.filter((p) => p.hit !== null).length;
+      const hitRate = totalGraded > 0 ? Math.round((totalHits / totalGraded) * 100) : 0;
+
+      // Most recent day's picks for display
+      const mostRecentDate = dailyResults[0]?.gameDate ?? "";
+      const recentPicks = picks.filter((p) => p.gameDate === mostRecentDate);
+
+      return {
+        totalPicks: totalGraded,
+        totalHits: totalHits,
+        hitRate,
+        daysCount: dailyResults.length,
+        edge: Math.round((hitRate - 52.4) * 10) / 10,
+        dailyResults,
+        marketBreakdown,
+        recentPicks,
+      };
+    } catch (error) {
+      console.error("Database Error (getMlBacktestResults):", error);
+      return {
+        totalPicks: 0, totalHits: 0, hitRate: 0, daysCount: 0, edge: 0,
+        dailyResults: [], marketBreakdown: [], recentPicks: [],
+      };
+    }
+  },
+  ["getMlBacktestResults"],
+  { tags: ["player-data"] }
+);
+
 // --- Home/Away splits for a player (full season) ---
 export type SplitStats = {
   games: number;
@@ -1648,6 +1808,83 @@ export const getLastDataUpdate = unstable_cache(
     }
   },
   ["getLastDataUpdate"],
+  { tags: ["player-data"] }
+);
+
+// --- ML Predictions ---
+
+export type MlPrediction = {
+  playerName: string;
+  marketCode: string;
+  bookLine: number;
+  pOver: number;
+  prediction: string; // "OVER" | "UNDER"
+  confidence: number;
+  avgLast5: number | null;
+  avgSeason: number | null;
+  oppDefRank: number | null;
+  lineZscore: number | null;
+};
+
+export const getMlPredictions = unstable_cache(
+  async (): Promise<MlPrediction[]> => {
+    type Row = {
+      player_name: string;
+      market_code: string;
+      book_line: string | number;
+      p_over: string | number;
+      prediction: string;
+      confidence: string | number;
+      avg_last_5: string | number | null;
+      avg_season: string | number | null;
+      opp_def_rank: number | null;
+      line_zscore: string | number | null;
+    };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT
+          p.player_name,
+          pm.market_code,
+          ml.book_line::text AS book_line,
+          ml.p_over::text AS p_over,
+          ml.prediction,
+          ml.confidence::text AS confidence,
+          ml.avg_last_5::text AS avg_last_5,
+          ml.avg_season::text AS avg_season,
+          ml.opp_def_rank,
+          ml.line_zscore::text AS line_zscore
+        FROM ml_predictions ml
+        JOIN players p ON p.player_id = ml.player_id
+        JOIN games g ON g.game_id = ml.game_id
+        JOIN prop_markets pm ON pm.market_id = ml.market_id
+        WHERE g.game_date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+          AND pm.market_code NOT IN ('FTM', 'TOV', 'FG2', 'BLK')
+          AND ml.book_line >= 4.5
+        ORDER BY ml.confidence DESC
+      `);
+
+      const rows: Row[] =
+        "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+      return rows.map((r) => ({
+        playerName: r.player_name,
+        marketCode: r.market_code,
+        bookLine: Number(r.book_line),
+        pOver: Number(r.p_over),
+        prediction: r.prediction,
+        confidence: Number(r.confidence),
+        avgLast5: r.avg_last_5 != null ? Number(r.avg_last_5) : null,
+        avgSeason: r.avg_season != null ? Number(r.avg_season) : null,
+        oppDefRank: r.opp_def_rank,
+        lineZscore: r.line_zscore != null ? Number(r.line_zscore) : null,
+      }));
+    } catch (error) {
+      console.error("Database Error (getMlPredictions):", error);
+      return [];
+    }
+  },
+  ["getMlPredictions"],
   { tags: ["player-data"] }
 );
 

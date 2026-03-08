@@ -124,6 +124,31 @@ export const playerProps = pgTable(
   ]
 );
 
+export const mlPredictions = pgTable(
+  "ml_predictions",
+  {
+    predictionId: serial("prediction_id").primaryKey(),
+    playerId: integer("player_id").notNull().references(() => players.playerId),
+    gameId: integer("game_id").notNull().references(() => games.gameId),
+    marketId: integer("market_id").notNull().references(() => propMarkets.marketId),
+    pOver: numeric("p_over").notNull(),
+    prediction: varchar("prediction", { length: 5 }).notNull(),
+    confidence: numeric("confidence").notNull(),
+    bookLine: numeric("book_line"),
+    avgLast5: numeric("avg_last_5"),
+    avgSeason: numeric("avg_season"),
+    oppDefRank: integer("opp_def_rank"),
+    lineZscore: numeric("line_zscore"),
+    modelVersion: varchar("model_version", { length: 50 }),
+    predictedAt: timestamp("predicted_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("unq_ml_player_game_market").on(table.playerId, table.gameId, table.marketId),
+    index("idx_ml_predictions_game").on(table.gameId),
+    index("idx_ml_predictions_player_game").on(table.playerId, table.gameId),
+  ]
+);
+
 export const teamDefensiveRatings = pgTable(
   "team_defensive_ratings",
   {
