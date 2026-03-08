@@ -559,7 +559,7 @@ function PropAiSection({ mlPredictions }: { mlPredictions: MlPrediction[] }) {
                   </div>
 
                   {/* The line — the number that matters */}
-                  <div className="shrink-0 text-right">
+                  <div className="shrink-0 w-12 text-right">
                     <div className="text-lg font-black text-pe-text-primary tabular-nums">
                       {ml.bookLine}
                     </div>
