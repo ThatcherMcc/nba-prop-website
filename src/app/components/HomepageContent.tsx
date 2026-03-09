@@ -112,6 +112,29 @@ export default function HomepageContent({
     <>
       <HomeHero lastUpdated={lastUpdated} />
 
+      {/* Promo banner */}
+      <a
+        href="https://app.prizepicks.com/sign-up?invite_code=PR-5RMN2FT"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block mb-8 rounded-xl border border-pe-accent/20 bg-gradient-to-r from-pe-accent/10 to-pe-surface-1 p-4 hover:border-pe-accent/40 transition-colors group"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wide text-pe-accent">Promo</span>
+            <p className="text-sm font-semibold text-pe-text-primary mt-0.5">
+              Get $25 free on PrizePicks
+            </p>
+            <p className="text-xs text-pe-text-muted mt-0.5">
+              Sign up with our code and get $25 in bonus funds when you deposit. Use code <span className="font-mono font-bold text-pe-accent">PR-5RMN2FT</span>
+            </p>
+          </div>
+          <span className="shrink-0 px-4 py-2 rounded-lg bg-pe-accent/20 text-pe-accent text-xs font-bold uppercase tracking-wide group-hover:bg-pe-accent/30 transition-colors">
+            Claim
+          </span>
+        </div>
+      </a>
+
       {hasError && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-8 text-amber-200 text-sm">
           We&apos;re having trouble loading data right now. Data updates daily at 3:00 AM ET — please try again shortly.
