@@ -28,6 +28,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.AUTH_GITHUB_SECRET!,
     }),
   ],
+  trustHost: true,
   callbacks: {
     async session({ session, user }) {
       session.user.id = user.id;
