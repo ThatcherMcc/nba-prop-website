@@ -13,10 +13,9 @@ export const authConfig: NextAuthConfig = {
     error: "/auth/error",
   },
   callbacks: {
-    authorized({ auth }) {
-      // Only used by the middleware wrapper — actual route protection
-      // logic lives in src/middleware.ts.
-      return !!auth;
+    authorized() {
+      // Always allow — route protection logic lives in src/middleware.ts.
+      return true;
     },
   },
 };
