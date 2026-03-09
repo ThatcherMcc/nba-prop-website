@@ -114,7 +114,7 @@ export default function HomepageContent({
 
       {/* Promo banner */}
       <a
-        href="https://app.prizepicks.com/sign-up?invite_code=PR-5RMN2FT"
+        href="https://prizepicks.onelink.me/FjtC/e9fwt4jw"
         target="_blank"
         rel="noopener noreferrer"
         className="block mb-8 rounded-xl border border-pe-accent/20 bg-gradient-to-r from-pe-accent/10 to-pe-surface-1 p-4 hover:border-pe-accent/40 transition-colors group"
