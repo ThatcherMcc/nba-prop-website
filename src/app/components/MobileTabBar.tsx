@@ -83,12 +83,12 @@ export default function MobileTabBar({ session }: MobileTabBarProps) {
               <Image
                 src={user.image}
                 alt={user.name ?? "Profile"}
-                width={24}
-                height={24}
-                className="rounded-full w-6 h-6 object-cover"
+                width={28}
+                height={28}
+                className="rounded-full w-7 h-7 object-cover"
               />
             ) : (
-              <span className="w-6 h-6 rounded-full bg-pe-accent/20 text-pe-accent text-xs font-bold flex items-center justify-center">
+              <span className="w-7 h-7 rounded-full bg-pe-accent/20 text-pe-accent text-xs font-bold flex items-center justify-center">
                 {(user.name ?? user.email ?? "?")[0].toUpperCase()}
               </span>
             )}
