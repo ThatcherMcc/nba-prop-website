@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getPlayerNames, getAvailableInsightWeeks } from "@/lib/data";
+import { getPlayersWithGameData, getAvailableInsightWeeks } from "@/lib/data";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://propedge.bet";
@@ -18,16 +18,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/slate`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/track-record`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/insights`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/mlb`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.7,
+    },
   ];
 
+  // Only include players who have actual game data (filters out MLB players with no stats)
   let playerPages: MetadataRoute.Sitemap = [];
   try {
-    const playerNames = await getPlayerNames();
+    const playerNames = await getPlayersWithGameData();
     playerPages = playerNames.map((name) => ({
       url: `${baseUrl}/player/${encodeURIComponent(name)}`,
       lastModified: new Date(),

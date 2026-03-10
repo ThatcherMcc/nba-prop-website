@@ -29,6 +29,28 @@ export const getPlayerNames = unstable_cache(
   { tags: ["player-data"] }
 );
 
+/**
+ * Players who actually have game stats — used for sitemap generation.
+ * Excludes MLB players (and any NBA players) with zero game logs.
+ */
+export const getPlayersWithGameData = unstable_cache(
+  async (): Promise<string[]> => {
+    try {
+      const rows = await db
+        .selectDistinct({ playerName: players.playerName })
+        .from(players)
+        .innerJoin(playerGameStats, eq(players.playerId, playerGameStats.playerId))
+        .orderBy(players.playerName);
+      return rows.map((r) => r.playerName);
+    } catch (error) {
+      console.error("Database Error (getPlayersWithGameData):", error);
+      return [];
+    }
+  },
+  ["getPlayersWithGameData"],
+  { tags: ["player-data"] }
+);
+
 /** True if a player with this name exists in `players` (case-insensitive). Used for 404 on invalid /player/[name]. */
 export const getPlayerExists = unstable_cache(
   async (playerName: string): Promise<boolean> => {

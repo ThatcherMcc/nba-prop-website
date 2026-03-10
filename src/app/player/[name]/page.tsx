@@ -10,6 +10,7 @@ import {
   getPlayerPropLines,
   getPlayerTodaysGame,
   getTeamDefensiveRatings,
+  getPlayersWithGameData,
 } from "@/lib/data";
 import PlayerPageContent from "@/app/components/PlayerPageContent";
 import { PLAYER_STAT_NAMES } from "@/db/schema";
@@ -23,10 +24,17 @@ export async function generateMetadata({
   const playerName = decodeURIComponent(encodedName);
   const canonicalUrl = `https://propedge.bet/player/${encodeURIComponent(playerName)}`;
 
+  // noindex players with no game data (e.g. MLB players before season starts)
+  const playersWithData = await getPlayersWithGameData();
+  const hasData = playersWithData.some(
+    (n) => n.toLowerCase() === playerName.toLowerCase()
+  );
+
   return {
     title: `${playerName} — Prop Trends & Stats`,
     description: `View ${playerName}'s NBA prop trends, game logs, hot streaks, and betting analytics. Updated daily with the latest stats.`,
     alternates: { canonical: canonicalUrl },
+    ...(hasData ? {} : { robots: { index: false, follow: false } }),
     openGraph: {
       title: `${playerName} — Prop Trends & Stats | PropEdge`,
       description: `View ${playerName}'s NBA prop trends, game logs, hot streaks, and betting analytics.`,
