@@ -19,8 +19,9 @@ export const teams = pgTable(
   "teams",
   {
     teamId: serial("team_id").primaryKey(),
-    teamCode: varchar("team_code", { length: 3 }).notNull().unique(),
+    teamCode: varchar("team_code", { length: 6 }).notNull().unique(),
     teamName: varchar("team_name", { length: 50 }).notNull().unique(),
+    sport: varchar("sport", { length: 10 }).default("NBA"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index("idx_team_abbr").on(table.teamCode)]
@@ -221,6 +222,22 @@ export const nbaAdvancedTeamStats = pgTable(
   },
   (table) => [
     unique("unq_adv_team_season").on(table.teamId, table.season),
+  ]
+);
+
+export const mlbParkFactors = pgTable(
+  "mlb_park_factors",
+  {
+    parkId: serial("park_id").primaryKey(),
+    teamId: integer("team_id").notNull().references(() => teams.teamId),
+    season: varchar("season", { length: 9 }).notNull(),
+    pfRuns: numeric("pf_runs"),
+    pfHr: numeric("pf_hr"),
+    pfHits: numeric("pf_hits"),
+    pfSo: numeric("pf_so"),
+  },
+  (table) => [
+    unique("unq_mlb_park_factors_team_season").on(table.teamId, table.season),
   ]
 );
 

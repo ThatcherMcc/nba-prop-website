@@ -2520,3 +2520,164 @@ export const getTeamDefensiveRatings = unstable_cache(
   ["getTeamDefensiveRatings"],
   { tags: ["player-data"] }
 );
+
+// ── MLB Data Queries ──────────────────────────────────────────────────────────
+
+export type MlbTeam = {
+  teamId: number;
+  teamCode: string;
+  teamName: string;
+};
+
+export const getMlbTeams = unstable_cache(
+  async (): Promise<MlbTeam[]> => {
+    type Row = { team_id: number; team_code: string; team_name: string };
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT team_id, team_code, team_name
+        FROM teams
+        WHERE sport = 'MLB'
+        ORDER BY team_name
+      `);
+      const rows: Row[] = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      return rows.map((r) => ({
+        teamId: Number(r.team_id),
+        teamCode: r.team_code,
+        teamName: r.team_name,
+      }));
+    } catch (error) {
+      console.error("Database Error (getMlbTeams):", error);
+      return [];
+    }
+  },
+  ["getMlbTeams"],
+  { tags: ["mlb-data"] }
+);
+
+export type MlbParkFactor = {
+  teamId: number;
+  teamCode: string;
+  teamName: string;
+  season: string;
+  pfRuns: number | null;
+  pfHr: number | null;
+  pfHits: number | null;
+  pfK: number | null;
+};
+
+export const getMlbParkFactors = unstable_cache(
+  async (): Promise<MlbParkFactor[]> => {
+    type Row = {
+      team_id: number;
+      team_code: string;
+      team_name: string;
+      season: string;
+      pf_runs: string | null;
+      pf_hr: string | null;
+      pf_hits: string | null;
+      pf_so: string | null;
+    };
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT t.team_id, t.team_code, t.team_name,
+               pf.season, pf.pf_runs, pf.pf_hr, pf.pf_hits, pf.pf_so
+        FROM mlb_park_factors pf
+        JOIN teams t ON t.team_id = pf.team_id
+        ORDER BY pf.pf_runs DESC NULLS LAST
+      `);
+      const rows: Row[] = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      return rows.map((r) => ({
+        teamId: Number(r.team_id),
+        teamCode: r.team_code,
+        teamName: r.team_name,
+        season: r.season,
+        pfRuns: r.pf_runs != null ? Number(r.pf_runs) : null,
+        pfHr: r.pf_hr != null ? Number(r.pf_hr) : null,
+        pfHits: r.pf_hits != null ? Number(r.pf_hits) : null,
+        pfK: r.pf_so != null ? Number(r.pf_so) : null,
+      }));
+    } catch (error) {
+      console.error("Database Error (getMlbParkFactors):", error);
+      return [];
+    }
+  },
+  ["getMlbParkFactors"],
+  { tags: ["mlb-data"] }
+);
+
+export const getMlbPlayerCount = unstable_cache(
+  async (): Promise<number> => {
+    type Row = { cnt: string | number };
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT COUNT(*) AS cnt FROM players WHERE url LIKE '%baseball-reference%'
+      `);
+      const rows: Row[] = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      return Number(rows[0]?.cnt ?? 0);
+    } catch (error) {
+      console.error("Database Error (getMlbPlayerCount):", error);
+      return 0;
+    }
+  },
+  ["getMlbPlayerCount"],
+  { tags: ["mlb-data"] }
+);
+
+export type MlbTeamDetail = {
+  teamId: number;
+  teamCode: string;
+  teamName: string;
+  parkFactor: MlbParkFactor | null;
+};
+
+export const getMlbTeamWithParkFactor = unstable_cache(
+  async (teamCode: string): Promise<MlbTeamDetail | null> => {
+    type Row = {
+      team_id: number;
+      team_code: string;
+      team_name: string;
+      season: string | null;
+      pf_runs: string | null;
+      pf_hr: string | null;
+      pf_hits: string | null;
+      pf_so: string | null;
+    };
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT t.team_id, t.team_code, t.team_name,
+               pf.season, pf.pf_runs, pf.pf_hr, pf.pf_hits, pf.pf_so
+        FROM teams t
+        LEFT JOIN mlb_park_factors pf ON pf.team_id = t.team_id
+        WHERE t.sport = 'MLB'
+          AND t.team_code = ${teamCode}
+        LIMIT 1
+      `);
+      const rows: Row[] = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      if (rows.length === 0) return null;
+      const r = rows[0];
+      const hasPf = r.season != null;
+      return {
+        teamId: Number(r.team_id),
+        teamCode: r.team_code,
+        teamName: r.team_name,
+        parkFactor: hasPf
+          ? {
+              teamId: Number(r.team_id),
+              teamCode: r.team_code,
+              teamName: r.team_name,
+              season: r.season!,
+              pfRuns: r.pf_runs != null ? Number(r.pf_runs) : null,
+              pfHr: r.pf_hr != null ? Number(r.pf_hr) : null,
+              pfHits: r.pf_hits != null ? Number(r.pf_hits) : null,
+              pfK: r.pf_so != null ? Number(r.pf_so) : null,
+            }
+          : null,
+      };
+    } catch (error) {
+      console.error("Database Error (getMlbTeamWithParkFactor):", error);
+      return null;
+    }
+  },
+  ["getMlbTeamWithParkFactor"],
+  { tags: ["mlb-data"] }
+);
