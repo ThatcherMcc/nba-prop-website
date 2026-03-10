@@ -666,7 +666,24 @@ export const getTopPicks = unstable_cache(
                 WHEN 'RA' THEN l.total_rebounds + l.assists
                 WHEN 'SB' THEN l.steals + l.blocks
               END > tp.book_line
-            )::int AS over_count
+            )::int AS over_count,
+            AVG(
+              CASE tp.market_code
+                WHEN 'PTS' THEN l.points
+                WHEN 'REB' THEN l.total_rebounds
+                WHEN 'AST' THEN l.assists
+                WHEN 'STL' THEN l.steals
+                WHEN 'BLK' THEN l.blocks
+                WHEN 'FG3' THEN l.three_pointers_made
+                WHEN 'FTM' THEN l.free_throws_made
+                WHEN 'TOV' THEN l.turnovers
+                WHEN 'PRA' THEN l.pts_reb_ast
+                WHEN 'PR' THEN l.points + l.total_rebounds
+                WHEN 'PA' THEN l.points + l.assists
+                WHEN 'RA' THEN l.total_rebounds + l.assists
+                WHEN 'SB' THEN l.steals + l.blocks
+              END
+            ) AS avg_last10
           FROM todays_props tp
           JOIN last_10 l ON l.player_id = tp.player_id
           GROUP BY tp.player_id, tp.market_code, tp.market_name, tp.book_line
@@ -681,9 +698,10 @@ export const getTopPicks = unstable_cache(
             h.games_checked,
             h.over_count,
             ROUND((h.over_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
+            h.avg_last10,
             ROW_NUMBER() OVER (
               PARTITION BY h.player_id
-              ORDER BY (h.over_count::numeric / h.games_checked) DESC, h.book_line DESC
+              ORDER BY (h.over_count::numeric / h.games_checked) DESC, ABS(h.avg_last10 - h.book_line) / NULLIF(h.book_line, 0) DESC
             ) AS player_rn
           FROM hit_rates h
           JOIN players p ON p.player_id = h.player_id
@@ -695,7 +713,7 @@ export const getTopPicks = unstable_cache(
           (SELECT target_date::text FROM prop_date) AS prop_date
         FROM ranked_picks
         WHERE player_rn <= 2
-        ORDER BY hit_rate DESC, book_line DESC
+        ORDER BY hit_rate DESC, ABS(avg_last10 - book_line::numeric) / NULLIF(book_line::numeric, 0) DESC
         LIMIT ${limit}
       `);
 
@@ -980,7 +998,24 @@ export const getBacktestResults = unstable_cache(
                 WHEN 'RA' THEN l.total_rebounds + l.assists
                 WHEN 'SB' THEN l.steals + l.blocks
               END < tp.book_line
-            )::int AS under_count
+            )::int AS under_count,
+            AVG(
+              CASE tp.market_code
+                WHEN 'PTS' THEN l.points
+                WHEN 'REB' THEN l.total_rebounds
+                WHEN 'AST' THEN l.assists
+                WHEN 'STL' THEN l.steals
+                WHEN 'BLK' THEN l.blocks
+                WHEN 'FG3' THEN l.three_pointers_made
+                WHEN 'FTM' THEN l.free_throws_made
+                WHEN 'TOV' THEN l.turnovers
+                WHEN 'PRA' THEN l.pts_reb_ast
+                WHEN 'PR' THEN l.points + l.total_rebounds
+                WHEN 'PA' THEN l.points + l.assists
+                WHEN 'RA' THEN l.total_rebounds + l.assists
+                WHEN 'SB' THEN l.steals + l.blocks
+              END
+            ) AS avg_last10
           FROM target_props tp
           JOIN last_10 l ON l.player_id = tp.player_id
           GROUP BY tp.player_id, tp.market_code, tp.market_name, tp.book_line, tp.game_id
@@ -990,10 +1025,11 @@ export const getBacktestResults = unstable_cache(
           SELECT p.player_name, h.player_id, h.market_code, h.market_name,
             h.book_line, h.game_id, h.games_checked, h.over_count AS pick_count,
             ROUND((h.over_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
+            h.avg_last10,
             'over'::text AS side,
             ROW_NUMBER() OVER (
               PARTITION BY h.player_id
-              ORDER BY (h.over_count::numeric / h.games_checked) DESC, h.book_line DESC
+              ORDER BY (h.over_count::numeric / h.games_checked) DESC, ABS(h.avg_last10 - h.book_line) / NULLIF(h.book_line, 0) DESC
             ) AS player_rn
           FROM hit_rates h
           JOIN players p ON p.player_id = h.player_id
@@ -1004,10 +1040,11 @@ export const getBacktestResults = unstable_cache(
           SELECT p.player_name, h.player_id, h.market_code, h.market_name,
             h.book_line, h.game_id, h.games_checked, h.under_count AS pick_count,
             ROUND((h.under_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
+            h.avg_last10,
             'under'::text AS side,
             ROW_NUMBER() OVER (
               PARTITION BY h.player_id
-              ORDER BY (h.under_count::numeric / h.games_checked) DESC, h.book_line DESC
+              ORDER BY (h.under_count::numeric / h.games_checked) DESC, ABS(h.avg_last10 - h.book_line) / NULLIF(h.book_line, 0) DESC
             ) AS player_rn
           FROM hit_rates h
           JOIN players p ON p.player_id = h.player_id
@@ -1017,16 +1054,16 @@ export const getBacktestResults = unstable_cache(
         ),
         all_picks AS (
           (SELECT player_name, player_id, market_code, market_name, book_line, game_id,
-            games_checked, pick_count, hit_rate, side
+            games_checked, pick_count, hit_rate, avg_last10, side
           FROM over_ranked WHERE player_rn <= 2
-          ORDER BY hit_rate DESC, book_line DESC
-          LIMIT 25)
+          ORDER BY hit_rate DESC, ABS(avg_last10 - book_line) / NULLIF(book_line, 0) DESC
+          LIMIT 100)
           UNION ALL
           (SELECT player_name, player_id, market_code, market_name, book_line, game_id,
-            games_checked, pick_count, hit_rate, side
+            games_checked, pick_count, hit_rate, avg_last10, side
           FROM under_ranked WHERE player_rn <= 2
-          ORDER BY hit_rate DESC, book_line DESC
-          LIMIT 25)
+          ORDER BY hit_rate DESC, ABS(avg_last10 - book_line) / NULLIF(book_line, 0) DESC
+          LIMIT 100)
         ),
         actual AS (
           SELECT DISTINCT s.player_id, s.game_id,
@@ -1038,7 +1075,7 @@ export const getBacktestResults = unstable_cache(
         ),
         with_actual AS (
           SELECT ap.player_name, ap.market_code, ap.market_name,
-            ap.book_line, ap.games_checked, ap.pick_count, ap.hit_rate, ap.side,
+            ap.book_line, ap.games_checked, ap.pick_count, ap.hit_rate, ap.avg_last10, ap.side,
             CASE ap.market_code
               WHEN 'PTS' THEN a.points
               WHEN 'REB' THEN a.total_rebounds
@@ -1069,7 +1106,7 @@ export const getBacktestResults = unstable_cache(
           END AS result,
           (SELECT dt FROM target_date)::text AS game_date
         FROM with_actual
-        ORDER BY side, hit_rate DESC, book_line DESC
+        ORDER BY side, hit_rate DESC, ABS(avg_last10 - book_line) / NULLIF(book_line, 0) DESC
       `);
 
       const rows: Row[] =
