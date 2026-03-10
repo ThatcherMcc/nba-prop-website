@@ -90,6 +90,16 @@ export default function NavBar({ session }: NavBarProps) {
               The Edge
             </Link>
             <Link
+              href="/mlb"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
+                pathname === "/mlb"
+                  ? "bg-pe-accent/20 text-pe-accent"
+                  : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
+              }`}
+            >
+              MLB
+            </Link>
+            <Link
               href="/insights"
               className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
                 pathname.startsWith("/insights")
