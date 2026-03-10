@@ -847,8 +847,10 @@ export const getUnderPicks = unstable_cache(
           FROM hit_rates h
           JOIN players p ON p.player_id = h.player_id
           WHERE h.under_count::numeric / h.games_checked >= 0.6
-            AND NOT (h.market_code IN ('BLK', 'STL') AND h.book_line <= 0.5)
             AND h.book_line > 1.5
+            AND h.market_code != 'FG3'
+            AND NOT (h.market_code IN ('BLK', 'STL', 'SB') AND h.book_line <= 1.5)
+            AND NOT (h.market_code = 'AST' AND h.book_line <= 2.5)
         )
         SELECT player_name, market_code, market_name, book_line,
           games_checked, under_count, hit_rate,
@@ -1049,8 +1051,10 @@ export const getBacktestResults = unstable_cache(
           FROM hit_rates h
           JOIN players p ON p.player_id = h.player_id
           WHERE h.under_count::numeric / h.games_checked >= 0.6
-            AND NOT (h.market_code IN ('BLK', 'STL') AND h.book_line <= 0.5)
             AND h.book_line > 1.5
+            AND h.market_code != 'FG3'
+            AND NOT (h.market_code IN ('BLK', 'STL', 'SB') AND h.book_line <= 1.5)
+            AND NOT (h.market_code = 'AST' AND h.book_line <= 2.5)
         ),
         all_picks AS (
           (SELECT player_name, player_id, market_code, market_name, book_line, game_id,
@@ -2078,8 +2082,10 @@ async function backtestForDate(targetDate: string): Promise<BacktestResult> {
         FROM hit_rates h
         JOIN players p ON p.player_id = h.player_id
         WHERE h.under_count::numeric / h.games_checked >= 0.6
-          AND NOT (h.market_code IN ('BLK', 'STL') AND h.book_line <= 0.5)
           AND h.book_line > 1.5
+          AND h.market_code != 'FG3'
+          AND NOT (h.market_code IN ('BLK', 'STL', 'SB') AND h.book_line <= 1.5)
+          AND NOT (h.market_code = 'AST' AND h.book_line <= 2.5)
       ),
       all_picks AS (
         (SELECT player_name, player_id, market_code, market_name, book_line, game_id,
