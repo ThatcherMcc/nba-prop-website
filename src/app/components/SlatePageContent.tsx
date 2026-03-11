@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { TodaysPlayer, TopPick, TeamDefensiveRating, MlPrediction } from "@/lib/data";
+import type { TodaysPlayer, TopPick, UnderPick, TeamDefensiveRating, MlPrediction } from "@/lib/data";
 import { formatRelativeTimeShort } from "./homepage-shared";
 import PickShareButton from "./PickShareButton";
 
@@ -13,6 +13,8 @@ interface SlatePageContentProps {
   defensiveRatings: TeamDefensiveRating[];
   lastUpdated: string | null;
   propDate: string | null;
+  topPicks: TopPick[];
+  underPicks: UnderPick[];
   mlPredictions: MlPrediction[];
 }
 
@@ -204,35 +206,30 @@ function ConfidenceBar({ value, isOver }: { value: number; isOver: boolean }) {
 function PlayerRow({
   player,
   picks,
-  mlPicks,
+  underPicks,
   opponentRating,
   total,
 }: {
   player: TodaysPlayer;
   picks: TopPick[];
-  mlPicks: MlPrediction[];
+  underPicks: UnderPick[];
   opponentRating: TeamDefensiveRating | null;
   total: number;
 }) {
-  const qualifiedMlPicks = mlPicks
-    .filter((ml) => ml.confidence >= 0.10)
-    .sort((a, b) => b.confidence - a.confidence)
-    .slice(0, 3);
+  const hasEdge = picks.length > 0 || underPicks.length > 0;
 
-  const hasEdge = picks.length > 0 || qualifiedMlPicks.length > 0;
-
-  const statBadges = picks.map((pick) => {
+  const overBadges = picks.map((pick) => {
     const signal = pickSignal(pick, opponentRating, total);
     return (
       <span
-        key={`${pick.marketCode}-${pick.bookLine}`}
+        key={`over-${pick.marketCode}-${pick.bookLine}`}
         className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
           pick.hitRate >= 80
             ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
             : "bg-amber-500/10 text-amber-400 border-amber-500/25"
         }`}
       >
-        {pick.marketCode} {pick.bookLine} {pick.hitRate}%
+        {pick.marketCode} O{pick.bookLine} {pick.hitRate}%
         {signal && (
           <span className={`${signal.color} font-mono`}>
             {signal.icon}{signal.label}
@@ -242,22 +239,18 @@ function PlayerRow({
     );
   });
 
-  const mlBadges = qualifiedMlPicks.map((ml) => {
-    const isOver = ml.prediction === "OVER";
-    return (
-      <span
-        key={`ml-${ml.marketCode}`}
-        className={`inline-flex items-center gap-1 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
-          isOver
-            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-            : "bg-red-500/10 text-red-400 border-red-500/25"
-        }`}
-      >
-        <span className="text-[9px] opacity-60 font-mono">AI</span>
-        {ml.prediction === "OVER" ? "O" : "U"} {ml.marketCode} {ml.bookLine}
-      </span>
-    );
-  });
+  const underBadges = underPicks.map((pick) => (
+    <span
+      key={`under-${pick.marketCode}-${pick.bookLine}`}
+      className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
+        pick.hitRate >= 80
+          ? "bg-red-500/15 text-red-400 border-red-500/30"
+          : "bg-orange-500/10 text-orange-400 border-orange-500/25"
+      }`}
+    >
+      {pick.marketCode} U{pick.bookLine} {pick.hitRate}%
+    </span>
+  ));
 
   return (
     <div
@@ -287,10 +280,8 @@ function PlayerRow({
 
       {hasEdge && (
         <div className="flex flex-wrap gap-1">
-          {statBadges}
-          {mlBadges.length > 0 && (
-            <div className="flex flex-wrap gap-1">{mlBadges}</div>
-          )}
+          {overBadges}
+          {underBadges}
         </div>
       )}
     </div>
@@ -310,7 +301,7 @@ function TeamColumn({
   teamCode,
   players,
   topPicks,
-  mlPredictions,
+  underPicks,
   opponentRating,
   opponentCode,
   total,
@@ -318,7 +309,7 @@ function TeamColumn({
   teamCode: string;
   players: TodaysPlayer[];
   topPicks: TopPick[];
-  mlPredictions: MlPrediction[];
+  underPicks: UnderPick[];
   opponentRating: TeamDefensiveRating | null;
   opponentCode: string;
   total: number;
@@ -374,17 +365,17 @@ function TeamColumn({
       {/* Player rows */}
       {players.map((player) => {
         const picksForPlayer = topPicks.filter(
-          (p) => p.playerName === player.playerName
+          (p) => p.playerName === player.playerName && p.playingToday
         );
-        const mlPicksForPlayer = mlPredictions.filter(
-          (ml) => ml.playerName === player.playerName
+        const underPicksForPlayer = underPicks.filter(
+          (p) => p.playerName === player.playerName && p.playingToday
         );
         return (
           <PlayerRow
             key={player.playerName}
             player={player}
             picks={picksForPlayer}
-            mlPicks={mlPicksForPlayer}
+            underPicks={underPicksForPlayer}
             opponentRating={opponentRating}
             total={total}
           />
@@ -399,14 +390,14 @@ function TeamColumn({
 function GameCard({
   group,
   topPicks,
-  mlPredictions,
+  underPicks,
   defensiveRatings,
   defaultOpen,
   forceOpen,
 }: {
   group: GameGroup;
   topPicks: TopPick[];
-  mlPredictions: MlPrediction[];
+  underPicks: UnderPick[];
   defensiveRatings: TeamDefensiveRating[];
   defaultOpen: boolean;
   forceOpen: boolean | null;
@@ -451,7 +442,7 @@ function GameCard({
               teamCode={group.awayTeam}
               players={away}
               topPicks={topPicks}
-              mlPredictions={mlPredictions}
+              underPicks={underPicks}
               opponentRating={homeRating}
               opponentCode={group.homeTeam}
               total={total}
@@ -462,7 +453,7 @@ function GameCard({
               teamCode={group.homeTeam}
               players={home}
               topPicks={topPicks}
-              mlPredictions={mlPredictions}
+              underPicks={underPicks}
               opponentRating={awayRating}
               opponentCode={group.awayTeam}
               total={total}
@@ -614,11 +605,17 @@ export default function SlatePageContent({
   defensiveRatings,
   lastUpdated,
   propDate,
+  topPicks,
+  underPicks,
   mlPredictions,
 }: SlatePageContentProps) {
   const gameGroups = groupPlayersByGame(todaysPlayers);
   const hasGames = gameGroups.length > 0;
   const [allOpen, setAllOpen] = useState<boolean | null>(null);
+
+  const analyticsPickCount =
+    topPicks.filter((p) => p.playingToday).length +
+    underPicks.filter((p) => p.playingToday).length;
 
   return (
     <div className="w-full">
@@ -651,6 +648,12 @@ export default function SlatePageContent({
         <span className="text-pe-text-muted font-bold">{gameGroups.length}</span> games
         <span className="text-pe-border/20 select-none hidden sm:inline">&middot;</span>
         <span className="hidden sm:inline"><span className="text-pe-text-muted font-bold">{todaysPlayers.length}</span> players</span>
+        {analyticsPickCount > 0 && (
+          <>
+            <span className="text-pe-border/20 select-none">&middot;</span>
+            <span><span className="text-emerald-400 font-bold">{analyticsPickCount}</span> edges</span>
+          </>
+        )}
         {mlPredictions.length > 0 && (
           <>
             <span className="text-pe-border/20 select-none">&middot;</span>
@@ -686,8 +689,8 @@ export default function SlatePageContent({
             <GameCard
               key={group.matchupKey}
               group={group}
-              topPicks={[]}
-              mlPredictions={mlPredictions}
+              topPicks={topPicks}
+              underPicks={underPicks}
               defensiveRatings={defensiveRatings}
               defaultOpen={i < 3}
               forceOpen={allOpen}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
   getTodaysPlayers,
   getTopPicks,
+  getUnderPicks,
   getTeamDefensiveRatings,
   getLastDataUpdate,
   getMlPredictions,
@@ -92,16 +93,21 @@ export default async function SlatePage() {
     picks: [],
     propDate: null,
   };
+  let underPicks: Awaited<ReturnType<typeof getUnderPicks>> = {
+    picks: [],
+    propDate: null,
+  };
   let defensiveRatings: Awaited<ReturnType<typeof getTeamDefensiveRatings>> =
     [];
   let lastUpdated: string | null = null;
   let mlPredictions: Awaited<ReturnType<typeof getMlPredictions>> = [];
 
   try {
-    [todaysPlayers, topPicks, defensiveRatings, lastUpdated, mlPredictions] =
+    [todaysPlayers, topPicks, underPicks, defensiveRatings, lastUpdated, mlPredictions] =
       await Promise.all([
         getTodaysPlayers(),
         getTopPicks(50),
+        getUnderPicks(50),
         getTeamDefensiveRatings(),
         getLastDataUpdate(),
         getMlPredictions(),
@@ -116,6 +122,8 @@ export default async function SlatePage() {
       defensiveRatings={defensiveRatings}
       lastUpdated={lastUpdated}
       propDate={topPicks.propDate}
+      topPicks={topPicks.picks}
+      underPicks={underPicks.picks}
       mlPredictions={mlPredictions}
     />
   );
