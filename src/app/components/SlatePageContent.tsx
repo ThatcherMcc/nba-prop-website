@@ -476,7 +476,7 @@ function PropAiSection({
 
   // Top 20 picks by confidence, max 2 per player
   const sorted = mlPredictions
-    .filter((ml) => ml.confidence >= 0.10)
+    .filter((ml) => ml.confidence >= 0.20)
     .sort((a, b) => b.confidence - a.confidence);
   const top20: typeof sorted = [];
   const playerCount = new Map<string, number>();
@@ -657,7 +657,7 @@ export default function SlatePageContent({
         {mlPredictions.length > 0 && (
           <>
             <span className="text-pe-border/20 select-none">&middot;</span>
-            <span><span className="text-blue-400 font-bold">{Math.min(mlPredictions.filter((ml) => ml.confidence >= 0.10).length, 20)}</span> AI picks</span>
+            <span><span className="text-blue-400 font-bold">{Math.min(mlPredictions.filter((ml) => ml.confidence >= 0.20).length, 20)}</span> AI picks</span>
           </>
         )}
         <span className="ml-auto text-pe-text-faint">
