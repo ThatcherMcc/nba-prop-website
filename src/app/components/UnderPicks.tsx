@@ -41,6 +41,22 @@ function getStatColor(code: string) {
   return STAT_COLORS[code] ?? "bg-zinc-500/15 text-zinc-400 border-zinc-500/30";
 }
 
+const MARKET_TO_DEF_LABEL: Record<string, string> = {
+  PTS: "PPG",
+  REB: "RPG",
+  AST: "APG",
+  STL: "SPG",
+  BLK: "BPG",
+  FG3: "3PM",
+  FTM: "FTM",
+  TOV: "TOPG",
+  PRA: "PRA",
+  PR: "PR",
+  PA: "PA",
+  RA: "RA",
+  SB: "SB",
+};
+
 const MOBILE_COLLAPSED = 5;
 const DESKTOP_COLLAPSED = 10;
 
@@ -98,9 +114,16 @@ export default function UnderPicks({ picks, propDate, onSelectPlayer }: Props) {
                   }
                 >
                   <td className="py-4 md:py-3 px-4">
-                    <span className="text-base md:text-sm font-bold text-pe-text-primary">
-                      {p.playerName}
-                    </span>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-base md:text-sm font-bold text-pe-text-primary">
+                        {p.playerName}
+                      </span>
+                      {p.opponentCode && p.opponentDefenseValue != null && p.opponentDefenseRank != null && (
+                        <span className="text-[11px] text-pe-text-faint font-mono">
+                          vs {p.opponentCode} • {p.opponentDefenseValue.toFixed(1)} {MARKET_TO_DEF_LABEL[p.marketCode] ?? "allowed"} • {p.opponentDefenseRank}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="py-4 md:py-3 px-3">
                     <span
