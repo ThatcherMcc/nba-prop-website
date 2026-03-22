@@ -198,155 +198,6 @@ function rowToPlayerGameLog(
   };
 }
 
-function getCurrentSeasonYear(): number {
-  const now = new Date();
-  return now.getMonth() <= 8 ? now.getFullYear() : now.getFullYear() + 1;
-}
-
-function normalizeGameLogUrl(url: string): string {
-  const seasonYear = getCurrentSeasonYear();
-  if (/\/players\/[a-z]\/[^/]+\.html$/.test(url)) {
-    return url.replace(/\.html$/, `/gamelog/${seasonYear}`);
-  }
-  if (/\/gamelog\/\d{4}$/.test(url)) {
-    return url.replace(/\/gamelog\/\d{4}$/, `/gamelog/${seasonYear}`);
-  }
-  if (url.endsWith("/gamelog")) {
-    return `${url}/${seasonYear}`;
-  }
-  return url;
-}
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&nbsp;/g, " ")
-    .trim();
-}
-
-function parseStatNumber(value: string): number | null {
-  if (!value) return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
-function parseDateCell(cellHtml: string, cellText: string): string | null {
-  const csk = cellHtml.match(/csk="(\d{8})"/)?.[1];
-  if (csk) {
-    return `${csk.slice(0, 4)}-${csk.slice(4, 6)}-${csk.slice(6, 8)}`;
-  }
-
-  const parsed = new Date(cellText);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toISOString().slice(0, 10);
-}
-
-async function fetchLivePlayerGameData(
-  playerUrl: string,
-  playerName: string,
-  limit: number
-): Promise<PlayerGameLog[]> {
-  const response = await fetch(normalizeGameLogUrl(playerUrl), {
-    cache: "no-store",
-    headers: {
-      "User-Agent": "Mozilla/5.0",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Live gamelog fetch failed: ${response.status}`);
-  }
-
-  const html = await response.text();
-  const tableMatch = html.match(
-    /<table[^>]*id="player_game_log_reg"[\s\S]*?<\/table>/
-  );
-  if (!tableMatch) return [];
-
-  const rows = Array.from(tableMatch[0].matchAll(/<tr[\s\S]*?<\/tr>/g));
-  const liveRows: PlayerGameLog[] = [];
-
-  for (const rowMatch of rows) {
-    const rowHtml = rowMatch[0];
-    if (rowHtml.includes('class="thead"')) continue;
-
-    const cells = Array.from(
-      rowHtml.matchAll(/<t[dh][^>]*data-stat="([^"]+)"([^>]*)>([\s\S]*?)<\/t[dh]>/g)
-    );
-    if (cells.length === 0) continue;
-
-    const byStat = new Map<string, { attrs: string; html: string; text: string }>();
-    for (const [, stat, attrs, innerHtml] of cells) {
-      byStat.set(stat, {
-        attrs,
-        html: innerHtml,
-        text: stripHtml(innerHtml),
-      });
-    }
-
-    const ranker = byStat.get("ranker")?.text ?? "";
-    if (!ranker || Number.isNaN(Number(ranker))) continue;
-
-    const dateCell = byStat.get("date") ?? byStat.get("date_game");
-    const gameDate = dateCell
-      ? parseDateCell(`${dateCell.attrs}>${dateCell.html}`, dateCell.text)
-      : null;
-    if (!gameDate) continue;
-
-    const locationText = byStat.get("game_location")?.text ?? "";
-    const opponent =
-      byStat.get("opp_name_abbr")?.text ?? byStat.get("opp_id")?.text ?? null;
-    const mp = byStat.get("mp")?.text || null;
-    const pts = parseStatNumber(byStat.get("pts")?.text ?? "");
-    const trb = parseStatNumber(byStat.get("trb")?.text ?? "");
-    const ast = parseStatNumber(byStat.get("ast")?.text ?? "");
-    const stl = parseStatNumber(byStat.get("stl")?.text ?? "");
-    const blk = parseStatNumber(byStat.get("blk")?.text ?? "");
-
-    liveRows.push({
-      playerName,
-      gameDate,
-      location: locationText === "@" ? "@" : "",
-      opponent,
-      mp,
-      fg: parseStatNumber(byStat.get("fg")?.text ?? ""),
-      fga: parseStatNumber(byStat.get("fga")?.text ?? ""),
-      fgPct: parseStatNumber(byStat.get("fg_pct")?.text ?? ""),
-      fg3: parseStatNumber(byStat.get("fg3")?.text ?? ""),
-      fg3a: parseStatNumber(byStat.get("fg3a")?.text ?? ""),
-      fg3Pct: parseStatNumber(byStat.get("fg3_pct")?.text ?? ""),
-      fg2: parseStatNumber(byStat.get("fg2")?.text ?? ""),
-      fg2a: parseStatNumber(byStat.get("fg2a")?.text ?? ""),
-      fg2Pct: parseStatNumber(byStat.get("fg2_pct")?.text ?? ""),
-      efgPct: parseStatNumber(byStat.get("efg_pct")?.text ?? ""),
-      ft: parseStatNumber(byStat.get("ft")?.text ?? ""),
-      fta: parseStatNumber(byStat.get("fta")?.text ?? ""),
-      ftPct: parseStatNumber(byStat.get("ft_pct")?.text ?? ""),
-      orb: parseStatNumber(byStat.get("orb")?.text ?? ""),
-      drb: parseStatNumber(byStat.get("drb")?.text ?? ""),
-      trb,
-      ast,
-      stl,
-      blk,
-      tov: parseStatNumber(byStat.get("tov")?.text ?? ""),
-      pts,
-      pra:
-        pts != null && trb != null && ast != null ? pts + trb + ast : null,
-      pr: pts != null && trb != null ? pts + trb : null,
-      pa: pts != null && ast != null ? pts + ast : null,
-      ra: trb != null && ast != null ? trb + ast : null,
-      sb: stl != null && blk != null ? stl + blk : null,
-    });
-  }
-
-  return liveRows
-    .sort((a, b) => (b.gameDate ?? "").localeCompare(a.gameDate ?? ""))
-    .slice(0, limit);
-}
-
 /** Most recent game (by date) for the player; used to show "Last game: DNP" when excluded from averages. */
 export type PlayerLastGameStatus = {
   lastGameDate: string | null;
@@ -391,7 +242,7 @@ export const getPlayerData = unstable_cache(
   async (playerName: string, limit = 20): Promise<PlayerGameLog[]> => {
     try {
       const [player] = await db
-        .select({ playerId: players.playerId, url: players.url })
+        .select({ playerId: players.playerId })
         .from(players)
         .where(eq(sql`lower(${players.playerName})`, playerName.toLowerCase()))
         .limit(1);
@@ -445,7 +296,7 @@ export const getPlayerData = unstable_cache(
         .orderBy(desc(games.gameDate))
         .limit(limit);
 
-      const dbRows = rows.map((r) =>
+      return rows.map((r) =>
         rowToPlayerGameLog({
           ...r,
           playerName: r.playerName ?? "",
@@ -453,26 +304,6 @@ export const getPlayerData = unstable_cache(
           opponentCode: r.opponentCode,
         })
       );
-
-      if (!player.url) return dbRows;
-
-      const dbLatestGameDate = dbRows[0]?.gameDate ?? null;
-
-      try {
-        const liveRows = await fetchLivePlayerGameData(player.url, playerName, limit);
-        const liveLatestGameDate = liveRows[0]?.gameDate ?? null;
-
-        if (
-          liveLatestGameDate &&
-          (!dbLatestGameDate || liveLatestGameDate > dbLatestGameDate)
-        ) {
-          return liveRows;
-        }
-      } catch (error) {
-        console.warn(`Live player fallback failed for ${playerName}:`, error);
-      }
-
-      return dbRows;
     } catch (error) {
       console.error("Database Error:", error);
       return [];
