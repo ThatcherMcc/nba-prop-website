@@ -14,7 +14,6 @@ const staticTabs = [
   { key: "home", label: "Home", href: "/", icon: "\u2302" },
   { key: "analytics", label: "Analytics", href: "/analytics", icon: "\u{1F4CA}" },
   { key: "search", label: "Search", href: null, icon: "\u{1F50D}" },
-  { key: "trending", label: "Trending", href: "/#trending", icon: "\u{1F525}" },
 ] as const;
 
 export default function MobileTabBar({ session }: MobileTabBarProps) {
