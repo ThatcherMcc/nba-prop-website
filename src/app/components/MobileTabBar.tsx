@@ -13,8 +13,8 @@ interface MobileTabBarProps {
 const staticTabs = [
   { key: "home", label: "Home", href: "/", icon: "\u2302" },
   { key: "analytics", label: "Analytics", href: "/analytics", icon: "\u{1F4CA}" },
-  { key: "slate", label: "The Edge", href: "/slate", icon: "\u{1F3C0}" },
   { key: "search", label: "Search", href: null, icon: "\u{1F50D}" },
+  { key: "trending", label: "Trending", href: "/#trending", icon: "\u{1F525}" },
 ] as const;
 
 export default function MobileTabBar({ session }: MobileTabBarProps) {
@@ -35,9 +35,7 @@ export default function MobileTabBar({ session }: MobileTabBarProps) {
               ? pathname === "/"
               : tab.key === "analytics"
                 ? pathname === "/analytics"
-                : tab.key === "slate"
-                  ? pathname === "/slate" || pathname === "/track-record"
-                  : false;
+                : false;
 
           if (tab.key === "search") {
             return (

@@ -11,13 +11,10 @@ import type {
   BacktestResult,
 } from "@/lib/data";
 import HomeHero from "./HomeHero";
-import BacktestResults from "./BacktestResults";
 import OverSeasonAvgLast5 from "./OverSeasonAvgLast5";
 import ColdLast5 from "./ColdLast5";
 import TrendingPlayers from "./TrendingPlayers";
 import FeaturedPlayer from "./FeaturedPlayer";
-import TopPicks from "./TopPicks";
-import UnderPicks from "./UnderPicks";
 import { useThemeLayout } from "./ThemeLayoutContext";
 import HomepageLayoutSpotlight from "./HomepageLayoutSpotlight";
 import HomepageLayoutEditorial from "./HomepageLayoutEditorial";
@@ -44,10 +41,6 @@ export default function HomepageContent({
   overSeasonAvgLast5 = [],
   underSeasonAvgLast5 = [],
   trendingPlayers = [],
-  topPicks = [],
-  underPicks = [],
-  propDate = null,
-  backtestResults = { gameDate: "", picks: [] },
   lastUpdated = null,
   hasError = false,
 }: {
@@ -56,10 +49,6 @@ export default function HomepageContent({
   overSeasonAvgLast5?: OverSeasonAvgLast5Type[];
   underSeasonAvgLast5?: UnderSeasonAvgLast5[];
   trendingPlayers?: TrendingPlayer[];
-  topPicks?: TopPick[];
-  underPicks?: UnderPick[];
-  propDate?: string | null;
-  backtestResults?: BacktestResult;
   lastUpdated?: string | null;
   hasError?: boolean;
 }) {
@@ -80,8 +69,6 @@ export default function HomepageContent({
   };
 
   const allDataEmpty =
-    topPicks.length === 0 &&
-    underPicks.length === 0 &&
     overSeasonAvgLast5.length === 0 &&
     underSeasonAvgLast5.length === 0 &&
     trendingPlayers.length === 0;
@@ -92,10 +79,10 @@ export default function HomepageContent({
     overSeasonAvgLast5,
     underSeasonAvgLast5,
     trendingPlayers,
-    topPicks,
-    underPicks,
-    propDate,
-    backtestResults,
+    topPicks: [],
+    underPicks: [],
+    propDate: null,
+    backtestResults: { gameDate: "", picks: [] },
     lastUpdated,
     hasError,
   };
@@ -143,27 +130,9 @@ export default function HomepageContent({
 
       {!hasError && allDataEmpty && (
         <div className="bg-pe-surface-2/50 border border-pe-border/5 rounded-xl p-6 mb-8 text-center text-pe-text-muted text-sm">
-          No games scheduled today. Check back tomorrow for fresh picks.
+          No player trends are available right now. Check back after the next data refresh.
         </div>
       )}
-
-      <TopPicks
-        picks={topPicks}
-        propDate={propDate}
-        onSelectPlayer={(name, stat, line) =>
-          goToPlayer(name, 10, stat, line ?? undefined)
-        }
-      />
-
-      <UnderPicks
-        picks={underPicks}
-        propDate={propDate}
-        onSelectPlayer={(name, stat, line) =>
-          goToPlayer(name, 10, stat, line ?? undefined)
-        }
-      />
-
-      <BacktestResults data={backtestResults} />
 
       <OverSeasonAvgLast5
         players={overSeasonAvgLast5}
