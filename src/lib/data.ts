@@ -5,6 +5,8 @@ import { eq, desc, sql, gte, and } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { FALLBACK_PLAYER_NAMES } from "@/lib/playerNames";
 
+const PLAYER_DATA_CACHE = { tags: ["player-data"], revalidate: 900 } as const;
+
 /**
  * Canonical list of player names from Neon `players` table (source of truth).
  * Used for search suggestions and validation. Cached with tag "player-data";
@@ -26,7 +28,7 @@ export const getPlayerNames = unstable_cache(
     }
   },
   ["getPlayerNames"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 /**
@@ -48,7 +50,7 @@ export const getPlayersWithGameData = unstable_cache(
     }
   },
   ["getPlayersWithGameData"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 /** True if a player with this name exists in `players` (case-insensitive). Used for 404 on invalid /player/[name]. */
@@ -67,7 +69,7 @@ export const getPlayerExists = unstable_cache(
     }
   },
   ["getPlayerExists"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // Only include games where the player actually played (exclude DNP).
@@ -117,7 +119,7 @@ export const getTopScorersLastGame = unstable_cache(
     }
   },
   ["getTopScorersLastGame"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 function toNum(v: string | number | null | undefined): number | null {
@@ -233,7 +235,7 @@ export const getPlayerLastGameStatus = unstable_cache(
     }
   },
   ["getPlayerLastGameStatus"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 export const getPlayerData = unstable_cache(
@@ -308,7 +310,7 @@ export const getPlayerData = unstable_cache(
     }
   },
   ["getPlayerData"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 export type HotScorer = {
@@ -345,7 +347,7 @@ export const getTopScorersLast7Days = unstable_cache(
     }
   },
   ["getTopScorersLast7Days"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Over season average in last 5 games (points) ---
@@ -459,7 +461,7 @@ export const getPlayersOverSeasonAvgLast5 = unstable_cache(
     }
   },
   ["getPlayersOverSeasonAvgLast5"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Under season average in last 5 games (points) — "Cold last 5" ---
@@ -584,7 +586,7 @@ export const getPlayersUnderSeasonAvgLast5 = unstable_cache(
     }
   },
   ["getPlayersUnderSeasonAvgLast5"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Trending: last 3 games avg vs previous 3 games avg (points) ---
@@ -875,7 +877,7 @@ export const getTopPicks = unstable_cache(
     }
   },
   ["getTopPicks"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Under Picks: players most likely to go UNDER today's book lines ---
@@ -1133,7 +1135,7 @@ export const getUnderPicks = unstable_cache(
     }
   },
   ["getUnderPicks"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Backtest: check how yesterday's picks actually performed ---
@@ -1387,7 +1389,7 @@ export const getBacktestResults = unstable_cache(
     }
   },
   ["getBacktestResults"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- ML Backtest: graded ML model predictions ---
@@ -1547,7 +1549,7 @@ export const getMlBacktestResults = unstable_cache(
     }
   },
   ["getMlBacktestResults"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Home/Away splits for a player (full season) ---
@@ -1641,7 +1643,7 @@ export const getPlayerSplits = unstable_cache(
     }
   },
   ["getPlayerSplits"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Matchup averages per opponent team (full season) ---
@@ -1721,7 +1723,7 @@ export const getPlayerMatchups = unstable_cache(
     }
   },
   ["getPlayerMatchups"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 export const getTrendingPlayers = unstable_cache(
@@ -1818,7 +1820,7 @@ export const getTrendingPlayers = unstable_cache(
     }
   },
   ["getTrendingPlayers"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Player prop lines from sportsbook data ---
@@ -1900,7 +1902,7 @@ export const getPlayerPropLines = unstable_cache(
     }
   },
   ["getPlayerPropLines"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Today's game info for a specific player ---
@@ -1991,7 +1993,7 @@ export const getPlayerTodaysGame = unstable_cache(
     }
   },
   ["getPlayerTodaysGame"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Today's players with their key prop lines ---
@@ -2076,7 +2078,7 @@ export const getTodaysPlayers = unstable_cache(
     }
   },
   ["getTodaysPlayers"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 /**
@@ -2099,7 +2101,7 @@ export const getLastDataUpdate = unstable_cache(
     }
   },
   ["getLastDataUpdate"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- ML Predictions ---
@@ -2176,7 +2178,7 @@ export const getMlPredictions = unstable_cache(
     }
   },
   ["getMlPredictions"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Weekly Insights ("The Edge") ---
@@ -2454,7 +2456,7 @@ export const getAvailableInsightWeeks = unstable_cache(
     }
   },
   ["getAvailableInsightWeeks"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 /** Full weekly recap: run backtest for each game date in the week, aggregate results */
@@ -2551,7 +2553,7 @@ export const getWeeklyRecap = unstable_cache(
     }
   },
   ["getWeeklyRecap"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 /** Players who outperformed their season average during the given week */
@@ -2613,7 +2615,7 @@ export const getWeeklyHotPlayers = unstable_cache(
     }
   },
   ["getWeeklyHotPlayers"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 /** Players who underperformed their season average during the given week */
@@ -2675,7 +2677,7 @@ export const getWeeklyColdPlayers = unstable_cache(
     }
   },
   ["getWeeklyColdPlayers"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // --- Team defensive ratings (opponent weakness overlay) ---
@@ -2768,7 +2770,7 @@ export const getTeamDefensiveRatings = unstable_cache(
     }
   },
   ["getTeamDefensiveRatings"],
-  { tags: ["player-data"] }
+  PLAYER_DATA_CACHE
 );
 
 // ── MLB Data Queries ──────────────────────────────────────────────────────────
