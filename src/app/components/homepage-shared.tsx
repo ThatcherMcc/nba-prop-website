@@ -191,7 +191,7 @@ export function PickOfTheDayHero({
         <span className="text-xs font-bold uppercase tracking-widest text-pe-text-faint">
           Pick of the Day
         </span>
-        <span className="text-[10px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full uppercase tracking-wide">
+        <span className="text-[10px] font-bold bg-[#e4c661]/14 text-[#f3dd97] px-2 py-0.5 rounded-full uppercase tracking-wide">
           {formatPropDate(propDate)}
         </span>
       </div>
@@ -199,10 +199,10 @@ export function PickOfTheDayHero({
       <button
         type="button"
         onClick={() => goToPlayer(pick.playerName, 10, statKey, pick.bookLine)}
-        className="w-full text-left rounded-2xl bg-pe-surface-1 border border-pe-border/10 overflow-hidden transition-all hover:border-emerald-500/30 hover:bg-emerald-500/5 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 cursor-pointer group"
+        className="w-full text-left rounded-2xl bg-pe-surface-1 border border-pe-border/10 overflow-hidden transition-all hover:border-[#e4c661]/30 hover:bg-white/[0.02] focus:outline-none focus:ring-2 focus:ring-[#e4c661]/30 cursor-pointer group"
         aria-label={`Analyze ${pick.playerName} — ${pick.marketName} Over ${pick.bookLine}`}
       >
-        <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-500" />
+        <div className="h-1 w-full bg-gradient-to-r from-[#cfa73e] via-[#e4c661] to-[#f3dd97]" />
         <div className="px-5 py-5 sm:px-6">
           {/* Single row: name + stat/line | hit rate + bar */}
           <div className="flex items-center gap-4">
@@ -284,7 +284,7 @@ export function EdgeCard({
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
           isOver
             ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-            : "bg-sky-500/15 text-sky-400 border-sky-500/30"
+            : "bg-red-500/15 text-red-400 border-red-500/30"
         }`}>
           {isOver ? "OVER" : "UNDER"}
         </span>

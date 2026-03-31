@@ -15,124 +15,113 @@ export default function NavBar({ session }: NavBarProps) {
   const { openPalette } = useCommandPalette();
 
   const user = session?.user;
+  const links = [
+    { href: "/", label: "Home", active: pathname === "/" },
+    { href: "/analytics", label: "Analytics", active: pathname === "/analytics" },
+    {
+      href: "/slate",
+      label: "Slate",
+      active: pathname === "/slate" || pathname === "/track-record",
+    },
+    { href: "/mlb", label: "MLB", active: pathname === "/mlb" },
+    {
+      href: "/insights",
+      label: "Insights",
+      active: pathname.startsWith("/insights"),
+    },
+  ];
+
+  const navLinkClass = (active: boolean) =>
+    active
+      ? "rounded-full border border-[#e4c661]/24 bg-[#e4c661]/10 px-3 py-2 text-[#f3dd97] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+      : "rounded-full border border-transparent px-3 py-2 text-pe-text-muted hover:border-white/8 hover:bg-white/[0.02] hover:text-pe-text-primary";
 
   return (
-    <nav className="border-b border-pe-border/10 bg-pe-bg/80 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-16 flex items-center justify-between gap-3 md:gap-4">
-        {/* Left: logo */}
-        <div className="flex items-center shrink-0">
-          <Link
-            href="/"
-            className="text-lg md:text-xl font-black tracking-tighter flex items-center gap-2"
-          >
-            <span className="bg-pe-accent-strong p-1 md:p-1.5 rounded-lg text-xs md:text-sm">
-              &#127936;
-            </span>
-            PROP<span className="text-pe-accent">EDGE</span>
-          </Link>
-        </div>
+    <nav className="sticky top-0 z-50 border-b border-transparent bg-transparent backdrop-blur-0">
+      <div className="mx-auto max-w-[1600px] px-4 py-3 md:px-6 md:py-4 lg:px-8">
+        <div className="rounded-[1.45rem] border border-white/8 bg-[rgba(6,7,8,0.94)] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl md:px-6 md:py-0">
+          <div className="flex items-center justify-between gap-4 md:h-16 md:gap-6">
+            <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-none md:gap-0">
+              <Link href="/" className="group flex shrink-0 items-center gap-3 text-pe-text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d6b470]/38 bg-[#d6b470]/9 text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[#f4dfb1] shadow-[0_0_18px_rgba(214,182,112,0.14)]">
+                  PE
+                </span>
+                <span className="hidden text-[1.05rem] font-semibold uppercase tracking-[0.32em] md:inline md:text-[1.15rem]">
+                  PropEdge
+                </span>
+              </Link>
 
-        {/* Center: search bar (desktop) */}
-        <button
-          type="button"
-          onClick={openPalette}
-          className="hidden md:flex flex-1 max-w-xl bg-pe-surface-1 border border-pe-border/10 rounded-xl px-4 py-2.5 text-sm text-pe-text-faint text-left cursor-pointer hover:border-pe-border/20 transition-colors items-center gap-3"
-        >
-          <span>&#128269;</span>
-          <span className="flex-1 truncate">Search players...</span>
-          <kbd className="inline-flex items-center gap-0.5 rounded border border-pe-border/10 bg-pe-surface-2 px-1.5 py-0.5 text-xs text-pe-text-faint">
-            <span className="text-xs">&#8984;</span>K
-          </kbd>
-        </button>
-
-        {/* Right: nav tabs + mobile search */}
-        <div className="flex items-center gap-2">
-          {/* Mobile search icon */}
-          <button
-            type="button"
-            onClick={openPalette}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-pe-surface-1 border border-pe-border/10 text-pe-text-muted active:bg-pe-surface-2 transition-colors"
-            aria-label="Search players"
-          >
-            <span className="text-base">&#128269;</span>
-          </button>
-
-          {/* Desktop tab pills */}
-          <div className="hidden sm:flex items-center gap-1 bg-pe-surface-1 border border-pe-border/10 rounded-xl p-1">
-            <Link
-              href="/"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
-                pathname === "/"
-                  ? "bg-pe-accent/20 text-pe-accent"
-                  : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
-              }`}
-            >
-              Home
-            </Link>
-            <Link
-              href="/analytics"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
-                pathname === "/analytics"
-                  ? "bg-pe-accent/20 text-pe-accent"
-                  : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
-              }`}
-            >
-              Analytics
-            </Link>
-            <Link
-              href="/mlb"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
-                pathname === "/mlb"
-                  ? "bg-pe-accent/20 text-pe-accent"
-                  : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
-              }`}
-            >
-              MLB
-            </Link>
-            <Link
-              href="/insights"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${
-                pathname.startsWith("/insights")
-                  ? "bg-pe-accent/20 text-pe-accent"
-                  : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
-              }`}
-            >
-              Insights
-            </Link>
-
-            {/* Profile / Sign In */}
-            {user ? (
-              <Link
-                href="/profile"
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
-                  pathname === "/profile"
-                    ? "bg-pe-accent/20 text-pe-accent"
-                    : "text-pe-text-muted hover:text-pe-text-primary hover:bg-pe-surface-2/60"
-                }`}
-                aria-label="Profile"
+              <button
+                type="button"
+                onClick={openPalette}
+                className="shell-panel-soft flex min-w-0 flex-1 items-center gap-3 rounded-full px-4 py-2.5 text-left text-sm text-pe-text-faint md:hidden"
+                aria-label="Search players"
               >
-                {user.image ? (
-                  <Image
-                    src={user.image}
-                    alt={user.name ?? "Profile"}
-                    width={32}
-                    height={32}
-                    className="rounded-full w-8 h-8 object-cover"
-                  />
+                <span className="text-pe-text-secondary">&#128269;</span>
+                <span className="flex-1 truncate">Search players or markets</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={openPalette}
+              className="shell-panel-soft hidden flex-1 items-center gap-3 rounded-full px-5 py-3 text-left text-sm text-pe-text-faint md:flex md:max-w-xl"
+            >
+              <span className="text-pe-text-secondary">&#128269;</span>
+              <span className="flex-1 truncate">Search a player, market, or matchup</span>
+              <kbd className="rounded-full border border-white/10 px-2 py-1 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-pe-text-muted">
+                Cmd K
+              </kbd>
+            </button>
+
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="hidden items-center gap-6 lg:flex">
+                {links.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`text-[0.72rem] font-medium uppercase tracking-[0.24em] transition-colors ${navLinkClass(link.active)}`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                {user ? (
+                  <Link
+                    href="/profile"
+                    className={`shell-panel-soft flex items-center gap-2 rounded-full px-2 py-1.5 ${
+                      pathname === "/profile"
+                        ? "border-pe-accent/30 text-pe-accent"
+                        : "text-pe-text-muted hover:text-pe-text-primary"
+                    }`}
+                    aria-label="Profile"
+                  >
+                    {user.image ? (
+                      <Image
+                        src={user.image}
+                        alt={user.name ?? "Profile"}
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pe-accent/20 text-sm font-bold text-pe-accent">
+                        {(user.name ?? user.email ?? "?")[0].toUpperCase()}
+                      </span>
+                    )}
+                    <span className="pr-2 text-[0.68rem] uppercase tracking-[0.22em]">
+                      Profile
+                    </span>
+                  </Link>
                 ) : (
-                  <span className="w-8 h-8 rounded-full bg-pe-accent/20 text-pe-accent text-sm font-bold flex items-center justify-center">
-                    {(user.name ?? user.email ?? "?")[0].toUpperCase()}
-                  </span>
+                  <Link
+                    href="/auth/sign-in"
+                    className="rounded-full border border-[#d6b470]/28 bg-[#d6b470]/10 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-[#f4dfb1] hover:bg-[#d6b470]/16"
+                  >
+                    Sign In
+                  </Link>
                 )}
-              </Link>
-            ) : (
-              <Link
-                href="/auth/sign-in"
-                className="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors bg-pe-accent/20 text-pe-accent hover:bg-pe-accent/30"
-              >
-                Sign In
-              </Link>
-            )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

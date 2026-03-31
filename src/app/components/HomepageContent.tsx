@@ -9,6 +9,7 @@ import type {
   TopPick,
   UnderPick,
   BacktestResult,
+  TeamDefensiveRating,
 } from "@/lib/data";
 import HomeHero from "./HomeHero";
 import BacktestResults from "./BacktestResults";
@@ -32,6 +33,7 @@ export interface HomepageContentProps {
   trendingPlayers?: TrendingPlayer[];
   topPicks?: TopPick[];
   underPicks?: UnderPick[];
+  defensiveRatings?: TeamDefensiveRating[];
   propDate?: string | null;
   backtestResults?: BacktestResult;
   lastUpdated?: string | null;
@@ -46,6 +48,7 @@ export default function HomepageContent({
   trendingPlayers = [],
   topPicks = [],
   underPicks = [],
+  defensiveRatings = [],
   propDate = null,
   backtestResults = { gameDate: "", picks: [] },
   lastUpdated = null,
@@ -58,6 +61,7 @@ export default function HomepageContent({
   trendingPlayers?: TrendingPlayer[];
   topPicks?: TopPick[];
   underPicks?: UnderPick[];
+  defensiveRatings?: TeamDefensiveRating[];
   propDate?: string | null;
   backtestResults?: BacktestResult;
   lastUpdated?: string | null;
@@ -94,6 +98,7 @@ export default function HomepageContent({
     trendingPlayers,
     topPicks,
     underPicks,
+    defensiveRatings,
     propDate,
     backtestResults,
     lastUpdated,
@@ -137,7 +142,7 @@ export default function HomepageContent({
       </a>
 
       {hasError && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-8 text-amber-200 text-sm">
+        <div className="bg-[#d1ad6a]/10 border border-[#d1ad6a]/20 rounded-xl p-4 mb-8 text-[#f5d89b] text-sm">
           We&apos;re having trouble loading data right now. Data updates daily at 3:00 AM ET — please try again shortly.
         </div>
       )}
@@ -150,6 +155,7 @@ export default function HomepageContent({
 
       <TopPicks
         picks={topPicks}
+        defensiveRatings={defensiveRatings}
         propDate={propDate}
         onSelectPlayer={(name, stat, line) =>
           goToPlayer(name, 10, stat, line ?? undefined)
@@ -158,6 +164,7 @@ export default function HomepageContent({
 
       <UnderPicks
         picks={underPicks}
+        defensiveRatings={defensiveRatings}
         propDate={propDate}
         onSelectPlayer={(name, stat, line) =>
           goToPlayer(name, 10, stat, line ?? undefined)

@@ -2,37 +2,42 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-pe-border/5 bg-pe-bg">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex flex-col items-center gap-2 text-xs text-pe-text-faint">
-        <span className="font-bold text-pe-text-secondary text-sm">
-          PROP<span className="text-pe-accent">EDGE</span>
-        </span>
-        <div className="flex items-center gap-1.5 flex-wrap justify-center">
-          <span>Data from{" "}
+    <footer className="border-t border-[#dcb776]/12 pb-20 pt-8 md:pb-8">
+      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-md">
+          <p className="section-label mb-3">PropEdge</p>
+          <h2 className="text-xl font-semibold uppercase tracking-[0.22em] text-pe-text-primary">
+            Wealth-coded signal for prop bettors.
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-pe-text-muted">
+            NBA and MLB research surfaces built for sharper reads, premium signal, and less wasted motion.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 text-xs uppercase tracking-[0.18em] text-pe-text-faint md:items-end">
+          <span>Data source:
             <a
               href="https://www.basketball-reference.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-pe-text-secondary transition-colors underline underline-offset-2"
+              className="line-link ml-2 text-pe-text-secondary"
             >
               Basketball Reference
             </a>
           </span>
-          <span>&middot;</span>
-          <span>21+ | Gambling Problem?{" "}
+          <span>
+            21+ | Gambling Problem?
             <a
               href="tel:18005224700"
-              className="underline underline-offset-2 hover:text-pe-text-muted transition-colors"
+              className="line-link ml-2 text-pe-text-secondary"
             >
               1-800-522-4700
             </a>
           </span>
-          <span>&middot;</span>
-          <Link href="/terms" className="hover:text-pe-text-secondary transition-colors">Terms</Link>
-          <span>&middot;</span>
-          <Link href="/privacy" className="hover:text-pe-text-secondary transition-colors">Privacy</Link>
-          <span>&middot;</span>
-          <Link href="/responsible-gambling" className="hover:text-pe-text-secondary transition-colors">Responsible Gambling</Link>
+          <div className="flex flex-wrap gap-4 text-pe-text-secondary">
+            <Link href="/terms" className="line-link">Terms</Link>
+            <Link href="/privacy" className="line-link">Privacy</Link>
+            <Link href="/responsible-gambling" className="line-link">Responsible Gambling</Link>
+          </div>
         </div>
       </div>
     </footer>

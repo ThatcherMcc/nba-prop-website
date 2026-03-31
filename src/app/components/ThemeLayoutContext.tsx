@@ -11,12 +11,9 @@ import {
 
 export type ColorTheme =
   | "default"
-  | "midnight"
-  | "clean"
+  | "classic"
   | "press-box"
-  | "hardwood"
-  | "broadcast"
-  | "monochrome";
+  | "hardwood";
 
 export type LayoutVariant =
   | "current"
@@ -57,13 +54,16 @@ export default function ThemeLayoutProvider({
 
   // Restore from localStorage on mount (with migration guard for stale values)
   useEffect(() => {
-    const VALID_THEMES: ColorTheme[] = ["default", "midnight", "clean", "press-box", "hardwood", "broadcast", "monochrome"];
+    const VALID_THEMES: ColorTheme[] = ["default", "classic", "press-box", "hardwood"];
     const VALID_LAYOUTS: LayoutVariant[] = ["current", "spotlight", "editorial", "action-board", "ticker-feed"];
     try {
       const stored = localStorage.getItem(THEME_KEY);
       const theme = VALID_THEMES.includes(stored as ColorTheme) ? (stored as ColorTheme) : "default";
       setColorThemeState(theme);
       applyThemeAttribute(theme);
+      if (stored !== theme) {
+        localStorage.setItem(THEME_KEY, theme);
+      }
 
       const storedLayout = localStorage.getItem(LAYOUT_KEY);
       const layout = VALID_LAYOUTS.includes(storedLayout as LayoutVariant) ? (storedLayout as LayoutVariant) : "editorial";

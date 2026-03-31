@@ -13,6 +13,7 @@ interface MobileTabBarProps {
 const staticTabs = [
   { key: "home", label: "Home", href: "/", icon: "\u2302" },
   { key: "analytics", label: "Analytics", href: "/analytics", icon: "\u{1F4CA}" },
+  { key: "slate", label: "Slate", href: "/slate", icon: "\u{1F3C0}" },
   { key: "search", label: "Search", href: null, icon: "\u{1F50D}" },
 ] as const;
 
@@ -23,9 +24,9 @@ export default function MobileTabBar({ session }: MobileTabBarProps) {
   const user = session?.user;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-pe-border/10 bg-pe-bg/95 backdrop-blur-md">
+    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#dcb776]/12 bg-[linear-gradient(180deg,rgba(18,11,8,0.82),rgba(8,6,4,0.96))] backdrop-blur-xl md:hidden">
       <nav
-        className="flex items-center justify-around h-16"
+        className="flex items-center justify-around px-2"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         {staticTabs.map((tab) => {
@@ -34,34 +35,36 @@ export default function MobileTabBar({ session }: MobileTabBarProps) {
               ? pathname === "/"
               : tab.key === "analytics"
                 ? pathname === "/analytics"
-                : false;
+                : tab.key === "slate"
+                  ? pathname === "/slate" || pathname === "/track-record"
+                  : false;
 
           if (tab.key === "search") {
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={openPalette}
-                className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-pe-text-faint active:text-pe-accent transition-colors"
-              >
-                <span className="text-lg">{tab.icon}</span>
-                <span className="text-[10px] font-medium">{tab.label}</span>
-              </button>
-            );
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={openPalette}
+                  className="flex h-16 flex-1 flex-col items-center justify-center gap-1 py-2 text-pe-text-faint active:text-pe-text-secondary"
+                >
+                  <span className="text-lg">{tab.icon}</span>
+                  <span className="text-[0.58rem] uppercase tracking-[0.2em]">{tab.label}</span>
+                </button>
+              );
           }
 
           return (
             <Link
               key={tab.key}
               href={tab.href!}
-              className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
+              className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 py-2 ${
                 isActive
-                  ? "text-pe-accent"
-                  : "text-pe-text-faint active:text-pe-accent"
+                  ? "text-pe-text-secondary"
+                  : "text-pe-text-faint active:text-pe-text-secondary"
               }`}
             >
               <span className="text-lg">{tab.icon}</span>
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-[0.58rem] uppercase tracking-[0.2em]">{tab.label}</span>
             </Link>
           );
         })}
@@ -70,10 +73,10 @@ export default function MobileTabBar({ session }: MobileTabBarProps) {
         {user ? (
           <Link
             href="/profile"
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
+            className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 py-2 ${
               pathname === "/profile"
-                ? "text-pe-accent"
-                : "text-pe-text-faint active:text-pe-accent"
+                ? "text-pe-text-secondary"
+                : "text-pe-text-faint active:text-pe-text-secondary"
             }`}
           >
             {user.image ? (
@@ -82,26 +85,26 @@ export default function MobileTabBar({ session }: MobileTabBarProps) {
                 alt={user.name ?? "Profile"}
                 width={28}
                 height={28}
-                className="rounded-full w-7 h-7 object-cover"
+                className="h-7 w-7 rounded-full object-cover"
               />
             ) : (
-              <span className="w-7 h-7 rounded-full bg-pe-accent/20 text-pe-accent text-xs font-bold flex items-center justify-center">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-pe-accent/20 text-xs font-bold text-pe-text-secondary">
                 {(user.name ?? user.email ?? "?")[0].toUpperCase()}
               </span>
             )}
-            <span className="text-[10px] font-medium">Profile</span>
+            <span className="text-[0.58rem] uppercase tracking-[0.2em]">Profile</span>
           </Link>
         ) : (
           <Link
             href="/auth/sign-in"
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
+            className={`flex h-16 flex-1 flex-col items-center justify-center gap-1 py-2 ${
               pathname === "/auth/sign-in"
-                ? "text-pe-accent"
-                : "text-pe-text-faint active:text-pe-accent"
+                ? "text-pe-text-secondary"
+                : "text-pe-text-faint active:text-pe-text-secondary"
             }`}
           >
             <span className="text-lg">&#128100;</span>
-            <span className="text-[10px] font-medium">Sign In</span>
+            <span className="text-[0.58rem] uppercase tracking-[0.2em]">Sign In</span>
           </Link>
         )}
       </nav>

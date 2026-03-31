@@ -18,13 +18,10 @@ const COLOR_THEMES: {
   label: string;
   swatch: [string, string];
 }[] = [
-  { key: "default", label: "Default", swatch: ["#09090b", "#3b82f6"] },
-  { key: "midnight", label: "Midnight Court", swatch: ["#0A0E1A", "#6366F1"] },
-  { key: "clean", label: "Clean Slate", swatch: ["#FAFAFA", "#18181B"] },
-  { key: "press-box", label: "Press Box", swatch: ["#121210", "#E2B860"] },
-  { key: "hardwood", label: "Hardwood", swatch: ["#0F0D0B", "#C27A3A"] },
-  { key: "broadcast", label: "Broadcast", swatch: ["#080C12", "#00D4AA"] },
-  { key: "monochrome", label: "Monochrome", swatch: ["#0A0A0A", "#FFFFFF"] },
+  { key: "default", label: "Gold", swatch: ["#060708", "#E4C661"] },
+  { key: "classic", label: "Original Slate", swatch: ["#18181B", "#3B82F6"] },
+  { key: "press-box", label: "Champagne Press", swatch: ["#11100E", "#CBB78F"] },
+  { key: "hardwood", label: "Bronze Court", swatch: ["#120D09", "#C78345"] },
 ];
 
 const LAYOUT_VARIANTS: {

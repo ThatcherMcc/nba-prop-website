@@ -189,6 +189,7 @@ export default function HomepageLayoutEditorial({
   featuredPlayerData = [],
   topPicks = [],
   underPicks = [],
+  defensiveRatings = [],
   propDate = null,
   backtestResults = { gameDate: "", picks: [] },
   hasError = false,
@@ -237,6 +238,7 @@ export default function HomepageLayoutEditorial({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           <TopPicks
             picks={topPicks}
+            defensiveRatings={defensiveRatings}
             propDate={propDate}
             onSelectPlayer={(name, stat, line) =>
               goToPlayer(name, 10, stat, line ?? undefined)
@@ -244,6 +246,7 @@ export default function HomepageLayoutEditorial({
           />
           <UnderPicks
             picks={underPicks}
+            defensiveRatings={defensiveRatings}
             propDate={propDate}
             onSelectPlayer={(name, stat, line) =>
               goToPlayer(name, 10, stat, line ?? undefined)

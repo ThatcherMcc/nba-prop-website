@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { getPlayerNames } from "@/lib/data";
 import { auth } from "@/lib/auth";
@@ -9,16 +8,6 @@ import MobileTabBar from "./components/MobileTabBar";
 import CookieConsentBanner from "./components/CookieConsentBanner";
 import CommandPaletteProvider from "./components/CommandPaletteProvider";
 import ThemeLayoutProvider from "./components/ThemeLayoutContext";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const SITE_URL = "https://propedge.bet";
 
@@ -80,7 +69,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#09090b",
+  themeColor: "#120c08",
 };
 
 export default async function RootLayout({
@@ -117,16 +106,16 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-pe-bg text-pe-text-body`}
-      >
+      <body className="page-shell min-h-screen bg-pe-bg text-pe-text-body antialiased">
         <ThemeLayoutProvider>
           <CommandPaletteProvider playerNames={playerNames}>
-            <NavBar session={session} />
-            <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 pb-24 md:pb-8">
-              {children}
-            </main>
-            <Footer />
+            <div className="site-frame mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-4 md:px-6">
+              <NavBar session={session} />
+              <main className="flex-1 px-0 pb-24 pt-6 md:pb-10 md:pt-8">
+                {children}
+              </main>
+              <Footer />
+            </div>
             <MobileTabBar session={session} />
             <CookieConsentBanner />
           </CommandPaletteProvider>

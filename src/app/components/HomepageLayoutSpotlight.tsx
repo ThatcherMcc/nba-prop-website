@@ -25,6 +25,7 @@ export default function HomepageLayoutSpotlight({
   trendingPlayers = [] as TrendingPlayer[],
   topPicks = [],
   underPicks = [],
+  defensiveRatings = [],
   propDate = null,
   backtestResults = { gameDate: "", picks: [] } as BacktestResult,
   lastUpdated = null,
@@ -67,6 +68,7 @@ export default function HomepageLayoutSpotlight({
 
       <TopPicks
         picks={topPicks}
+        defensiveRatings={defensiveRatings}
         propDate={propDate}
         onSelectPlayer={(name, stat, line) =>
           goToPlayer(name, 10, stat, line ?? undefined)
@@ -74,6 +76,7 @@ export default function HomepageLayoutSpotlight({
       />
       <UnderPicks
         picks={underPicks}
+        defensiveRatings={defensiveRatings}
         propDate={propDate}
         onSelectPlayer={(name, stat, line) =>
           goToPlayer(name, 10, stat, line ?? undefined)

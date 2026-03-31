@@ -49,7 +49,7 @@ function TickerStrip({
             <span className="text-pe-text-secondary font-mono">{item.line}</span>
             <span className="text-pe-text-faint">·</span>
             <span
-              className={`font-bold ${item.rate >= 80 ? "text-emerald-400" : "text-amber-400"}`}
+              className={`font-bold ${item.side === "OVER" ? "text-emerald-400" : "text-red-400"}`}
             >
               {item.rate}%
             </span>
@@ -57,7 +57,7 @@ function TickerStrip({
               className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
                 item.side === "OVER"
                   ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                  : "bg-sky-500/15 text-sky-400 border-sky-500/30"
+                  : "bg-red-500/15 text-red-400 border-red-500/30"
               }`}
             >
               {item.side}
@@ -86,9 +86,9 @@ function FeedCard({
   const hitRate = pick.hitRate;
   const hitColor =
     hitRate >= 80
-      ? "text-emerald-400"
+      ? isOver ? "text-emerald-400" : "text-red-400"
       : hitRate >= 70
-        ? "text-amber-400"
+        ? isOver ? "text-emerald-300" : "text-red-300"
         : "text-pe-text-secondary";
   const countKey = isOver ? "overCount" : "underCount";
   const count = (pick as Record<string, unknown>)[countKey];
@@ -110,7 +110,7 @@ function FeedCard({
               className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                 isOver
                   ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                  : "bg-sky-500/15 text-sky-400 border-sky-500/30"
+                  : "bg-red-500/15 text-red-400 border-red-500/30"
               }`}
             >
               {isOver ? "OVER" : "UNDER"}
