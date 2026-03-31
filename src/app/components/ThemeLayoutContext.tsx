@@ -15,25 +15,14 @@ export type ColorTheme =
   | "press-box"
   | "hardwood";
 
-export type LayoutVariant =
-  | "current"
-  | "spotlight"
-  | "editorial"
-  | "action-board"
-  | "ticker-feed";
-
 type ThemeLayoutContextType = {
   colorTheme: ColorTheme;
-  layoutVariant: LayoutVariant;
   setColorTheme: (t: ColorTheme) => void;
-  setLayoutVariant: (l: LayoutVariant) => void;
 };
 
 const ThemeLayoutContext = createContext<ThemeLayoutContextType>({
   colorTheme: "default",
-  layoutVariant: "editorial",
   setColorTheme: () => {},
-  setLayoutVariant: () => {},
 });
 
 export function useThemeLayout() {
@@ -41,7 +30,6 @@ export function useThemeLayout() {
 }
 
 const THEME_KEY = "pe-color-theme";
-const LAYOUT_KEY = "pe-layout-variant";
 
 export default function ThemeLayoutProvider({
   children,
@@ -49,13 +37,9 @@ export default function ThemeLayoutProvider({
   children: ReactNode;
 }) {
   const [colorTheme, setColorThemeState] = useState<ColorTheme>("default");
-  const [layoutVariant, setLayoutVariantState] =
-    useState<LayoutVariant>("editorial");
 
-  // Restore from localStorage on mount (with migration guard for stale values)
   useEffect(() => {
     const VALID_THEMES: ColorTheme[] = ["default", "classic", "press-box", "hardwood"];
-    const VALID_LAYOUTS: LayoutVariant[] = ["current", "spotlight", "editorial", "action-board", "ticker-feed"];
     try {
       const stored = localStorage.getItem(THEME_KEY);
       const theme = VALID_THEMES.includes(stored as ColorTheme) ? (stored as ColorTheme) : "default";
@@ -64,12 +48,8 @@ export default function ThemeLayoutProvider({
       if (stored !== theme) {
         localStorage.setItem(THEME_KEY, theme);
       }
-
-      const storedLayout = localStorage.getItem(LAYOUT_KEY);
-      const layout = VALID_LAYOUTS.includes(storedLayout as LayoutVariant) ? (storedLayout as LayoutVariant) : "editorial";
-      setLayoutVariantState(layout);
     } catch {
-      // localStorage unavailable
+      // Ignore localStorage failures.
     }
   }, []);
 
@@ -83,18 +63,9 @@ export default function ThemeLayoutProvider({
     }
   }, []);
 
-  const setLayoutVariant = useCallback((l: LayoutVariant) => {
-    setLayoutVariantState(l);
-    try {
-      localStorage.setItem(LAYOUT_KEY, l);
-    } catch {
-      // localStorage unavailable
-    }
-  }, []);
-
   return (
     <ThemeLayoutContext.Provider
-      value={{ colorTheme, layoutVariant, setColorTheme, setLayoutVariant }}
+      value={{ colorTheme, setColorTheme }}
     >
       {children}
     </ThemeLayoutContext.Provider>

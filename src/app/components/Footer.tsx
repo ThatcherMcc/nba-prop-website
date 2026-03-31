@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#dcb776]/12 pb-20 pt-8 md:pb-8">
+    <footer className="border-t border-pe-accent/12 pb-20 pt-8 md:pb-8">
       <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
         <div className="max-w-md">
           <p className="section-label mb-3">PropEdge</p>

@@ -33,17 +33,17 @@ export default function NavBar({ session }: NavBarProps) {
 
   const navLinkClass = (active: boolean) =>
     active
-      ? "rounded-full border border-[#e4c661]/24 bg-[#e4c661]/10 px-3 py-2 text-[#f3dd97] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+      ? "rounded-full border border-pe-accent/25 bg-pe-accent/12 px-3 py-2 text-pe-accent-strong shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
       : "rounded-full border border-transparent px-3 py-2 text-pe-text-muted hover:border-white/8 hover:bg-white/[0.02] hover:text-pe-text-primary";
 
   return (
     <nav className="sticky top-0 z-50 border-b border-transparent bg-transparent backdrop-blur-0">
       <div className="mx-auto max-w-[1600px] px-4 py-3 md:px-6 md:py-4 lg:px-8">
-        <div className="rounded-[1.45rem] border border-white/8 bg-[rgba(6,7,8,0.94)] px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl md:px-6 md:py-0">
+        <div className="shell-nav rounded-[1.45rem] px-4 py-3 md:px-6 md:py-0">
           <div className="flex items-center justify-between gap-4 md:h-16 md:gap-6">
             <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-none md:gap-0">
               <Link href="/" className="group flex shrink-0 items-center gap-3 text-pe-text-primary">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d6b470]/38 bg-[#d6b470]/9 text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[#f4dfb1] shadow-[0_0_18px_rgba(214,182,112,0.14)]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-pe-accent/40 bg-pe-accent/10 text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-pe-accent-strong shadow-[0_0_18px_rgba(0,0,0,0.14)]">
                   PE
                 </span>
                 <span className="hidden text-[1.05rem] font-semibold uppercase tracking-[0.32em] md:inline md:text-[1.15rem]">
@@ -115,7 +115,7 @@ export default function NavBar({ session }: NavBarProps) {
                 ) : (
                   <Link
                     href="/auth/sign-in"
-                    className="rounded-full border border-[#d6b470]/28 bg-[#d6b470]/10 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-[#f4dfb1] hover:bg-[#d6b470]/16"
+                    className="rounded-full border border-pe-accent/28 bg-pe-accent/12 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-pe-accent-strong hover:bg-pe-accent/18"
                   >
                     Sign In
                   </Link>

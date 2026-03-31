@@ -41,28 +41,28 @@ export default async function Page() {
       label: "Slate desk",
       eyebrow: "Live board",
       summary: "Today's slate with analytics picks, line context, and game-by-game player research.",
-      accent: "text-[#d7b06b]",
+      accent: "text-pe-text-secondary",
     },
     {
       href: "/analytics",
       label: "Trend engine",
       eyebrow: "Recent form",
       summary: "Hot streaks, cold streaks, rolling averages, and momentum signals before the market catches up.",
-      accent: "text-[#d7b06b]",
+      accent: "text-pe-text-secondary",
     },
     {
       href: "/player/LeBron%20James",
       label: "Player dossiers",
       eyebrow: "Research layer",
       summary: "Searchable player pages with logs, splits, charts, matchup context, and current lines in one read.",
-      accent: "text-[#e4c48d]",
+      accent: "text-pe-accent-strong",
     },
     {
       href: "/insights",
       label: "Editorial review",
       eyebrow: "Weekly signal",
       summary: "Weekly recaps built around trends, recent results, and the strongest storylines on the board.",
-      accent: "text-[#f0d7a5]",
+      accent: "text-pe-accent-strong",
     },
   ];
 
@@ -77,9 +77,18 @@ export default async function Page() {
 
   return (
     <div className="relative flex flex-col gap-12 pb-8 md:gap-24 md:pb-10">
-      <section className="relative left-1/2 right-1/2 -mt-[7.25rem] w-screen -translate-x-1/2 overflow-hidden border-b border-white/8 bg-[#050607] pt-[7.25rem] md:-mt-[8.5rem] md:pt-[8.5rem]">
+      <section
+        className="relative left-1/2 right-1/2 -mt-[7.25rem] w-screen -translate-x-1/2 overflow-hidden border-b border-pe-accent/10 pt-[7.25rem] md:-mt-[8.5rem] md:pt-[8.5rem]"
+        style={{ backgroundColor: "rgb(var(--pe-bg-rgb))" }}
+      >
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_18%,rgba(240,208,77,0.18),transparent_18%),radial-gradient(circle_at_76%_44%,rgba(240,208,77,0.1),transparent_24%),linear-gradient(180deg,#050607_0%,#060708_42%,#050607_100%)]" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(circle at 24% 18%, rgb(var(--pe-accent) / 0.18), transparent 18%), radial-gradient(circle at 76% 44%, rgb(var(--pe-accent) / 0.1), transparent 24%), linear-gradient(180deg, rgb(var(--pe-bg-rgb)) 0%, rgb(var(--pe-bg-rgb)) 42%, rgb(var(--pe-bg-rgb)) 100%)",
+            }}
+          />
           <div className="absolute inset-0 opacity-90">
             <svg
               className="h-full w-full"
@@ -90,12 +99,12 @@ export default async function Page() {
             >
               <path
                 d="M0 710C137 671 213 598 332 570C449 543 503 602 617 561C758 511 764 387 907 343C1031 305 1146 351 1440 234"
-                stroke="rgba(240,208,77,0.28)"
+                stroke="rgb(var(--pe-accent) / 0.28)"
                 strokeWidth="2"
               />
               <path
                 d="M0 794C146 761 223 708 358 676C494 644 563 708 689 671C830 629 866 505 1005 460C1136 418 1248 442 1440 397"
-                stroke="rgba(240,208,77,0.18)"
+                stroke="rgb(var(--pe-accent) / 0.18)"
                 strokeWidth="2"
               />
               <path
@@ -112,7 +121,7 @@ export default async function Page() {
           <div className="max-w-3xl self-start pt-2 pl-2 -translate-y-4 md:self-center md:pt-0 md:pl-0 md:-translate-y-10 md:pr-6">
             <div className="pl-0.5 md:pl-0">
               <div className="hero-reveal">
-                <span className="font-mono text-[0.72rem] uppercase tracking-[0.28em] text-[#f0d04d]">
+                <span className="font-mono text-[0.72rem] uppercase tracking-[0.28em] text-pe-accent">
                   Analytics Desk
                 </span>
               </div>
@@ -137,13 +146,13 @@ export default async function Page() {
             <div className="hero-reveal hero-reveal-delay-3 mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center md:mt-6 md:gap-3">
               <Link
                 href="/slate"
-                className="inline-flex items-center justify-center rounded-full border border-[#f0d04d]/40 bg-[#f0d04d]/12 px-5 py-2.5 text-[0.78rem] font-medium uppercase tracking-[0.2em] text-[#fff1b8] shadow-[0_10px_30px_rgba(240,208,77,0.12)] transition-transform duration-300 hover:-translate-y-0.5 hover:bg-[#f0d04d]/18 md:px-6 md:py-3 md:text-sm md:tracking-[0.22em]"
+                className="inline-flex items-center justify-center rounded-full border border-pe-accent/40 bg-pe-accent/12 px-5 py-2.5 text-[0.78rem] font-medium uppercase tracking-[0.2em] text-pe-accent-strong shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-transform duration-300 hover:-translate-y-0.5 hover:bg-pe-accent/18 md:px-6 md:py-3 md:text-sm md:tracking-[0.22em]"
               >
                 Open today&apos;s slate
               </Link>
               <Link
                 href="/analytics"
-                className="line-link inline-flex w-fit items-center text-[0.78rem] font-medium uppercase tracking-[0.2em] text-[#f0d04d] md:text-sm md:tracking-[0.22em]"
+                className="line-link inline-flex w-fit items-center text-[0.78rem] font-medium uppercase tracking-[0.2em] text-pe-accent md:text-sm md:tracking-[0.22em]"
               >
                 Explore the analytics layer
               </Link>
@@ -151,9 +160,9 @@ export default async function Page() {
           </div>
 
           <div className="hero-reveal hero-reveal-delay-2 mt-0 self-start -translate-y-5 md:mt-0 md:self-center md:-translate-y-6">
-            <div className="relative overflow-hidden rounded-[1.6rem] border border-[#f0d04d]/14 bg-[rgba(8,9,11,0.9)] p-4 shadow-[0_24px_64px_rgba(0,0,0,0.32)] md:rounded-[2rem] md:p-5">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#f0d04d] to-transparent opacity-70" />
-              <div className="absolute -right-16 top-6 h-32 w-32 rounded-full bg-[#f0d04d]/10 blur-3xl" />
+            <div className="relative overflow-hidden rounded-[1.6rem] border border-pe-accent/15 bg-pe-surface-3/90 p-4 shadow-[0_24px_64px_rgba(0,0,0,0.32)] md:rounded-[2rem] md:p-5">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-pe-accent to-transparent opacity-70" />
+              <div className="absolute -right-16 top-6 h-32 w-32 rounded-full bg-pe-accent/10 blur-3xl" />
               <div className="relative">
                 <div className="flex items-center justify-between border-b border-white/8 pb-2.5 md:pb-3">
                   <div>
@@ -170,20 +179,20 @@ export default async function Page() {
                 </div>
 
                 {heroTopPick ? (
-                  <div className="mt-3 rounded-[1.15rem] border border-[#f0d04d]/14 bg-[rgba(255,255,255,0.03)] px-3.5 py-3.5 md:mt-4 md:rounded-[1.35rem] md:px-4 md:py-4">
-                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.26em] text-[#a79f91] md:text-[0.64rem] md:tracking-[0.3em]">
+                  <div className="mt-3 rounded-[1.15rem] border border-pe-accent/15 bg-[rgba(255,255,255,0.03)] px-3.5 py-3.5 md:mt-4 md:rounded-[1.35rem] md:px-4 md:py-4">
+                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.26em] text-pe-text-faint md:text-[0.64rem] md:tracking-[0.3em]">
                       Top pick today
                     </p>
                     <div className="mt-2.5 flex items-end justify-between gap-3 md:mt-3 md:gap-4">
                       <div>
-                        <p className="text-[2rem] font-semibold tracking-[-0.05em] text-[#f5d96f] md:text-4xl">
+                        <p className="text-[2rem] font-semibold tracking-[-0.05em] text-pe-accent-strong md:text-4xl">
                           {heroTopPick.hitRate}%
                         </p>
-                        <p className="mt-1.5 text-[0.66rem] uppercase tracking-[0.18em] text-[#f0d04d] md:mt-2 md:text-[0.72rem] md:tracking-[0.22em]">
+                        <p className="mt-1.5 text-[0.66rem] uppercase tracking-[0.18em] text-pe-accent md:mt-2 md:text-[0.72rem] md:tracking-[0.22em]">
                           Over {heroTopPick.bookLine} {heroTopPick.marketCode}
                         </p>
                       </div>
-                      <div className="rounded-full border border-[#f0d04d]/20 bg-[#f0d04d]/10 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.2em] text-[#fff1b8] md:px-3 md:text-[0.62rem] md:tracking-[0.24em]">
+                      <div className="rounded-full border border-pe-accent/20 bg-pe-accent/10 px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.2em] text-pe-accent-strong md:px-3 md:text-[0.62rem] md:tracking-[0.24em]">
                         {heroTopPick.overCount}/{heroTopPick.gamesChecked}
                       </div>
                     </div>
@@ -198,11 +207,11 @@ export default async function Page() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-3 rounded-[1.15rem] border border-[#f0d04d]/14 bg-[rgba(255,255,255,0.03)] px-3.5 py-3.5 md:mt-4 md:rounded-[1.35rem] md:px-4 md:py-4">
-                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.26em] text-[#a79f91] md:text-[0.64rem] md:tracking-[0.3em]">
+                  <div className="mt-3 rounded-[1.15rem] border border-pe-accent/15 bg-[rgba(255,255,255,0.03)] px-3.5 py-3.5 md:mt-4 md:rounded-[1.35rem] md:px-4 md:py-4">
+                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.26em] text-pe-text-faint md:text-[0.64rem] md:tracking-[0.3em]">
                       Top pick today
                     </p>
-                    <p className="mt-2.5 text-[2rem] font-semibold tracking-[-0.05em] text-[#f5d96f] md:mt-3 md:text-4xl">
+                    <p className="mt-2.5 text-[2rem] font-semibold tracking-[-0.05em] text-pe-accent-strong md:mt-3 md:text-4xl">
                       Live
                     </p>
                     <p className="mt-2 text-[0.88rem] leading-5 text-pe-text-muted md:mt-3 md:text-sm md:leading-6">
@@ -263,7 +272,7 @@ export default async function Page() {
               <p className="text-[0.68rem] uppercase tracking-[0.24em] text-pe-text-faint">
                 Break-even
               </p>
-              <p className="mt-2 text-2xl font-semibold text-[#f5d89b]">52.4%</p>
+              <p className="mt-2 text-2xl font-semibold text-pe-accent-strong">52.4%</p>
             </div>
           </div>
 
@@ -275,12 +284,12 @@ export default async function Page() {
               const rateTone = positive
                 ? "text-emerald-300"
                 : item.units === 0
-                  ? "text-[#f5d89b]"
+                  ? "text-pe-accent-strong"
                   : "text-rose-300";
               const amountTone = positive
                 ? "text-emerald-300"
                 : item.units === 0
-                  ? "text-[#f5d89b]"
+                  ? "text-pe-accent-strong"
                   : "text-rose-300";
               return (
                 <div key={item.rate} className="grid gap-3 md:grid-cols-[7rem_1fr_7rem] md:items-center">
@@ -297,7 +306,7 @@ export default async function Page() {
                       <div className="absolute inset-y-0 left-1/2 w-px bg-white/18" />
                       <div
                         className={`absolute inset-y-0 rounded-full ${
-                          positive ? "bg-emerald-400/85" : item.units === 0 ? "bg-[#f5d89b]/85" : "bg-rose-400/72"
+                          positive ? "bg-emerald-400/85" : item.units === 0 ? "bg-pe-accent/85" : "bg-rose-400/72"
                         }`}
                         style={positive ? { left: "50%", width } : { right: "50%", width }}
                       />

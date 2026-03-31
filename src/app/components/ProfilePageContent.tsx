@@ -4,7 +4,6 @@ import Image from "next/image";
 import {
   useThemeLayout,
   type ColorTheme,
-  type LayoutVariant,
 } from "./ThemeLayoutContext";
 import { signOutAction } from "@/lib/auth-actions";
 import type { Session } from "next-auth";
@@ -24,21 +23,8 @@ const COLOR_THEMES: {
   { key: "hardwood", label: "Bronze Court", swatch: ["#120D09", "#C78345"] },
 ];
 
-const LAYOUT_VARIANTS: {
-  key: LayoutVariant;
-  label: string;
-  desc: string;
-}[] = [
-  { key: "editorial", label: "Editorial", desc: "Clean picks-first layout" },
-  { key: "current", label: "Classic", desc: "Original full layout" },
-  { key: "spotlight", label: "Spotlight", desc: "Hero pick + classic flow" },
-  { key: "action-board", label: "Action Board", desc: "Collapsible sections" },
-  { key: "ticker-feed", label: "Ticker + Feed", desc: "Live ticker + card grid" },
-];
-
 export default function ProfilePageContent({ session }: ProfilePageContentProps) {
-  const { colorTheme, layoutVariant, setColorTheme, setLayoutVariant } =
-    useThemeLayout();
+  const { colorTheme, setColorTheme } = useThemeLayout();
 
   const user = session?.user;
 
@@ -151,37 +137,6 @@ export default function ProfilePageContent({ session }: ProfilePageContentProps)
                   &#10003;
                 </span>
               )}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Layout */}
-      <section className="mb-8">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-pe-text-faint mb-4">
-          Homepage Layout
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {LAYOUT_VARIANTS.map(({ key, label, desc }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setLayoutVariant(key)}
-              className={`flex flex-col items-start rounded-xl px-4 py-3 text-left transition-colors border ${
-                layoutVariant === key
-                  ? "bg-pe-accent/15 border-pe-accent/30 text-pe-text-primary"
-                  : "bg-pe-surface-1 border-pe-border/10 text-pe-text-secondary hover:bg-pe-surface-2/60"
-              }`}
-            >
-              <div className="flex items-center gap-2 w-full">
-                <span className="text-sm font-bold">{label}</span>
-                {layoutVariant === key && (
-                  <span className="ml-auto text-pe-accent text-xs font-bold">
-                    &#10003;
-                  </span>
-                )}
-              </div>
-              <span className="text-xs text-pe-text-faint mt-0.5">{desc}</span>
             </button>
           ))}
         </div>

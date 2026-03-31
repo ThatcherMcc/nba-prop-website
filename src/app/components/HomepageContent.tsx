@@ -19,11 +19,6 @@ import TrendingPlayers from "./TrendingPlayers";
 import FeaturedPlayer from "./FeaturedPlayer";
 import TopPicks from "./TopPicks";
 import UnderPicks from "./UnderPicks";
-import { useThemeLayout } from "./ThemeLayoutContext";
-import HomepageLayoutSpotlight from "./HomepageLayoutSpotlight";
-import HomepageLayoutEditorial from "./HomepageLayoutEditorial";
-import HomepageLayoutActionBoard from "./HomepageLayoutActionBoard";
-import HomepageLayoutTickerFeed from "./HomepageLayoutTickerFeed";
 
 export interface HomepageContentProps {
   featuredPlayerName?: string;
@@ -68,7 +63,6 @@ export default function HomepageContent({
   hasError?: boolean;
 }) {
   const router = useRouter();
-  const { layoutVariant } = useThemeLayout();
 
   const goToPlayer = (
     name: string,
@@ -89,30 +83,6 @@ export default function HomepageContent({
     overSeasonAvgLast5.length === 0 &&
     underSeasonAvgLast5.length === 0 &&
     trendingPlayers.length === 0;
-
-  const allProps: HomepageContentProps = {
-    featuredPlayerName,
-    featuredPlayerData,
-    overSeasonAvgLast5,
-    underSeasonAvgLast5,
-    trendingPlayers,
-    topPicks,
-    underPicks,
-    defensiveRatings,
-    propDate,
-    backtestResults,
-    lastUpdated,
-    hasError,
-  };
-
-  if (layoutVariant === "spotlight")
-    return <HomepageLayoutSpotlight {...allProps} goToPlayer={goToPlayer} />;
-  if (layoutVariant === "editorial")
-    return <HomepageLayoutEditorial {...allProps} goToPlayer={goToPlayer} />;
-  if (layoutVariant === "action-board")
-    return <HomepageLayoutActionBoard {...allProps} goToPlayer={goToPlayer} />;
-  if (layoutVariant === "ticker-feed")
-    return <HomepageLayoutTickerFeed {...allProps} goToPlayer={goToPlayer} />;
 
   return (
     <>

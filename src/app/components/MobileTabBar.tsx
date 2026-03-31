@@ -24,7 +24,7 @@ export default function MobileTabBar({ session }: MobileTabBarProps) {
   const user = session?.user;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#dcb776]/12 bg-[linear-gradient(180deg,rgba(18,11,8,0.82),rgba(8,6,4,0.96))] backdrop-blur-xl md:hidden">
+    <div className="shell-mobile-bar fixed bottom-0 left-0 right-0 z-50 md:hidden">
       <nav
         className="flex items-center justify-around px-2"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
