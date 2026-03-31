@@ -11,7 +11,6 @@ import type {
   BacktestResult,
   TeamDefensiveRating,
 } from "@/lib/data";
-import HomeHero from "./HomeHero";
 import BacktestResults from "./BacktestResults";
 import OverSeasonAvgLast5 from "./OverSeasonAvgLast5";
 import ColdLast5 from "./ColdLast5";
@@ -46,7 +45,6 @@ export default function HomepageContent({
   defensiveRatings = [],
   propDate = null,
   backtestResults = { gameDate: "", picks: [] },
-  lastUpdated = null,
   hasError = false,
 }: {
   featuredPlayerName?: string;
@@ -86,8 +84,6 @@ export default function HomepageContent({
 
   return (
     <>
-      <HomeHero lastUpdated={lastUpdated} />
-
       {/* Promo banner */}
       <a
         href="https://prizepicks.onelink.me/FjtC/e9fwt4jw"
@@ -141,8 +137,6 @@ export default function HomepageContent({
         }
       />
 
-      <BacktestResults data={backtestResults} />
-
       <OverSeasonAvgLast5
         players={overSeasonAvgLast5}
         onSelectPlayer={(name, seasonAvgPts) =>
@@ -161,6 +155,8 @@ export default function HomepageContent({
           goToPlayer(name, 10, "pts", last3AvgPts ?? undefined)
         }
       />
+
+      <BacktestResults data={backtestResults} />
 
       {/* Divider */}
       <div className="border-t border-pe-border/5 my-10" />

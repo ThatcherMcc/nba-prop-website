@@ -145,7 +145,7 @@ export default function MlbPageContent({
       value: playerCount > 0 ? playerCount.toLocaleString() : "—",
     },
     { label: "Park Factors", value: teamCount > 0 ? "Loaded" : "—" },
-    { label: "Status", value: "Awaiting Opening Day" },
+    { label: "Status", value: "Working on it" },
   ];
 
   return (
