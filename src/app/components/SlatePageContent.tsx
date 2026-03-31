@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { TodaysPlayer, TopPick, UnderPick, TeamDefensiveRating, MlPrediction } from "@/lib/data";
+import type { TodaysPlayer, TopPick, UnderPick, TeamDefensiveRating } from "@/lib/data";
+import { getDefenseMarketInfo } from "@/lib/defense";
 import { formatRelativeTimeShort } from "./homepage-shared";
-import PickShareButton from "./PickShareButton";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,7 +15,6 @@ interface SlatePageContentProps {
   propDate: string | null;
   topPicks: TopPick[];
   underPicks: UnderPick[];
-  mlPredictions: MlPrediction[];
 }
 
 interface GameGroup {
@@ -26,24 +25,6 @@ interface GameGroup {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-const STAT_BADGE_COLORS: Record<string, string> = {
-  PTS: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  REB: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-  AST: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  STL: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  BLK: "bg-red-500/15 text-red-400 border-red-500/30",
-  FG3: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-  PRA: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  PR: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
-  PA: "bg-teal-500/15 text-teal-400 border-teal-500/30",
-  RA: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-  SB: "bg-pink-500/15 text-pink-400 border-pink-500/30",
-};
-
-function getStatBadgeColor(code: string) {
-  return STAT_BADGE_COLORS[code] ?? "bg-zinc-500/15 text-zinc-400 border-zinc-500/30";
-}
 
 function formatSlateDate(propDate: string | null): string {
   if (!propDate) {
@@ -113,12 +94,6 @@ const DEF_STAT_KEYS: Record<DefStat, { rankKey: string; valKey: keyof TeamDefens
   tov: { rankKey: "opp_tov", valKey: "oppTov", label: "TOV" },
 };
 
-const MARKET_TO_DEF_STAT: Record<string, DefStat> = {
-  PTS: "pts", REB: "reb", AST: "ast", FG3: "3p", FTM: "ft",
-  STL: "stl", BLK: "blk", TOV: "tov",
-  PRA: "pts", PR: "pts", PA: "pts", RA: "reb", SB: "stl",
-};
-
 function getDefRating(ratings: TeamDefensiveRating[], teamCode: string) {
   return ratings.find((d) => d.teamCode === teamCode) ?? null;
 }
@@ -157,9 +132,8 @@ function pickSignal(
   opponentRating: TeamDefensiveRating | null,
   total: number
 ): { icon: string; label: string; color: string } | null {
-  const defStat = MARKET_TO_DEF_STAT[pick.marketCode];
-  if (!defStat || !opponentRating) return null;
-  const rank = getDefRank(opponentRating, defStat);
+  const info = getDefenseMarketInfo(opponentRating, pick.marketCode);
+  const rank = info?.rank ?? null;
   if (rank === null) return null;
   const v = defVerdict(rank, total);
   if (v === "weak") return { icon: "+", label: ordinal(rank), color: "text-emerald-400" };
@@ -179,26 +153,6 @@ function statDefenseInfo(
   const allowed = opponentRating[key];
   if (typeof allowed !== "number") return null;
   return { allowed, rank, verdict: defVerdict(rank, total) };
-}
-
-// ── Confidence bar ──────────────────────────────────────────────────────────
-
-function ConfidenceBar({ value, isOver }: { value: number; isOver: boolean }) {
-  const pct = Math.round(value * 100);
-  const width = Math.max(pct, 8);
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full bg-pe-surface-2/60 overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${isOver ? "bg-emerald-500/70" : "bg-red-400/70"}`}
-          style={{ width: `${width}%` }}
-        />
-      </div>
-      <span className={`text-xs font-bold tabular-nums w-8 text-right ${isOver ? "text-emerald-400" : "text-red-400"}`}>
-        {pct}%
-      </span>
-    </div>
-  );
 }
 
 // ── Player Row ──────────────────────────────────────────────────────────────
@@ -221,12 +175,12 @@ function PlayerRow({
   const overBadges = picks.map((pick) => {
     const signal = pickSignal(pick, opponentRating, total);
     return (
-      <span
+        <span
         key={`over-${pick.marketCode}-${pick.bookLine}`}
         className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
           pick.hitRate >= 80
             ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-            : "bg-amber-500/10 text-amber-400 border-amber-500/25"
+            : "bg-emerald-500/10 text-emerald-300 border-emerald-500/25"
         }`}
       >
         {pick.marketCode} O{pick.bookLine} {pick.hitRate}%
@@ -245,7 +199,7 @@ function PlayerRow({
       className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-md border whitespace-nowrap ${
         pick.hitRate >= 80
           ? "bg-red-500/15 text-red-400 border-red-500/30"
-          : "bg-orange-500/10 text-orange-400 border-orange-500/25"
+          : "bg-red-500/10 text-red-300 border-red-500/25"
       }`}
     >
       {pick.marketCode} U{pick.bookLine} {pick.hitRate}%
@@ -255,7 +209,7 @@ function PlayerRow({
   return (
     <div
       className={`flex flex-col py-2 px-3 border-b border-pe-border/5 last:border-0 hover:bg-pe-surface-2/20 transition-colors gap-1.5 ${
-        hasEdge ? "bg-emerald-500/[0.03]" : ""
+        hasEdge ? "bg-white/[0.015]" : ""
       }`}
     >
       <div className="flex items-center gap-x-2.5 min-w-0">
@@ -419,7 +373,7 @@ function GameCard({
       >
         <h2 className="text-sm font-black uppercase tracking-tight text-pe-text-primary">
           {group.awayTeam}{" "}
-          <span className="text-pe-text-faint font-normal text-xs">@</span>{" "}
+            <span className="text-pe-text-faint font-normal text-xs">@</span>{" "}
           {group.homeTeam}
         </h2>
         <svg
@@ -465,139 +419,6 @@ function GameCard({
   );
 }
 
-// ── Prop AI Section ─────────────────────────────────────────────────────────
-
-function PropAiSection({
-  mlPredictions,
-}: {
-  mlPredictions: MlPrediction[];
-}) {
-  const [expanded, setExpanded] = useState(true);
-
-  // Top 20 picks by confidence, max 2 per player
-  const sorted = mlPredictions
-    .filter((ml) => ml.confidence >= 0.20)
-    .sort((a, b) => b.confidence - a.confidence);
-  const top20: typeof sorted = [];
-  const playerCount = new Map<string, number>();
-  for (const pick of sorted) {
-    const count = playerCount.get(pick.playerName) ?? 0;
-    if (count >= 2) continue;
-    top20.push(pick);
-    playerCount.set(pick.playerName, count + 1);
-    if (top20.length >= 20) break;
-  }
-
-  if (top20.length === 0) return null;
-
-  return (
-    <div className="bg-pe-surface-1/60 border border-pe-border/10 rounded-2xl overflow-hidden mb-4">
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-500/10 via-pe-surface-2/30 to-pe-surface-2/30 hover:from-blue-500/15 transition-colors text-left cursor-pointer"
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="text-sm font-black uppercase tracking-tight text-pe-text-primary">
-            Prop AI
-          </span>
-          <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-1.5 py-0.5 rounded-full">
-            {top20.length} picks
-          </span>
-        </div>
-        <svg
-          className={`w-4 h-4 text-pe-text-faint transition-transform ${expanded ? "rotate-180" : ""}`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
-
-      {expanded && (
-        <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-pe-border/5">
-            {top20.map((ml) => {
-              const isOver = ml.prediction === "OVER";
-
-              return (
-                <div
-                  key={`${ml.playerName}-${ml.marketCode}`}
-                  className="flex items-center gap-3 px-4 py-3 bg-pe-surface-1/80 hover:bg-pe-surface-2/40 transition-colors"
-                >
-                  {/* Direction indicator — the decision */}
-                  <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-black text-xs ${
-                    isOver
-                      ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
-                      : "bg-red-500/12 text-red-400 border border-red-500/25"
-                  }`}>
-                    {isOver ? "OVR" : "UND"}
-                  </div>
-
-                  {/* Core info — player, stat, line */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Link
-                        href={`/player/${encodeURIComponent(ml.playerName)}`}
-                        className="text-sm font-bold text-pe-text-primary hover:text-pe-accent transition-colors truncate"
-                      >
-                        {ml.playerName}
-                      </Link>
-                      <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border ${getStatBadgeColor(ml.marketCode)}`}>
-                        {ml.marketCode}
-                      </span>
-                    </div>
-
-                    {/* Confidence bar — visual, not just a number */}
-                    <ConfidenceBar value={ml.confidence} isOver={isOver} />
-                  </div>
-
-                  {/* The line — the number that matters */}
-                  <div className="shrink-0 text-right">
-                    <div className="text-lg font-black text-pe-text-primary tabular-nums">
-                      {ml.bookLine}
-                    </div>
-                    <div className="text-[10px] text-pe-text-faint mb-1.5">line</div>
-                  </div>
-
-                  {/* Share button */}
-                  <PickShareButton
-                    playerName={ml.playerName}
-                    market={ml.marketCode}
-                    line={ml.bookLine}
-                    direction={ml.prediction as "OVER" | "UNDER"}
-                    confidence={ml.confidence}
-                  />
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Model estimate note */}
-          <div className="px-4 pt-2.5 pb-1">
-            <span className="text-[9px] text-pe-text-faint">Model estimate based on historical data</span>
-          </div>
-
-          {/* Track record link */}
-          <Link
-            href="/track-record"
-            className="flex items-center justify-center gap-2 py-3 border-t border-pe-border/10 text-xs font-bold text-blue-400 hover:text-blue-300 hover:bg-blue-500/5 transition-colors"
-          >
-            View full track record
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </Link>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function SlatePageContent({
@@ -607,7 +428,6 @@ export default function SlatePageContent({
   propDate,
   topPicks,
   underPicks,
-  mlPredictions,
 }: SlatePageContentProps) {
   const gameGroups = groupPlayersByGame(todaysPlayers);
   const hasGames = gameGroups.length > 0;
@@ -623,7 +443,7 @@ export default function SlatePageContent({
       <div className="flex items-end justify-between mb-4">
         <div>
           <h1 className="text-lg font-black uppercase tracking-tight text-pe-text-primary">
-            The Edge
+            Slate
           </h1>
           <p className="text-xs text-pe-text-faint mt-0.5">
             {formatSlateDate(propDate)}
@@ -651,22 +471,14 @@ export default function SlatePageContent({
         {analyticsPickCount > 0 && (
           <>
             <span className="text-pe-border/20 select-none">&middot;</span>
-            <span><span className="text-emerald-400 font-bold">{analyticsPickCount}</span> edges</span>
-          </>
-        )}
-        {mlPredictions.length > 0 && (
-          <>
-            <span className="text-pe-border/20 select-none">&middot;</span>
-            <span><span className="text-blue-400 font-bold">{Math.min(mlPredictions.filter((ml) => ml.confidence >= 0.20).length, 20)}</span> AI picks</span>
+            <span><span className="text-[#f5d89b] font-bold">{analyticsPickCount}</span> edges</span>
+            
           </>
         )}
         <span className="ml-auto text-pe-text-faint">
           {formatRelativeTimeShort(lastUpdated)}
         </span>
       </div>
-
-      {/* Prop AI picks */}
-      {hasGames && <PropAiSection mlPredictions={mlPredictions} />}
 
       {!hasGames ? (
         <div className="bg-pe-surface-1/60 border border-pe-border/10 rounded-2xl p-12 text-center">

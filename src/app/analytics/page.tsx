@@ -7,6 +7,7 @@ import {
   getUnderPicks,
   getBacktestResults,
   getLastDataUpdate,
+  getTeamDefensiveRatings,
 } from "@/lib/data";
 import HomepageContent from "@/app/components/HomepageContent";
 
@@ -26,6 +27,7 @@ export default async function AnalyticsPage() {
   let topPicks: Awaited<ReturnType<typeof getTopPicks>> = { picks: [], propDate: null };
   let underPicks: Awaited<ReturnType<typeof getUnderPicks>> = { picks: [], propDate: null };
   let backtestResults: Awaited<ReturnType<typeof getBacktestResults>> = { gameDate: "", picks: [] };
+  let defensiveRatings: Awaited<ReturnType<typeof getTeamDefensiveRatings>> = [];
   let lastUpdated: string | null = null;
 
   try {
@@ -37,6 +39,7 @@ export default async function AnalyticsPage() {
       topPicks,
       underPicks,
       backtestResults,
+      defensiveRatings,
       lastUpdated,
     ] = await Promise.all([
       getPlayerData(FEATURED_PLAYER, 10),
@@ -46,6 +49,7 @@ export default async function AnalyticsPage() {
       getTopPicks(25),
       getUnderPicks(25),
       getBacktestResults(),
+      getTeamDefensiveRatings(),
       getLastDataUpdate(),
     ]);
   } catch (e) {
@@ -61,6 +65,7 @@ export default async function AnalyticsPage() {
       trendingPlayers={trendingPlayers}
       topPicks={topPicks.picks}
       underPicks={underPicks.picks}
+      defensiveRatings={defensiveRatings}
       propDate={topPicks.propDate ?? underPicks.propDate}
       backtestResults={backtestResults}
       lastUpdated={lastUpdated}

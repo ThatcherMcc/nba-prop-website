@@ -5,82 +5,27 @@ import {
   getUnderPicks,
   getTeamDefensiveRatings,
   getLastDataUpdate,
-  getMlPredictions,
 } from "@/lib/data";
 import SlatePageContent from "@/app/components/SlatePageContent";
 
 const BASE_URL = "https://propedge.bet";
 
-// ── Dynamic metadata for share links ─────────────────────────────────────────
-
-type SlatePageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-export async function generateMetadata(
-  { searchParams }: SlatePageProps
-): Promise<Metadata> {
-  const params = await searchParams;
-
-  const player    = typeof params.player    === "string" ? params.player    : null;
-  const market    = typeof params.market    === "string" ? params.market    : null;
-  const line      = typeof params.line      === "string" ? params.line      : null;
-  const direction = typeof params.direction === "string" ? params.direction : null;
-  const confidence = typeof params.confidence === "string" ? params.confidence : null;
-
-  // If all share params present, generate a pick-specific OG image
-  if (player && market && line && direction) {
-    const ogParams = new URLSearchParams({ player, market, line, direction });
-    if (confidence) ogParams.set("confidence", confidence);
-
-    const dirLabel = direction.toUpperCase() === "UNDER" ? "UNDER" : "OVER";
-    const confLabel = confidence
-      ? ` (${Math.round(parseFloat(confidence) * 100)}% conf)`
-      : "";
-    const title = `${player} ${dirLabel} ${line} ${market}${confLabel} — PropEdge AI Pick`;
-    const description = `PropEdge AI model pick: ${player} ${dirLabel} ${line} ${market}${confLabel}. Data-driven NBA prop analysis.`;
-
-    return {
-      title,
-      description,
-      openGraph: {
-        title,
-        description,
-        url: `${BASE_URL}/slate?${ogParams.toString()}`,
-        images: [
-          {
-            url: `${BASE_URL}/api/og/pick?${ogParams.toString()}`,
-            width: 1200,
-            height: 630,
-            alt: title,
-          },
-        ],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        images: [`${BASE_URL}/api/og/pick?${ogParams.toString()}`],
-      },
-    };
-  }
-
-  // Default slate page metadata
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "The Edge | PropEdge",
+    title: "Slate | PropEdge",
     description:
-      "Today's NBA games with top prop edges and ML picks for every matchup.",
+      "Today's NBA slate with analytics picks, player prop lines, and matchup context for every game.",
     openGraph: {
-      title: "The Edge | PropEdge",
+      title: "Slate | PropEdge",
       description:
-        "Today's NBA games with top prop edges and ML picks for every matchup.",
+        "Today's NBA slate with analytics picks, player prop lines, and matchup context for every game.",
       url: `${BASE_URL}/slate`,
     },
     twitter: {
       card: "summary",
-      title: "The Edge | PropEdge",
+      title: "Slate | PropEdge",
       description:
-        "Today's NBA games with top prop edges and ML picks for every matchup.",
+        "Today's NBA slate with analytics picks, player prop lines, and matchup context for every game.",
     },
   };
 }
@@ -100,17 +45,15 @@ export default async function SlatePage() {
   let defensiveRatings: Awaited<ReturnType<typeof getTeamDefensiveRatings>> =
     [];
   let lastUpdated: string | null = null;
-  let mlPredictions: Awaited<ReturnType<typeof getMlPredictions>> = [];
 
   try {
-    [todaysPlayers, topPicks, underPicks, defensiveRatings, lastUpdated, mlPredictions] =
+    [todaysPlayers, topPicks, underPicks, defensiveRatings, lastUpdated] =
       await Promise.all([
         getTodaysPlayers(),
         getTopPicks(50),
         getUnderPicks(50),
         getTeamDefensiveRatings(),
         getLastDataUpdate(),
-        getMlPredictions(),
       ]);
   } catch (e) {
     console.error("Slate page data load failed:", e);
@@ -124,7 +67,6 @@ export default async function SlatePage() {
       propDate={topPicks.propDate}
       topPicks={topPicks.picks}
       underPicks={underPicks.picks}
-      mlPredictions={mlPredictions}
     />
   );
 }

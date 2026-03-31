@@ -5,8 +5,6 @@ import { eq, desc, sql, gte, and } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { FALLBACK_PLAYER_NAMES } from "@/lib/playerNames";
 
-const PLAYER_DATA_CACHE = { tags: ["player-data"], revalidate: 900 } as const;
-
 /**
  * Canonical list of player names from Neon `players` table (source of truth).
  * Used for search suggestions and validation. Cached with tag "player-data";
@@ -28,7 +26,7 @@ export const getPlayerNames = unstable_cache(
     }
   },
   ["getPlayerNames"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 /**
@@ -50,7 +48,7 @@ export const getPlayersWithGameData = unstable_cache(
     }
   },
   ["getPlayersWithGameData"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 /** True if a player with this name exists in `players` (case-insensitive). Used for 404 on invalid /player/[name]. */
@@ -69,7 +67,7 @@ export const getPlayerExists = unstable_cache(
     }
   },
   ["getPlayerExists"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // Only include games where the player actually played (exclude DNP).
@@ -119,7 +117,7 @@ export const getTopScorersLastGame = unstable_cache(
     }
   },
   ["getTopScorersLastGame"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 function toNum(v: string | number | null | undefined): number | null {
@@ -235,7 +233,7 @@ export const getPlayerLastGameStatus = unstable_cache(
     }
   },
   ["getPlayerLastGameStatus"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 export const getPlayerData = unstable_cache(
@@ -310,7 +308,7 @@ export const getPlayerData = unstable_cache(
     }
   },
   ["getPlayerData"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 export type HotScorer = {
@@ -347,7 +345,7 @@ export const getTopScorersLast7Days = unstable_cache(
     }
   },
   ["getTopScorersLast7Days"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Over season average in last 5 games (points) ---
@@ -461,7 +459,7 @@ export const getPlayersOverSeasonAvgLast5 = unstable_cache(
     }
   },
   ["getPlayersOverSeasonAvgLast5"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Under season average in last 5 games (points) — "Cold last 5" ---
@@ -586,7 +584,7 @@ export const getPlayersUnderSeasonAvgLast5 = unstable_cache(
     }
   },
   ["getPlayersUnderSeasonAvgLast5"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Trending: last 3 games avg vs previous 3 games avg (points) ---
@@ -606,13 +604,11 @@ export type TopPick = {
   marketCode: string;
   marketName: string;
   bookLine: number;
+  opponentTeamCode: string | null;
   gamesChecked: number;
   overCount: number;
   hitRate: number; // 0-100
   playingToday: boolean;
-  opponentCode: string | null;
-  opponentDefenseValue: number | null;
-  opponentDefenseRank: number | null;
 };
 
 export type PicksResult<T> = {
@@ -630,13 +626,11 @@ export const getTopPicks = unstable_cache(
       market_code: string;
       market_name: string;
       book_line: string | number;
+      opponent_team_code: string | null;
       games_checked: number;
       over_count: number;
       hit_rate: string | number;
       prop_date: string | null;
-      opponent_code: string | null;
-      opponent_defense_value: string | number | null;
-      opponent_defense_rank: number | null;
     };
 
     try {
@@ -651,53 +645,13 @@ export const getTopPicks = unstable_cache(
              JOIN games g ON g.game_id = pp.game_id)
           ) AS target_date
         ),
-        defense AS (
-          SELECT
-            tdr.team_id,
-            t.team_code,
-            tdr.opp_pts::float AS opp_pts,
-            tdr.opp_trb::float AS opp_trb,
-            tdr.opp_ast::float AS opp_ast,
-            tdr.opp_3p::float AS opp_3p,
-            tdr.opp_ft::float AS opp_ft,
-            tdr.opp_stl::float AS opp_stl,
-            tdr.opp_blk::float AS opp_blk,
-            tdr.opp_tov::float AS opp_tov,
-            RANK() OVER (ORDER BY tdr.opp_pts ASC) AS rank_pts,
-            RANK() OVER (ORDER BY tdr.opp_trb ASC) AS rank_trb,
-            RANK() OVER (ORDER BY tdr.opp_ast ASC) AS rank_ast,
-            RANK() OVER (ORDER BY tdr.opp_3p ASC) AS rank_3p,
-            RANK() OVER (ORDER BY tdr.opp_ft ASC) AS rank_ft,
-            RANK() OVER (ORDER BY tdr.opp_stl ASC) AS rank_stl,
-            RANK() OVER (ORDER BY tdr.opp_blk ASC) AS rank_blk,
-            RANK() OVER (ORDER BY tdr.opp_tov ASC) AS rank_tov
-          FROM team_defensive_ratings tdr
-          JOIN teams t ON t.team_id = tdr.team_id
-        ),
         todays_props AS (
           SELECT
             pp.player_id,
-            pp.game_id,
             pm.market_code,
             pm.market_name,
             pp.book_line,
-            opp.team_code AS opponent_code,
-            def.opp_pts,
-            def.opp_trb,
-            def.opp_ast,
-            def.opp_3p,
-            def.opp_ft,
-            def.opp_stl,
-            def.opp_blk,
-            def.opp_tov,
-            def.rank_pts,
-            def.rank_trb,
-            def.rank_ast,
-            def.rank_3p,
-            def.rank_ft,
-            def.rank_stl,
-            def.rank_blk,
-            def.rank_tov
+            opp.team_code AS opponent_team_code
           FROM player_props pp
           JOIN games g ON g.game_id = pp.game_id
           JOIN prop_markets pm ON pm.market_id = pp.market_id
@@ -708,14 +662,14 @@ export const getTopPicks = unstable_cache(
             ORDER BY pgs.gamelog_id DESC
             LIMIT 1
           ) latest_team ON true
-          LEFT JOIN teams opp ON opp.team_id = CASE
+          JOIN teams opp ON opp.team_id = CASE
             WHEN latest_team.team_id = g.home_team_id THEN g.away_team_id
             ELSE g.home_team_id
           END
-          LEFT JOIN defense def ON def.team_id = opp.team_id
           WHERE g.game_date = (SELECT target_date FROM prop_date)
             AND pp.book_line IS NOT NULL
             AND pm.market_code NOT IN ('FTM', 'TOV')
+            AND latest_team.team_id IS NOT NULL
         ),
         ranked_games AS (
           SELECT s.player_id,
@@ -736,6 +690,7 @@ export const getTopPicks = unstable_cache(
             tp.market_code,
             tp.market_name,
             tp.book_line,
+            tp.opponent_team_code,
             COUNT(*)::int AS games_checked,
             COUNT(*) FILTER (WHERE
               CASE tp.market_code
@@ -754,41 +709,6 @@ export const getTopPicks = unstable_cache(
                 WHEN 'SB' THEN l.steals + l.blocks
               END > tp.book_line
             )::int AS over_count,
-            MAX(tp.opponent_code) AS opponent_code,
-            MAX(
-              CASE tp.market_code
-                WHEN 'PTS' THEN tp.opp_pts
-                WHEN 'REB' THEN tp.opp_trb
-                WHEN 'AST' THEN tp.opp_ast
-                WHEN 'STL' THEN tp.opp_stl
-                WHEN 'BLK' THEN tp.opp_blk
-                WHEN 'FG3' THEN tp.opp_3p
-                WHEN 'FTM' THEN tp.opp_ft
-                WHEN 'TOV' THEN tp.opp_tov
-                WHEN 'PRA' THEN COALESCE(tp.opp_pts, 0) + COALESCE(tp.opp_trb, 0) + COALESCE(tp.opp_ast, 0)
-                WHEN 'PR' THEN COALESCE(tp.opp_pts, 0) + COALESCE(tp.opp_trb, 0)
-                WHEN 'PA' THEN COALESCE(tp.opp_pts, 0) + COALESCE(tp.opp_ast, 0)
-                WHEN 'RA' THEN COALESCE(tp.opp_trb, 0) + COALESCE(tp.opp_ast, 0)
-                WHEN 'SB' THEN COALESCE(tp.opp_stl, 0) + COALESCE(tp.opp_blk, 0)
-              END
-            ) AS opponent_defense_value,
-            MAX(
-              CASE tp.market_code
-                WHEN 'PTS' THEN tp.rank_pts
-                WHEN 'REB' THEN tp.rank_trb
-                WHEN 'AST' THEN tp.rank_ast
-                WHEN 'STL' THEN tp.rank_stl
-                WHEN 'BLK' THEN tp.rank_blk
-                WHEN 'FG3' THEN tp.rank_3p
-                WHEN 'FTM' THEN tp.rank_ft
-                WHEN 'TOV' THEN tp.rank_tov
-                WHEN 'PRA' THEN COALESCE(tp.rank_pts, 0) + COALESCE(tp.rank_trb, 0) + COALESCE(tp.rank_ast, 0)
-                WHEN 'PR' THEN COALESCE(tp.rank_pts, 0) + COALESCE(tp.rank_trb, 0)
-                WHEN 'PA' THEN COALESCE(tp.rank_pts, 0) + COALESCE(tp.rank_ast, 0)
-                WHEN 'RA' THEN COALESCE(tp.rank_trb, 0) + COALESCE(tp.rank_ast, 0)
-                WHEN 'SB' THEN COALESCE(tp.rank_stl, 0) + COALESCE(tp.rank_blk, 0)
-              END
-            )::int AS opponent_defense_rank,
             AVG(
               CASE tp.market_code
                 WHEN 'PTS' THEN l.points
@@ -808,7 +728,7 @@ export const getTopPicks = unstable_cache(
             ) AS avg_last10
           FROM todays_props tp
           JOIN last_10 l ON l.player_id = tp.player_id
-          GROUP BY tp.player_id, tp.market_code, tp.market_name, tp.book_line
+          GROUP BY tp.player_id, tp.market_code, tp.market_name, tp.book_line, tp.opponent_team_code
           HAVING COUNT(*) >= 5
         )
         ,ranked_picks AS (
@@ -817,35 +737,26 @@ export const getTopPicks = unstable_cache(
             h.market_code,
             h.market_name,
             h.book_line::text AS book_line,
+            h.opponent_team_code,
             h.games_checked,
             h.over_count,
             ROUND((h.over_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
-            h.opponent_code,
-            ROUND(h.opponent_defense_value::numeric, 1) AS opponent_defense_value,
-            h.opponent_defense_rank,
             h.avg_last10,
             ROW_NUMBER() OVER (
               PARTITION BY h.player_id
-              ORDER BY
-                (h.over_count::numeric / h.games_checked) DESC,
-                COALESCE(h.opponent_defense_rank, 0) DESC,
-                ABS(h.avg_last10 - h.book_line) / NULLIF(h.book_line, 0) DESC
+              ORDER BY (h.over_count::numeric / h.games_checked) DESC, ABS(h.avg_last10 - h.book_line) / NULLIF(h.book_line, 0) DESC
             ) AS player_rn
           FROM hit_rates h
           JOIN players p ON p.player_id = h.player_id
           WHERE h.over_count::numeric / h.games_checked >= 0.6
             AND h.book_line > 1.5
         )
-        SELECT player_name, market_code, market_name, book_line,
+        SELECT player_name, market_code, market_name, book_line, opponent_team_code,
           games_checked, over_count, hit_rate,
-          opponent_code, opponent_defense_value, opponent_defense_rank,
           (SELECT target_date::text FROM prop_date) AS prop_date
         FROM ranked_picks
         WHERE player_rn <= 2
-        ORDER BY
-          hit_rate DESC,
-          COALESCE(opponent_defense_rank, 0) DESC,
-          ABS(avg_last10 - book_line::numeric) / NULLIF(book_line::numeric, 0) DESC
+        ORDER BY hit_rate DESC, ABS(avg_last10 - book_line::numeric) / NULLIF(book_line::numeric, 0) DESC
         LIMIT ${limit}
       `);
 
@@ -858,16 +769,11 @@ export const getTopPicks = unstable_cache(
           marketCode: r.market_code,
           marketName: r.market_name,
           bookLine: Number(r.book_line),
+          opponentTeamCode: r.opponent_team_code,
           gamesChecked: Number(r.games_checked),
           overCount: Number(r.over_count),
           hitRate: Number(r.hit_rate),
           playingToday: true,
-          opponentCode: r.opponent_code ?? null,
-          opponentDefenseValue:
-            r.opponent_defense_value != null
-              ? Number(r.opponent_defense_value)
-              : null,
-          opponentDefenseRank: r.opponent_defense_rank ?? null,
         })),
         propDate: rows[0]?.prop_date ?? null,
       };
@@ -877,7 +783,7 @@ export const getTopPicks = unstable_cache(
     }
   },
   ["getTopPicks"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Under Picks: players most likely to go UNDER today's book lines ---
@@ -886,13 +792,11 @@ export type UnderPick = {
   marketCode: string;
   marketName: string;
   bookLine: number;
+  opponentTeamCode: string | null;
   gamesChecked: number;
   underCount: number;
   hitRate: number; // 0-100
   playingToday: boolean;
-  opponentCode: string | null;
-  opponentDefenseValue: number | null;
-  opponentDefenseRank: number | null;
 };
 
 export const getUnderPicks = unstable_cache(
@@ -902,13 +806,11 @@ export const getUnderPicks = unstable_cache(
       market_code: string;
       market_name: string;
       book_line: string | number;
+      opponent_team_code: string | null;
       games_checked: number;
       under_count: number;
       hit_rate: string | number;
       prop_date: string | null;
-      opponent_code: string | null;
-      opponent_defense_value: string | number | null;
-      opponent_defense_rank: number | null;
     };
 
     try {
@@ -923,53 +825,13 @@ export const getUnderPicks = unstable_cache(
              JOIN games g ON g.game_id = pp.game_id)
           ) AS target_date
         ),
-        defense AS (
-          SELECT
-            tdr.team_id,
-            t.team_code,
-            tdr.opp_pts::float AS opp_pts,
-            tdr.opp_trb::float AS opp_trb,
-            tdr.opp_ast::float AS opp_ast,
-            tdr.opp_3p::float AS opp_3p,
-            tdr.opp_ft::float AS opp_ft,
-            tdr.opp_stl::float AS opp_stl,
-            tdr.opp_blk::float AS opp_blk,
-            tdr.opp_tov::float AS opp_tov,
-            RANK() OVER (ORDER BY tdr.opp_pts ASC) AS rank_pts,
-            RANK() OVER (ORDER BY tdr.opp_trb ASC) AS rank_trb,
-            RANK() OVER (ORDER BY tdr.opp_ast ASC) AS rank_ast,
-            RANK() OVER (ORDER BY tdr.opp_3p ASC) AS rank_3p,
-            RANK() OVER (ORDER BY tdr.opp_ft ASC) AS rank_ft,
-            RANK() OVER (ORDER BY tdr.opp_stl ASC) AS rank_stl,
-            RANK() OVER (ORDER BY tdr.opp_blk ASC) AS rank_blk,
-            RANK() OVER (ORDER BY tdr.opp_tov ASC) AS rank_tov
-          FROM team_defensive_ratings tdr
-          JOIN teams t ON t.team_id = tdr.team_id
-        ),
         todays_props AS (
           SELECT
             pp.player_id,
-            pp.game_id,
             pm.market_code,
             pm.market_name,
             pp.book_line,
-            opp.team_code AS opponent_code,
-            def.opp_pts,
-            def.opp_trb,
-            def.opp_ast,
-            def.opp_3p,
-            def.opp_ft,
-            def.opp_stl,
-            def.opp_blk,
-            def.opp_tov,
-            def.rank_pts,
-            def.rank_trb,
-            def.rank_ast,
-            def.rank_3p,
-            def.rank_ft,
-            def.rank_stl,
-            def.rank_blk,
-            def.rank_tov
+            opp.team_code AS opponent_team_code
           FROM player_props pp
           JOIN games g ON g.game_id = pp.game_id
           JOIN prop_markets pm ON pm.market_id = pp.market_id
@@ -980,14 +842,14 @@ export const getUnderPicks = unstable_cache(
             ORDER BY pgs.gamelog_id DESC
             LIMIT 1
           ) latest_team ON true
-          LEFT JOIN teams opp ON opp.team_id = CASE
+          JOIN teams opp ON opp.team_id = CASE
             WHEN latest_team.team_id = g.home_team_id THEN g.away_team_id
             ELSE g.home_team_id
           END
-          LEFT JOIN defense def ON def.team_id = opp.team_id
           WHERE g.game_date = (SELECT target_date FROM prop_date)
             AND pp.book_line IS NOT NULL
             AND pm.market_code NOT IN ('FTM', 'TOV')
+            AND latest_team.team_id IS NOT NULL
         ),
         ranked_games AS (
           SELECT s.player_id,
@@ -1008,6 +870,7 @@ export const getUnderPicks = unstable_cache(
             tp.market_code,
             tp.market_name,
             tp.book_line,
+            tp.opponent_team_code,
             COUNT(*)::int AS games_checked,
             COUNT(*) FILTER (WHERE
               CASE tp.market_code
@@ -1025,45 +888,10 @@ export const getUnderPicks = unstable_cache(
                 WHEN 'RA' THEN l.total_rebounds + l.assists
                 WHEN 'SB' THEN l.steals + l.blocks
               END < tp.book_line
-            )::int AS under_count,
-            MAX(tp.opponent_code) AS opponent_code,
-            MAX(
-              CASE tp.market_code
-                WHEN 'PTS' THEN tp.opp_pts
-                WHEN 'REB' THEN tp.opp_trb
-                WHEN 'AST' THEN tp.opp_ast
-                WHEN 'STL' THEN tp.opp_stl
-                WHEN 'BLK' THEN tp.opp_blk
-                WHEN 'FG3' THEN tp.opp_3p
-                WHEN 'FTM' THEN tp.opp_ft
-                WHEN 'TOV' THEN tp.opp_tov
-                WHEN 'PRA' THEN COALESCE(tp.opp_pts, 0) + COALESCE(tp.opp_trb, 0) + COALESCE(tp.opp_ast, 0)
-                WHEN 'PR' THEN COALESCE(tp.opp_pts, 0) + COALESCE(tp.opp_trb, 0)
-                WHEN 'PA' THEN COALESCE(tp.opp_pts, 0) + COALESCE(tp.opp_ast, 0)
-                WHEN 'RA' THEN COALESCE(tp.opp_trb, 0) + COALESCE(tp.opp_ast, 0)
-                WHEN 'SB' THEN COALESCE(tp.opp_stl, 0) + COALESCE(tp.opp_blk, 0)
-              END
-            ) AS opponent_defense_value,
-            MAX(
-              CASE tp.market_code
-                WHEN 'PTS' THEN tp.rank_pts
-                WHEN 'REB' THEN tp.rank_trb
-                WHEN 'AST' THEN tp.rank_ast
-                WHEN 'STL' THEN tp.rank_stl
-                WHEN 'BLK' THEN tp.rank_blk
-                WHEN 'FG3' THEN tp.rank_3p
-                WHEN 'FTM' THEN tp.rank_ft
-                WHEN 'TOV' THEN tp.rank_tov
-                WHEN 'PRA' THEN COALESCE(tp.rank_pts, 0) + COALESCE(tp.rank_trb, 0) + COALESCE(tp.rank_ast, 0)
-                WHEN 'PR' THEN COALESCE(tp.rank_pts, 0) + COALESCE(tp.rank_trb, 0)
-                WHEN 'PA' THEN COALESCE(tp.rank_pts, 0) + COALESCE(tp.rank_ast, 0)
-                WHEN 'RA' THEN COALESCE(tp.rank_trb, 0) + COALESCE(tp.rank_ast, 0)
-                WHEN 'SB' THEN COALESCE(tp.rank_stl, 0) + COALESCE(tp.rank_blk, 0)
-              END
-            )::int AS opponent_defense_rank
+            )::int AS under_count
           FROM todays_props tp
           JOIN last_10 l ON l.player_id = tp.player_id
-          GROUP BY tp.player_id, tp.market_code, tp.market_name, tp.book_line
+          GROUP BY tp.player_id, tp.market_code, tp.market_name, tp.book_line, tp.opponent_team_code
           HAVING COUNT(*) >= 5
         )
         ,ranked_picks AS (
@@ -1073,18 +901,13 @@ export const getUnderPicks = unstable_cache(
             h.market_code,
             h.market_name,
             h.book_line::text AS book_line,
+            h.opponent_team_code,
             h.games_checked,
             h.under_count,
             ROUND((h.under_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
-            h.opponent_code,
-            ROUND(h.opponent_defense_value::numeric, 1) AS opponent_defense_value,
-            h.opponent_defense_rank,
             ROW_NUMBER() OVER (
               PARTITION BY h.player_id
-              ORDER BY
-                (h.under_count::numeric / h.games_checked) DESC,
-                COALESCE(h.opponent_defense_rank, 0) DESC,
-                h.book_line DESC
+              ORDER BY (h.under_count::numeric / h.games_checked) DESC, h.book_line DESC
             ) AS player_rn
           FROM hit_rates h
           JOIN players p ON p.player_id = h.player_id
@@ -1094,16 +917,12 @@ export const getUnderPicks = unstable_cache(
             AND NOT (h.market_code IN ('BLK', 'STL', 'SB') AND h.book_line <= 1.5)
             AND NOT (h.market_code = 'AST' AND h.book_line <= 2.5)
         )
-        SELECT player_name, market_code, market_name, book_line,
+        SELECT player_name, market_code, market_name, book_line, opponent_team_code,
           games_checked, under_count, hit_rate,
-          opponent_code, opponent_defense_value, opponent_defense_rank,
           (SELECT target_date::text FROM prop_date) AS prop_date
         FROM ranked_picks
         WHERE player_rn <= 2
-        ORDER BY
-          hit_rate DESC,
-          COALESCE(opponent_defense_rank, 0) DESC,
-          book_line DESC
+        ORDER BY hit_rate DESC, book_line DESC
         LIMIT ${limit}
       `);
 
@@ -1116,16 +935,11 @@ export const getUnderPicks = unstable_cache(
           marketCode: r.market_code,
           marketName: r.market_name,
           bookLine: Number(r.book_line),
+          opponentTeamCode: r.opponent_team_code,
           gamesChecked: Number(r.games_checked),
           underCount: Number(r.under_count),
           hitRate: Number(r.hit_rate),
           playingToday: true,
-          opponentCode: r.opponent_code ?? null,
-          opponentDefenseValue:
-            r.opponent_defense_value != null
-              ? Number(r.opponent_defense_value)
-              : null,
-          opponentDefenseRank: r.opponent_defense_rank ?? null,
         })),
         propDate: rows[0]?.prop_date ?? null,
       };
@@ -1135,7 +949,7 @@ export const getUnderPicks = unstable_cache(
     }
   },
   ["getUnderPicks"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Backtest: check how yesterday's picks actually performed ---
@@ -1389,7 +1203,7 @@ export const getBacktestResults = unstable_cache(
     }
   },
   ["getBacktestResults"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- ML Backtest: graded ML model predictions ---
@@ -1549,7 +1363,7 @@ export const getMlBacktestResults = unstable_cache(
     }
   },
   ["getMlBacktestResults"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Home/Away splits for a player (full season) ---
@@ -1643,7 +1457,7 @@ export const getPlayerSplits = unstable_cache(
     }
   },
   ["getPlayerSplits"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Matchup averages per opponent team (full season) ---
@@ -1723,7 +1537,7 @@ export const getPlayerMatchups = unstable_cache(
     }
   },
   ["getPlayerMatchups"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 export const getTrendingPlayers = unstable_cache(
@@ -1820,7 +1634,7 @@ export const getTrendingPlayers = unstable_cache(
     }
   },
   ["getTrendingPlayers"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Player prop lines from sportsbook data ---
@@ -1902,7 +1716,7 @@ export const getPlayerPropLines = unstable_cache(
     }
   },
   ["getPlayerPropLines"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Today's game info for a specific player ---
@@ -1993,7 +1807,7 @@ export const getPlayerTodaysGame = unstable_cache(
     }
   },
   ["getPlayerTodaysGame"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Today's players with their key prop lines ---
@@ -2078,7 +1892,7 @@ export const getTodaysPlayers = unstable_cache(
     }
   },
   ["getTodaysPlayers"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 /**
@@ -2101,7 +1915,7 @@ export const getLastDataUpdate = unstable_cache(
     }
   },
   ["getLastDataUpdate"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- ML Predictions ---
@@ -2178,7 +1992,7 @@ export const getMlPredictions = unstable_cache(
     }
   },
   ["getMlPredictions"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Weekly Insights ("The Edge") ---
@@ -2456,7 +2270,7 @@ export const getAvailableInsightWeeks = unstable_cache(
     }
   },
   ["getAvailableInsightWeeks"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 /** Full weekly recap: run backtest for each game date in the week, aggregate results */
@@ -2553,7 +2367,7 @@ export const getWeeklyRecap = unstable_cache(
     }
   },
   ["getWeeklyRecap"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 /** Players who outperformed their season average during the given week */
@@ -2615,7 +2429,7 @@ export const getWeeklyHotPlayers = unstable_cache(
     }
   },
   ["getWeeklyHotPlayers"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 /** Players who underperformed their season average during the given week */
@@ -2677,7 +2491,7 @@ export const getWeeklyColdPlayers = unstable_cache(
     }
   },
   ["getWeeklyColdPlayers"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // --- Team defensive ratings (opponent weakness overlay) ---
@@ -2770,7 +2584,7 @@ export const getTeamDefensiveRatings = unstable_cache(
     }
   },
   ["getTeamDefensiveRatings"],
-  PLAYER_DATA_CACHE
+  { tags: ["player-data"] }
 );
 
 // ── MLB Data Queries ──────────────────────────────────────────────────────────
