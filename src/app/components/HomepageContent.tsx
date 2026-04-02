@@ -95,14 +95,14 @@ export default function HomepageContent({
           <div>
             <span className="text-xs font-bold uppercase tracking-wide text-pe-accent">Promo</span>
             <p className="text-sm font-semibold text-pe-text-primary mt-0.5">
-              Get $25 free on PrizePicks
+              Sign up for PrizePicks with our code
             </p>
             <p className="text-xs text-pe-text-muted mt-0.5">
-              Sign up with our code and get $25 in bonus funds when you deposit. Use code <span className="font-mono font-bold text-pe-accent">PR-5RMN2FT</span>
+              Use code <span className="font-mono font-bold text-pe-accent">PR-5RMN2FT</span> when you sign up to take advantage and support PropEdge.
             </p>
           </div>
           <span className="shrink-0 px-4 py-2 rounded-lg bg-pe-accent/20 text-pe-accent text-xs font-bold uppercase tracking-wide group-hover:bg-pe-accent/30 transition-colors">
-            Claim
+            Sign up
           </span>
         </div>
       </a>
