@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  getLastDataUpdate,
   getMlbParkFactors,
   getMlbSlateProps,
   getMlbSupportedMarkets,
@@ -35,13 +36,15 @@ export default async function MlbSlatePage() {
     propDate: null,
     props: [],
   };
+  let lastUpdated: string | null = null;
 
   try {
-    [starterGames, parkFactors, supportedMarkets, slateProps] = await Promise.all([
+    [starterGames, parkFactors, supportedMarkets, slateProps, lastUpdated] = await Promise.all([
       getMlbStarterGames(),
       getMlbParkFactors(),
       getMlbSupportedMarkets(),
       getMlbSlateProps(),
+      getLastDataUpdate(),
     ]);
   } catch (error) {
     console.error("MLB slate page data load failed:", error);
@@ -53,6 +56,7 @@ export default async function MlbSlatePage() {
       parkFactors={parkFactors}
       supportedMarkets={supportedMarkets}
       slateProps={slateProps}
+      lastUpdated={lastUpdated}
     />
   );
 }

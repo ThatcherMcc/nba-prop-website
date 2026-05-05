@@ -2,6 +2,7 @@ import Link from "next/link";
 import type {
   MlbDataCoverage,
   MlbParkFactor,
+  MlbSlatePropsResult,
   MlbSupportedMarket,
 } from "@/lib/data";
 import type { MlbStarterGame } from "@/lib/mlbStarters";
@@ -9,20 +10,10 @@ import { normalizeMlbTeamCode } from "@/lib/leagues";
 import MlbStartersToday from "@/app/components/MlbStartersToday";
 
 function pfClass(value: number | null): string {
-  if (value == null) return "bg-zinc-500/15 text-zinc-400";
-  if (value > 103) return "bg-emerald-500/15 text-emerald-400";
-  if (value < 97) return "bg-red-500/15 text-red-400";
-  return "bg-zinc-700/40 text-pe-text-muted";
-}
-
-function pfLabel(value: number | null): string {
-  return value == null ? "—" : value.toFixed(0);
-}
-
-function marketClass(playerType: "Batter" | "Pitcher"): string {
-  return playerType === "Batter"
-    ? "bg-emerald-500/12 border-emerald-500/20 text-emerald-300"
-    : "bg-sky-500/12 border-sky-500/20 text-sky-300";
+  if (value == null) return "bg-zinc-500/15 text-zinc-400 border-zinc-500/20";
+  if (value > 103) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/20";
+  if (value < 97) return "bg-sky-500/15 text-sky-400 border-sky-500/20";
+  return "bg-pe-surface-2 text-pe-text-muted border-pe-border/10";
 }
 
 function statusClass(live: boolean): string {
@@ -31,97 +22,226 @@ function statusClass(live: boolean): string {
     : "bg-amber-500/12 text-amber-300 border-amber-500/20";
 }
 
-function StatBar({
-  items,
-}: {
-  items: Array<{ label: string; value: string; detail: string }>;
-}) {
+function formatRelativeTimeShort(value: string | null) {
+  if (!value) return "Updating...";
+  const diff = Date.now() - new Date(value).getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  if (minutes < 60) return `${Math.max(minutes, 0)}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function LivePropsSection({ slateProps }: { slateProps: MlbSlatePropsResult }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl px-4 py-4"
-        >
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-pe-text-faint">
-            {item.label}
+    <section className="mb-10">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="text-2xl">🎯</span>
+        <div>
+          <h2 className="text-lg font-black uppercase tracking-wide text-pe-text-primary">
+            Live MLB Lines
+          </h2>
+          <p className="text-xs text-pe-text-faint">
+            Current MLB market rows coming from the shared prop feed
           </p>
-          <p className="mt-2 text-2xl font-black text-pe-text-primary">{item.value}</p>
-          <p className="mt-1 text-xs text-pe-text-faint">{item.detail}</p>
         </div>
-      ))}
-    </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-pe-border/5 bg-pe-surface-1/60">
+        {slateProps.props.length > 0 ? (
+          <table className="w-full table-fixed text-sm">
+            <thead>
+              <tr className="border-b border-pe-border/10 text-[10px] font-bold uppercase tracking-widest text-pe-text-faint">
+                <th className="w-[28%] px-4 py-3 text-left">Player</th>
+                <th className="w-[16%] px-3 py-3 text-left">Team</th>
+                <th className="w-[22%] px-3 py-3 text-left">Market</th>
+                <th className="w-[14%] px-3 py-3 text-right">Line</th>
+                <th className="w-[20%] px-4 py-3 text-right">Game</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slateProps.props.map((prop, index) => (
+                <tr
+                  key={`${prop.playerName}-${prop.marketCode}-${index}`}
+                  className="border-b border-pe-border/5 last:border-0 hover:bg-pe-surface-2/20 transition-colors"
+                >
+                  <td className="px-4 py-4 md:py-3">
+                    <span className="block truncate text-base font-bold text-pe-text-primary md:text-sm">
+                      {prop.playerName}
+                    </span>
+                  </td>
+                  <td className="px-3 py-4 text-pe-text-secondary md:py-3 md:text-sm">
+                    {prop.playerTeam ? normalizeMlbTeamCode(prop.playerTeam) : "—"}
+                  </td>
+                  <td className="px-3 py-4 md:py-3">
+                    <span className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-bold ${pfClass(prop.bookLine)}`}>
+                      {prop.marketCode.replace("MLB_", "")}
+                    </span>
+                  </td>
+                  <td className="px-3 py-4 text-right font-mono text-base text-pe-text-secondary md:py-3 md:text-sm">
+                    {prop.bookLine ?? "—"}
+                  </td>
+                  <td className="px-4 py-4 text-right text-pe-text-muted md:py-3 md:text-sm">
+                    {normalizeMlbTeamCode(prop.awayTeam)} @ {normalizeMlbTeamCode(prop.homeTeam)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="px-6 py-10 text-center text-pe-text-faint text-sm">
+            No MLB prop rows are stored for today yet.
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
-function CoverageRow({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: number;
-  detail: string;
-}) {
-  const live = value > 0;
+function CoverageSection({ coverage, lastUpdated }: { coverage: MlbDataCoverage; lastUpdated: string | null }) {
+  const rows = [
+    { label: "MLB teams", value: coverage.teamCount, detail: "Team directory rows ready for routing and joins." },
+    { label: "Tracked players", value: coverage.playerCount, detail: "Baseball Reference player profiles loaded into the DB." },
+    { label: "Tracked games", value: coverage.gameCount, detail: "MLB games currently present in the shared games table." },
+    { label: "Batter logs", value: coverage.batterGameLogCount, detail: "Required for hitter form and batter-side model inputs." },
+    { label: "Pitcher logs", value: coverage.pitcherGameLogCount, detail: "Required for strikeout, outs, and earned-run modeling." },
+    { label: "Team stats", value: coverage.teamStatCount, detail: "Opponent context tables for the MLB model layer." },
+    { label: "Live props", value: coverage.propCount, detail: "Rows currently present in the shared player_props table." },
+    { label: "Predictions", value: coverage.predictionCount, detail: "Model outputs already written to mlb_predictions." },
+  ];
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-pe-border/8 py-3 last:border-0">
-      <div>
-        <p className="text-sm font-semibold text-pe-text-primary">{label}</p>
-        <p className="text-xs text-pe-text-faint">{detail}</p>
+    <section className="mb-10">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">📡</span>
+        <div>
+          <h2 className="text-lg font-black uppercase tracking-wide text-pe-text-primary">
+            Coverage Status
+          </h2>
+          <p className="text-xs text-pe-text-faint">
+            Updated {formatRelativeTimeShort(lastUpdated)} across the baseball warehouse layer
+          </p>
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-mono text-pe-text-secondary">{value.toLocaleString()}</span>
-        <span
-          className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${statusClass(live)}`}
-        >
-          {live ? "Live" : "Pending"}
-        </span>
+
+      <div className="overflow-hidden rounded-2xl border border-pe-border/5 bg-pe-surface-1/60">
+        <div className="px-4 py-3 border-b border-pe-border/10 text-[10px] font-bold uppercase tracking-widest text-pe-text-faint">
+          MLB data readiness
+        </div>
+        <div className="divide-y divide-pe-border/5">
+          {rows.map((row) => {
+            const live = row.value > 0;
+            return (
+              <div key={row.label} className="flex items-center justify-between gap-4 px-4 py-3">
+                <div>
+                  <p className="text-sm font-semibold text-pe-text-primary">{row.label}</p>
+                  <p className="text-xs text-pe-text-faint">{row.detail}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-mono text-pe-text-secondary">
+                    {row.value.toLocaleString()}
+                  </span>
+                  <span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${statusClass(live)}`}>
+                    {live ? "Live" : "Pending"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function Leaderboard({
+function ParkCardsSection({
   title,
+  subtitle,
+  emoji,
+  borderTone,
+  badgeTone,
   rows,
 }: {
   title: string;
+  subtitle: string;
+  emoji: string;
+  borderTone: string;
+  badgeTone: string;
   rows: MlbParkFactor[];
 }) {
+  if (rows.length === 0) return null;
+
   return (
-    <section className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-bold text-pe-text-primary">{title}</h2>
-        <span className="text-[10px] uppercase tracking-[0.22em] text-pe-text-faint">
-          Runs / HR / K
-        </span>
+    <section className="mb-10">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">{emoji}</span>
+        <div>
+          <h2 className="text-lg font-black uppercase tracking-wide text-pe-text-primary">
+            {title}
+          </h2>
+          <p className="text-xs text-pe-text-faint">{subtitle}</p>
+        </div>
       </div>
 
-      <div className="mt-4 space-y-3">
-        {rows.map((team) => (
+      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        {rows.map((park) => (
           <Link
-            key={`${title}-${team.teamId}`}
-            href={`/mlb/team/${team.teamCode}`}
-            className="flex items-center justify-between gap-4 rounded-xl border border-pe-border/8 px-3 py-3 transition-colors hover:border-pe-border/20 hover:bg-pe-surface-2/35"
+            key={`${title}-${park.teamId}`}
+            href={`/mlb/team/${park.teamCode}`}
+            className={`flex flex-col items-start gap-2 rounded-xl bg-pe-surface-1/60 border border-pe-border/5 border-l-4 ${borderTone} px-5 py-4 transition-all hover:bg-white/[0.02] text-left`}
           >
-            <div>
-              <p className="text-sm font-semibold text-pe-text-primary">
-                {normalizeMlbTeamCode(team.teamCode)}
-              </p>
-              <p className="text-xs text-pe-text-faint">{team.teamName}</p>
+            <span className="text-base font-bold text-pe-text-primary truncate w-full">
+              {normalizeMlbTeamCode(park.teamCode)}
+            </span>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${badgeTone}`}>
+              Runs {park.pfRuns?.toFixed(0) ?? "—"}
+            </span>
+            <div className="w-full space-y-0.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-pe-text-faint">HR</span>
+                <span className="font-bold text-pe-text-primary">{park.pfHr?.toFixed(0) ?? "—"}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-pe-text-faint">Hits</span>
+                <span className="text-pe-text-muted">{park.pfHits?.toFixed(0) ?? "—"}</span>
+              </div>
+              <div className="flex justify-between text-sm pt-1 border-t border-pe-border/5">
+                <span className="text-pe-text-faint">K</span>
+                <span className="font-bold text-pe-text-secondary">{park.pfK?.toFixed(0) ?? "—"}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-[11px] font-bold">
-              <span className={`rounded-md px-2 py-1 ${pfClass(team.pfRuns)}`}>
-                R {pfLabel(team.pfRuns)}
+          </Link>
+        ))}
+      </div>
+
+      <div className="md:hidden space-y-3">
+        {rows.map((park) => (
+          <Link
+            key={`${title}-mobile-${park.teamId}`}
+            href={`/mlb/team/${park.teamCode}`}
+            className={`block rounded-xl bg-pe-surface-1/60 border border-pe-border/5 border-l-4 ${borderTone} px-5 py-4`}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-lg font-bold text-pe-text-primary">
+                {normalizeMlbTeamCode(park.teamCode)}
               </span>
-              <span className={`rounded-md px-2 py-1 ${pfClass(team.pfHr)}`}>
-                HR {pfLabel(team.pfHr)}
+              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${badgeTone}`}>
+                Runs {park.pfRuns?.toFixed(0) ?? "—"}
               </span>
-              <span className={`rounded-md px-2 py-1 ${pfClass(team.pfK)}`}>
-                K {pfLabel(team.pfK)}
-              </span>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <p className="text-pe-text-faint">HR</p>
+                <p className="font-bold text-pe-text-primary">{park.pfHr?.toFixed(0) ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-pe-text-faint">Hits</p>
+                <p className="font-bold text-pe-text-primary">{park.pfHits?.toFixed(0) ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-pe-text-faint">K</p>
+                <p className="font-bold text-pe-text-primary">{park.pfK?.toFixed(0) ?? "—"}</p>
+              </div>
             </div>
           </Link>
         ))}
@@ -130,21 +250,78 @@ function Leaderboard({
   );
 }
 
+function SupportedMarketsSection({ supportedMarkets }: { supportedMarkets: MlbSupportedMarket[] }) {
+  if (supportedMarkets.length === 0) return null;
+
+  const batterMarkets = supportedMarkets.filter((market) => market.playerType === "Batter");
+  const pitcherMarkets = supportedMarkets.filter((market) => market.playerType === "Pitcher");
+
+  return (
+    <section className="mb-10">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-2xl">🧩</span>
+        <div>
+          <h2 className="text-lg font-black uppercase tracking-wide text-pe-text-primary">
+            Markets Ready
+          </h2>
+          <p className="text-xs text-pe-text-faint">
+            These MLB markets are already recognized in the shared routing layer
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-pe-border/5 bg-pe-surface-1/60 px-5 py-5">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-pe-text-faint">
+            Batter markets
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {batterMarkets.map((market) => (
+              <span
+                key={market.marketCode}
+                className="rounded-full border border-emerald-500/20 bg-emerald-500/12 px-3 py-1.5 text-[11px] font-semibold text-emerald-300"
+              >
+                {market.marketName}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 border-t border-pe-border/5 pt-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-pe-text-faint">
+            Pitcher markets
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {pitcherMarkets.map((market) => (
+              <span
+                key={market.marketCode}
+                className="rounded-full border border-sky-500/20 bg-sky-500/12 px-3 py-1.5 text-[11px] font-semibold text-sky-300"
+              >
+                {market.marketName}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function MlbAnalyticsPageContent({
   parkFactors,
-  playerCount,
   supportedMarkets,
   coverage,
   starterGames,
+  slateProps,
+  lastUpdated,
 }: {
   parkFactors: MlbParkFactor[];
-  playerCount: number;
   supportedMarkets: MlbSupportedMarket[];
   coverage: MlbDataCoverage;
   starterGames: MlbStarterGame[];
+  slateProps: MlbSlatePropsResult;
+  lastUpdated: string | null;
 }) {
-  const batterMarkets = supportedMarkets.filter((market) => market.playerType === "Batter");
-  const pitcherMarkets = supportedMarkets.filter((market) => market.playerType === "Pitcher");
   const hitterFriendly = [...parkFactors]
     .sort((a, b) => (b.pfRuns ?? 0) - (a.pfRuns ?? 0))
     .slice(0, 5);
@@ -153,172 +330,52 @@ export default function MlbAnalyticsPageContent({
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-pe-bg">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 md:py-10">
-        <section className="rounded-[2rem] border border-pe-border/10 bg-pe-surface-1 px-5 py-6 md:px-7 md:py-7">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="flex items-center gap-2">
-                <span className="rounded-full bg-pe-accent/12 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-pe-accent-strong">
-                  MLB
-                </span>
-                <span className="text-[10px] uppercase tracking-[0.22em] text-pe-text-faint">
-                  Analytics
-                </span>
-              </div>
-              <h1 className="mt-3 text-3xl font-black tracking-tight text-pe-text-primary md:text-4xl">
-                MLB analytics now has its own lane.
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-pe-text-muted">
-                Live starter context, full park-factor coverage, and the exact MLB prop markets
-                already supported by the model layer are surfaced here. Line-level picks will
-                populate automatically when MLB props and predictions start landing in the shared
-                tables.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/mlb/slate"
-                className="rounded-full border border-pe-accent/25 bg-pe-accent/12 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-pe-accent-strong"
-              >
-                Open MLB Slate
-              </Link>
-              <Link
-                href="/mlb"
-                className="rounded-full border border-pe-border/14 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-pe-text-muted hover:text-pe-text-primary"
-              >
-                Team Directory
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <StatBar
-          items={[
-            {
-              label: "Players Tracked",
-              value: playerCount.toLocaleString(),
-              detail: "Baseball Reference player directory loaded.",
-            },
-            {
-              label: "Markets Supported",
-              value: supportedMarkets.length.toString(),
-              detail: `${batterMarkets.length} batter markets and ${pitcherMarkets.length} pitcher markets.`,
-            },
-            {
-              label: "Starter Board",
-              value: starterGames.length.toString(),
-              detail: "Today's probable starters from the MLB Stats API.",
-            },
-            {
-              label: "Park Factors",
-              value: parkFactors.length.toString(),
-              detail: "All MLB parks ranked off the current season file.",
-            },
-          ]}
-        />
-
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <section className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-bold text-pe-text-primary">Coverage status</h2>
-                <p className="mt-1 text-xs text-pe-text-faint">
-                  What the MLB surface can already render from the shared data warehouse.
-                </p>
-              </div>
-              <span className="rounded-full bg-pe-surface-2 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-pe-text-faint">
-                Auto-updating
-              </span>
-            </div>
-
-            <div className="mt-4">
-              <CoverageRow
-                label="MLB teams"
-                value={coverage.teamCount}
-                detail="Shared team directory rows available for routing and matchup joins."
-              />
-              <CoverageRow
-                label="Tracked games"
-                value={coverage.gameCount}
-                detail="MLB rows currently present in the shared games table."
-              />
-              <CoverageRow
-                label="Batter game logs"
-                value={coverage.batterGameLogCount}
-                detail="Required for hitter form tables and batter-side model edges."
-              />
-              <CoverageRow
-                label="Pitcher game logs"
-                value={coverage.pitcherGameLogCount}
-                detail="Required for strikeout, earned-run, and outs modeling."
-              />
-              <CoverageRow
-                label="Team stats"
-                value={coverage.teamStatCount}
-                detail="Used for opponent context once the MLB team pipeline is filled."
-              />
-              <CoverageRow
-                label="Live MLB props"
-                value={coverage.propCount}
-                detail="Line rows already present in the shared player_props table."
-              />
-              <CoverageRow
-                label="MLB predictions"
-                value={coverage.predictionCount}
-                detail="Model outputs already written to mlb_predictions."
-              />
-            </div>
-          </section>
-
-          <section className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl p-5">
-            <h2 className="text-base font-bold text-pe-text-primary">Supported markets</h2>
-            <p className="mt-1 text-xs text-pe-text-faint">
-              These market codes already exist in `prop_markets` and in the MLB model routing.
+    <>
+      <a
+        href="https://prizepicks.onelink.me/FjtC/e9fwt4jw"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block mb-8 rounded-xl border border-pe-accent/20 bg-gradient-to-r from-pe-accent/10 to-pe-surface-1 p-4 hover:border-pe-accent/40 transition-colors group"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wide text-pe-accent">Promo</span>
+            <p className="text-sm font-semibold text-pe-text-primary mt-0.5">
+              Sign up for PrizePicks with our code
             </p>
-
-            <div className="mt-5">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-pe-text-faint">
-                Batter markets
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {batterMarkets.map((market) => (
-                  <span
-                    key={market.marketCode}
-                    className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${marketClass(market.playerType)}`}
-                  >
-                    {market.marketName}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-pe-text-faint">
-                Pitcher markets
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {pitcherMarkets.map((market) => (
-                  <span
-                    key={market.marketCode}
-                    className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${marketClass(market.playerType)}`}
-                  >
-                    {market.marketName}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </section>
+            <p className="text-xs text-pe-text-muted mt-0.5">
+              Use code <span className="font-mono font-bold text-pe-accent">PR-5RMN2FT</span> when you sign up to take advantage and support PropEdge.
+            </p>
+          </div>
+          <span className="shrink-0 px-4 py-2 rounded-lg bg-pe-accent/20 text-pe-accent text-xs font-bold uppercase tracking-wide group-hover:bg-pe-accent/30 transition-colors">
+            Sign up
+          </span>
         </div>
+      </a>
 
-        <MlbStartersToday games={starterGames} title="Today’s probable starters" />
+      <LivePropsSection slateProps={slateProps} />
+      <CoverageSection coverage={coverage} lastUpdated={lastUpdated} />
+      <ParkCardsSection
+        title="Hitter-Friendly Parks"
+        subtitle="The run environments currently grading highest above league average"
+        emoji="🔥"
+        borderTone="border-l-emerald-500"
+        badgeTone="bg-emerald-500/15 text-emerald-400"
+        rows={hitterFriendly}
+      />
+      <ParkCardsSection
+        title="Pitcher-Friendly Parks"
+        subtitle="The run environments currently suppressing scoring the most"
+        emoji="🧊"
+        borderTone="border-l-sky-500"
+        badgeTone="bg-sky-500/15 text-sky-400"
+        rows={pitcherFriendly}
+      />
+      <SupportedMarketsSection supportedMarkets={supportedMarkets} />
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <Leaderboard title="Most hitter-friendly parks" rows={hitterFriendly} />
-          <Leaderboard title="Most pitcher-friendly parks" rows={pitcherFriendly} />
-        </div>
-      </div>
-    </div>
+      <div className="border-t border-pe-border/5 my-10" />
+
+      <MlbStartersToday games={starterGames} title="Today’s probable starters" />
+    </>
   );
 }

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import {
+  getLastDataUpdate,
   getMlbDataCoverage,
   getMlbParkFactors,
+  getMlbSlateProps,
   getMlbSupportedMarkets,
 } from "@/lib/data";
 import { getMlbStarterGames } from "@/lib/mlbStarters";
@@ -43,13 +45,20 @@ export default async function MlbAnalyticsPage() {
     predictionCount: 0,
   };
   let starterGames: Awaited<ReturnType<typeof getMlbStarterGames>> = [];
+  let slateProps: Awaited<ReturnType<typeof getMlbSlateProps>> = {
+    propDate: null,
+    props: [],
+  };
+  let lastUpdated: string | null = null;
 
   try {
-    [parkFactors, supportedMarkets, coverage, starterGames] = await Promise.all([
+    [parkFactors, supportedMarkets, coverage, starterGames, slateProps, lastUpdated] = await Promise.all([
       getMlbParkFactors(),
       getMlbSupportedMarkets(),
       getMlbDataCoverage(),
       getMlbStarterGames(),
+      getMlbSlateProps(24),
+      getLastDataUpdate(),
     ]);
   } catch (error) {
     console.error("MLB analytics page data load failed:", error);
@@ -58,10 +67,11 @@ export default async function MlbAnalyticsPage() {
   return (
     <MlbAnalyticsPageContent
       parkFactors={parkFactors}
-      playerCount={coverage.playerCount}
       supportedMarkets={supportedMarkets}
       coverage={coverage}
       starterGames={starterGames}
+      slateProps={slateProps}
+      lastUpdated={lastUpdated}
     />
   );
 }
