@@ -16,18 +16,18 @@ export async function generateMetadata({
   const canonicalUrl = `https://propedge.bet/mlb/team/${code}`;
   return {
     title: `${team.teamName} — MLB Park Factors & Stats | PropEdge`,
-    description: `${team.teamName} park factors, ballpark data, and upcoming MLB prop analytics.`,
+    description: `${team.teamName} park factors, ballpark context, and links into the live MLB slate and analytics surfaces.`,
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: `${team.teamName} — MLB Park Factors | PropEdge`,
-      description: `${team.teamName} park factors and upcoming prop analytics.`,
+      description: `${team.teamName} park factors and live MLB matchup context.`,
       url: canonicalUrl,
       type: "website",
     },
     twitter: {
       card: "summary",
       title: `${team.teamName} — MLB Park Factors | PropEdge`,
-      description: `${team.teamName} park factors and upcoming prop analytics.`,
+      description: `${team.teamName} park factors and live MLB matchup context.`,
     },
   };
 }

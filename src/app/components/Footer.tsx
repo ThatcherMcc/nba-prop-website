@@ -14,7 +14,8 @@ export default function Footer() {
           </p>
         </div>
         <div className="flex flex-col gap-2 text-xs uppercase tracking-[0.18em] text-pe-text-faint md:items-end">
-          <span>Data source:
+          <span>
+            Data sources:
             <a
               href="https://www.basketball-reference.com"
               target="_blank"
@@ -22,6 +23,14 @@ export default function Footer() {
               className="line-link ml-2 text-pe-text-secondary"
             >
               Basketball Reference
+            </a>
+            <a
+              href="https://www.baseball-reference.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="line-link ml-2 text-pe-text-secondary"
+            >
+              Baseball Reference
             </a>
           </span>
           <span>

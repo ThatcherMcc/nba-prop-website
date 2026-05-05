@@ -15,19 +15,21 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   manifest: "/site.webmanifest",
   title: {
-    default: "PropEdge — NBA Player Prop Trends & Analytics",
+    default: "PropEdge — NBA & MLB Prop Analytics",
     template: "%s | PropEdge",
   },
   description:
-    "Find your edge with real-time NBA player prop trends, hot streaks, and cold spells. Data-driven prop betting analytics updated daily.",
+    "Find your edge with NBA and MLB prop analytics, slate context, park factors, and player trend surfaces updated from the shared data pipeline.",
   keywords: [
     "NBA props",
+    "MLB props",
     "player props",
-    "NBA betting analytics",
+    "sports betting analytics",
     "prop trends",
     "NBA hot streaks",
+    "MLB park factors",
     "player prop lines",
-    "NBA statistics",
+    "sports statistics",
     "prop betting",
     "NBA player stats",
     "over under props",
@@ -50,15 +52,15 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "PropEdge",
-    title: "PropEdge — NBA Player Prop Trends & Analytics",
+    title: "PropEdge — NBA & MLB Prop Analytics",
     description:
-      "Find your edge with real-time NBA player prop trends, hot streaks, and cold spells. Data-driven prop betting analytics updated daily.",
+      "Find your edge with NBA and MLB prop analytics, slate context, park factors, and player trend surfaces updated from the shared data pipeline.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PropEdge — NBA Player Prop Trends & Analytics",
+    title: "PropEdge — NBA & MLB Prop Analytics",
     description:
-      "Find your edge with real-time NBA player prop trends, hot streaks, and cold spells.",
+      "Find your edge with NBA and MLB prop analytics, slate context, and player trend surfaces.",
   },
   alternates: {
     canonical: SITE_URL,
@@ -94,7 +96,7 @@ export default async function RootLayout({
               name: "PropEdge",
               url: "https://propedge.bet",
               description:
-                "NBA player prop trends and analytics updated daily. Track hot streaks, cold spells, and prop line edges.",
+                "NBA and MLB prop analytics updated daily. Track slate context, park factors, hot streaks, cold spells, and model-ready market coverage.",
               applicationCategory: "SportsApplication",
               operatingSystem: "Web",
               offers: {

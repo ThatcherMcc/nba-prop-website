@@ -2747,3 +2747,265 @@ export const getMlbTeamWithParkFactor = unstable_cache(
   ["getMlbTeamWithParkFactor"],
   { tags: ["mlb-data"] }
 );
+
+const MLB_BATTER_MARKET_CODES = new Set([
+  "MLB_HITS",
+  "MLB_TB",
+  "MLB_HR",
+  "MLB_RBI",
+  "MLB_RUNS",
+  "MLB_WALKS",
+  "MLB_SB",
+]);
+
+type CountRow = { cnt: string | number };
+
+async function safeCountQuery(
+  query: ReturnType<typeof sql.raw>,
+  label: string,
+  suppressMissingTableError = false
+): Promise<number> {
+  try {
+    const result = await db.execute<CountRow>(query);
+    const rows: CountRow[] = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+    return Number(rows[0]?.cnt ?? 0);
+  } catch (error) {
+    const errorCode =
+      typeof error === "object" &&
+      error != null &&
+      "cause" in error &&
+      typeof (error as { cause?: { code?: string } }).cause?.code === "string"
+        ? (error as { cause?: { code?: string } }).cause?.code
+        : undefined;
+
+    if (suppressMissingTableError && errorCode === "42P01") {
+      return 0;
+    }
+
+    console.error(`Database Error (${label}):`, error);
+    return 0;
+  }
+}
+
+export type MlbSupportedMarket = {
+  marketCode: string;
+  marketName: string;
+  playerType: "Batter" | "Pitcher";
+};
+
+export const getMlbSupportedMarkets = unstable_cache(
+  async (): Promise<MlbSupportedMarket[]> => {
+    type Row = {
+      market_code: string;
+      market_name: string;
+    };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        SELECT market_code, market_name
+        FROM prop_markets
+        WHERE market_code LIKE 'MLB_%'
+        ORDER BY market_code
+      `);
+      const rows: Row[] = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+      return rows.map((row) => ({
+        marketCode: row.market_code,
+        marketName: row.market_name,
+        playerType: MLB_BATTER_MARKET_CODES.has(row.market_code) ? "Batter" : "Pitcher",
+      }));
+    } catch (error) {
+      console.error("Database Error (getMlbSupportedMarkets):", error);
+      return [];
+    }
+  },
+  ["getMlbSupportedMarkets"],
+  { tags: ["mlb-data"] }
+);
+
+export type MlbDataCoverage = {
+  teamCount: number;
+  playerCount: number;
+  parkFactorCount: number;
+  supportedMarketCount: number;
+  gameCount: number;
+  teamStatCount: number;
+  batterGameLogCount: number;
+  pitcherGameLogCount: number;
+  propCount: number;
+  predictionCount: number;
+};
+
+export const getMlbDataCoverage = unstable_cache(
+  async (): Promise<MlbDataCoverage> => {
+    const [
+      teamCount,
+      playerCount,
+      parkFactorCount,
+      supportedMarketCount,
+      gameCount,
+      teamStatCount,
+      batterGameLogCount,
+      pitcherGameLogCount,
+      propCount,
+      predictionCount,
+    ] = await Promise.all([
+      safeCountQuery(sql`SELECT COUNT(*) AS cnt FROM teams WHERE sport = 'MLB'`, "getMlbDataCoverage:teams"),
+      safeCountQuery(
+        sql`SELECT COUNT(*) AS cnt FROM players WHERE url LIKE '%baseball-reference%'`,
+        "getMlbDataCoverage:players"
+      ),
+      safeCountQuery(sql`SELECT COUNT(*) AS cnt FROM mlb_park_factors`, "getMlbDataCoverage:park_factors"),
+      safeCountQuery(
+        sql`SELECT COUNT(*) AS cnt FROM prop_markets WHERE market_code LIKE 'MLB_%'`,
+        "getMlbDataCoverage:supported_markets"
+      ),
+      safeCountQuery(
+        sql`
+          SELECT COUNT(*) AS cnt
+          FROM games g
+          JOIN teams ht ON ht.team_id = g.home_team_id
+          WHERE ht.sport = 'MLB'
+        `,
+        "getMlbDataCoverage:games"
+      ),
+      safeCountQuery(sql.raw("SELECT COUNT(*) AS cnt FROM mlb_team_stats"), "getMlbDataCoverage:team_stats"),
+      safeCountQuery(
+        sql.raw("SELECT COUNT(*) AS cnt FROM mlb_batter_game_stats"),
+        "getMlbDataCoverage:batter_logs"
+      ),
+      safeCountQuery(
+        sql.raw("SELECT COUNT(*) AS cnt FROM mlb_pitcher_game_stats"),
+        "getMlbDataCoverage:pitcher_logs"
+      ),
+      safeCountQuery(
+        sql`
+          SELECT COUNT(*) AS cnt
+          FROM player_props pp
+          JOIN prop_markets pm ON pm.market_id = pp.market_id
+          WHERE pm.market_code LIKE 'MLB_%'
+        `,
+        "getMlbDataCoverage:props"
+      ),
+      safeCountQuery(
+        sql.raw("SELECT COUNT(*) AS cnt FROM mlb_predictions"),
+        "getMlbDataCoverage:predictions",
+        true
+      ),
+    ]);
+
+    return {
+      teamCount,
+      playerCount,
+      parkFactorCount,
+      supportedMarketCount,
+      gameCount,
+      teamStatCount,
+      batterGameLogCount,
+      pitcherGameLogCount,
+      propCount,
+      predictionCount,
+    };
+  },
+  ["getMlbDataCoverage"],
+  { tags: ["mlb-data"] }
+);
+
+export type MlbSlateProp = {
+  playerName: string;
+  marketCode: string;
+  marketName: string;
+  bookLine: number | null;
+  bookOdds: number | null;
+  homeTeam: string;
+  awayTeam: string;
+  playerTeam: string | null;
+};
+
+export type MlbSlatePropsResult = {
+  propDate: string | null;
+  props: MlbSlateProp[];
+};
+
+export const getMlbSlateProps = unstable_cache(
+  async (limit = 200): Promise<MlbSlatePropsResult> => {
+    type Row = {
+      player_name: string;
+      market_code: string;
+      market_name: string;
+      book_line: string | null;
+      book_odds: number | null;
+      home_team: string;
+      away_team: string;
+      player_team: string | null;
+      prop_date: string | null;
+    };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        WITH target_date AS (
+          SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date AS prop_date
+        )
+        SELECT
+          p.player_name,
+          pm.market_code,
+          pm.market_name,
+          pp.book_line::text AS book_line,
+          pp.book_odds,
+          ht.team_code AS home_team,
+          at.team_code AS away_team,
+          latest_team.team_code AS player_team,
+          (SELECT prop_date::text FROM target_date) AS prop_date
+        FROM player_props pp
+        JOIN players p ON p.player_id = pp.player_id
+        JOIN games g ON g.game_id = pp.game_id
+        JOIN prop_markets pm ON pm.market_id = pp.market_id
+        JOIN teams ht ON ht.team_id = g.home_team_id
+        JOIN teams at ON at.team_id = g.away_team_id
+        LEFT JOIN LATERAL (
+          SELECT t.team_code
+          FROM (
+            SELECT bgs.team_id, g2.game_date, bgs.gamelog_id
+            FROM mlb_batter_game_stats bgs
+            JOIN games g2 ON g2.game_id = bgs.game_id
+            WHERE bgs.player_id = pp.player_id
+
+            UNION ALL
+
+            SELECT pgs.team_id, g3.game_date, pgs.gamelog_id
+            FROM mlb_pitcher_game_stats pgs
+            JOIN games g3 ON g3.game_id = pgs.game_id
+            WHERE pgs.player_id = pp.player_id
+          ) mlb_latest_team
+          JOIN teams t ON t.team_id = mlb_latest_team.team_id
+          ORDER BY mlb_latest_team.game_date DESC, mlb_latest_team.gamelog_id DESC
+          LIMIT 1
+        ) latest_team ON true
+        WHERE pm.market_code LIKE 'MLB_%'
+          AND g.game_date = (SELECT prop_date FROM target_date)
+        ORDER BY ht.team_code, at.team_code, p.player_name, pm.market_code
+        LIMIT ${limit}
+      `);
+
+      const rows: Row[] = "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+      return {
+        propDate: rows.length > 0 ? rows[0]?.prop_date ?? null : null,
+        props: rows.map((row) => ({
+          playerName: row.player_name,
+          marketCode: row.market_code,
+          marketName: row.market_name,
+          bookLine: row.book_line != null ? Number(row.book_line) : null,
+          bookOdds: row.book_odds,
+          homeTeam: row.home_team,
+          awayTeam: row.away_team,
+          playerTeam: row.player_team ?? null,
+        })),
+      };
+    } catch (error) {
+      console.error("Database Error (getMlbSlateProps):", error);
+      return { propDate: null, props: [] };
+    }
+  },
+  ["getMlbSlateProps"],
+  { tags: ["mlb-data"] }
+);

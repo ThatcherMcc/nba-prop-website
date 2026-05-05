@@ -2,10 +2,10 @@ import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeCompare, extractBearerToken } from "@/lib/api-auth";
 
-const CACHE_TAG = "player-data";
+const CACHE_TAGS = ["player-data", "mlb-data"] as const;
 
 /**
- * Invalidate cached player data (homepage + player pages).
+ * Invalidate cached site data after backend updates.
  * Call this after a scrape (e.g. from GitHub Actions) so the next request gets fresh data.
  *
  * Auth: set REVALIDATE_SECRET in env, then send it in the request:
@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  revalidateTag(CACHE_TAG);
-  return NextResponse.json({ revalidated: true, tag: CACHE_TAG });
+  for (const tag of CACHE_TAGS) {
+    revalidateTag(tag);
+  }
+
+  return NextResponse.json({ revalidated: true, tags: CACHE_TAGS });
 }

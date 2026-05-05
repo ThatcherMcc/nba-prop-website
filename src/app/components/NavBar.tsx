@@ -5,9 +5,60 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useCommandPalette } from "./CommandPaletteProvider";
 import type { Session } from "next-auth";
+import { getLeagueFromPathname, getLeagueNavLinks, type League } from "@/lib/leagues";
 
 interface NavBarProps {
   session: Session | null;
+}
+
+const GLOBAL_LINKS = [
+  {
+    href: "/insights",
+    label: "Insights",
+    isActive: (pathname: string) => pathname.startsWith("/insights"),
+  },
+] as const;
+
+function isPrimaryLinkActive(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
+  if (href === "/mlb") return pathname === "/mlb";
+  if (href === "/slate") return pathname === "/slate" || pathname === "/track-record";
+  return pathname === href;
+}
+
+function leagueHref(league: League): string {
+  return league === "mlb" ? "/mlb" : "/";
+}
+
+function leaguePillClass(active: boolean): string {
+  return active
+    ? "bg-pe-accent text-pe-text-primary shadow-[0_0_18px_rgba(206,168,84,0.18)]"
+    : "text-pe-text-faint hover:text-pe-text-primary";
+}
+
+function navLinkClass(active: boolean): string {
+  return active
+    ? "rounded-full border border-pe-accent/25 bg-pe-accent/12 px-3 py-2 text-pe-accent-strong shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
+    : "rounded-full border border-transparent px-3 py-2 text-pe-text-muted hover:border-white/8 hover:bg-white/[0.02] hover:text-pe-text-primary";
+}
+
+function LeagueSwitcher({ activeLeague }: { activeLeague: League }) {
+  return (
+    <div className="shell-panel-soft inline-flex items-center gap-1 rounded-full p-1">
+      {(["nba", "mlb"] as const).map((league) => {
+        const isActive = activeLeague === league;
+        return (
+          <Link
+            key={league}
+            href={leagueHref(league)}
+            className={`rounded-full px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.24em] transition-colors ${leaguePillClass(isActive)}`}
+          >
+            {league}
+          </Link>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function NavBar({ session }: NavBarProps) {
@@ -15,26 +66,11 @@ export default function NavBar({ session }: NavBarProps) {
   const { openPalette } = useCommandPalette();
 
   const user = session?.user;
-  const links = [
-    { href: "/", label: "Home", active: pathname === "/" },
-    { href: "/analytics", label: "Analytics", active: pathname === "/analytics" },
-    {
-      href: "/slate",
-      label: "Slate",
-      active: pathname === "/slate" || pathname === "/track-record",
-    },
-    { href: "/mlb", label: "MLB", active: pathname === "/mlb" },
-    {
-      href: "/insights",
-      label: "Insights",
-      active: pathname.startsWith("/insights"),
-    },
-  ];
-
-  const navLinkClass = (active: boolean) =>
-    active
-      ? "rounded-full border border-pe-accent/25 bg-pe-accent/12 px-3 py-2 text-pe-accent-strong shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-      : "rounded-full border border-transparent px-3 py-2 text-pe-text-muted hover:border-white/8 hover:bg-white/[0.02] hover:text-pe-text-primary";
+  const activeLeague = getLeagueFromPathname(pathname);
+  const primaryLinks = getLeagueNavLinks(activeLeague).map((link) => ({
+    ...link,
+    active: isPrimaryLinkActive(pathname, link.href),
+  }));
 
   return (
     <nav className="sticky top-0 z-50 border-b border-transparent bg-transparent backdrop-blur-0">
@@ -74,53 +110,79 @@ export default function NavBar({ session }: NavBarProps) {
               </kbd>
             </button>
 
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="hidden items-center gap-6 lg:flex">
-                {links.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`text-[0.72rem] font-medium uppercase tracking-[0.24em] transition-colors ${navLinkClass(link.active)}`}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-                {user ? (
-                  <Link
-                    href="/profile"
-                    className={`shell-panel-soft flex items-center gap-2 rounded-full px-2 py-1.5 ${
-                      pathname === "/profile"
-                        ? "border-pe-accent/30 text-pe-accent"
-                        : "text-pe-text-muted hover:text-pe-text-primary"
-                    }`}
-                    aria-label="Profile"
-                  >
-                    {user.image ? (
-                      <Image
-                        src={user.image}
-                        alt={user.name ?? "Profile"}
-                        width={32}
-                        height={32}
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pe-accent/20 text-sm font-bold text-pe-accent">
-                        {(user.name ?? user.email ?? "?")[0].toUpperCase()}
-                      </span>
-                    )}
-                    <span className="pr-2 text-[0.68rem] uppercase tracking-[0.22em]">
-                      Profile
+            <div className="hidden items-center gap-3 lg:flex">
+              <LeagueSwitcher activeLeague={activeLeague} />
+
+              {primaryLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-[0.72rem] font-medium uppercase tracking-[0.24em] transition-colors ${navLinkClass(link.active)}`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              {GLOBAL_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-[0.72rem] font-medium uppercase tracking-[0.24em] transition-colors ${navLinkClass(link.isActive(pathname))}`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              {user ? (
+                <Link
+                  href="/profile"
+                  className={`shell-panel-soft flex items-center gap-2 rounded-full px-2 py-1.5 ${
+                    pathname === "/profile"
+                      ? "border-pe-accent/30 text-pe-accent"
+                      : "text-pe-text-muted hover:text-pe-text-primary"
+                  }`}
+                  aria-label="Profile"
+                >
+                  {user.image ? (
+                    <Image
+                      src={user.image}
+                      alt={user.name ?? "Profile"}
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-pe-accent/20 text-sm font-bold text-pe-accent">
+                      {(user.name ?? user.email ?? "?")[0].toUpperCase()}
                     </span>
-                  </Link>
-                ) : (
-                  <Link
-                    href="/auth/sign-in"
-                    className="rounded-full border border-pe-accent/28 bg-pe-accent/12 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-pe-accent-strong hover:bg-pe-accent/18"
-                  >
-                    Sign In
-                  </Link>
-                )}
-              </div>
+                  )}
+                  <span className="pr-2 text-[0.68rem] uppercase tracking-[0.22em]">
+                    Profile
+                  </span>
+                </Link>
+              ) : (
+                <Link
+                  href="/auth/sign-in"
+                  className="rounded-full border border-pe-accent/28 bg-pe-accent/12 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-pe-accent-strong hover:bg-pe-accent/18"
+                >
+                  Sign In
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3 lg:hidden">
+            <LeagueSwitcher activeLeague={activeLeague} />
+            <div className="flex items-center gap-2 text-[0.62rem] font-medium uppercase tracking-[0.22em] text-pe-text-faint">
+              {primaryLinks.slice(1).map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={link.active ? "text-pe-text-primary" : "hover:text-pe-text-primary"}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

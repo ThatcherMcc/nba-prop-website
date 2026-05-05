@@ -1,5 +1,9 @@
 import type { MetadataRoute } from "next";
-import { getPlayersWithGameData, getAvailableInsightWeeks } from "@/lib/data";
+import {
+  getAvailableInsightWeeks,
+  getMlbTeams,
+  getPlayersWithGameData,
+} from "@/lib/data";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://propedge.bet";
@@ -41,6 +45,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.7,
     },
+    {
+      url: `${baseUrl}/mlb/analytics`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/mlb/slate`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.8,
+    },
   ];
 
   // Only include players who have actual game data (filters out MLB players with no stats)
@@ -70,5 +86,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If DB is unavailable, skip insight pages
   }
 
-  return [...staticPages, ...playerPages, ...insightPages];
+  let mlbTeamPages: MetadataRoute.Sitemap = [];
+  try {
+    const teams = await getMlbTeams();
+    mlbTeamPages = teams.map((team) => ({
+      url: `${baseUrl}/mlb/team/${encodeURIComponent(team.teamCode)}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+  } catch {
+    // If DB is unavailable, skip MLB team pages
+  }
+
+  return [...staticPages, ...playerPages, ...insightPages, ...mlbTeamPages];
 }

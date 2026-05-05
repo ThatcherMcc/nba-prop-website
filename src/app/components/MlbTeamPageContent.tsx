@@ -1,21 +1,9 @@
-"use client";
-
 import Link from "next/link";
 import type { MlbTeamDetail } from "@/lib/data";
+import { normalizeMlbTeamCode } from "@/lib/leagues";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function displayCode(teamCode: string): string {
-  return teamCode.startsWith("M-") ? teamCode.slice(2) : teamCode;
-}
-
-/**
- * Clamp a park factor bar width: 100 = centre (50%). Range 70–130 maps to 0–100%.
- * Values below 100 lean left (pitcher-friendly), above 100 lean right (hitter-friendly).
- */
 function pfBarWidth(value: number | null): number {
   if (value == null) return 50;
-  // Map [70, 130] → [0, 100]
   return Math.min(100, Math.max(0, ((value - 70) / 60) * 100));
 }
 
@@ -34,8 +22,7 @@ function pfTextColor(value: number | null): string {
 }
 
 function pfLabel(value: number | null): string {
-  if (value == null) return "—";
-  return value.toFixed(0);
+  return value == null ? "—" : value.toFixed(0);
 }
 
 function pfDescription(value: number | null): string {
@@ -47,15 +34,40 @@ function pfDescription(value: number | null): string {
   return "Neutral";
 }
 
-// ── Park Factor Row ───────────────────────────────────────────────────────────
+function signalCopy(label: string, value: number | null): string {
+  if (value == null) {
+    return `${label} context is not loaded yet.`;
+  }
+  if (label === "Runs" && value > 103) {
+    return "Run-scoring environments usually play warmer than league average here.";
+  }
+  if (label === "Runs" && value < 97) {
+    return "This venue tends to suppress run scoring relative to league average.";
+  }
+  if (label === "Home Runs" && value > 103) {
+    return "Long-ball markets deserve extra attention in this park.";
+  }
+  if (label === "Home Runs" && value < 97) {
+    return "Home-run conditions lean quieter than league average.";
+  }
+  if (label === "Strikeouts" && value > 103) {
+    return "Strikeout environments can run stronger than average here.";
+  }
+  if (label === "Strikeouts" && value < 97) {
+    return "Strikeout environments can run lighter than average here.";
+  }
+  return `${label} trends sit close to league average in this park.`;
+}
 
-interface PfRowProps {
+function PfRow({
+  label,
+  sublabel,
+  value,
+}: {
   label: string;
   sublabel: string;
   value: number | null;
-}
-
-function PfRow({ label, sublabel, value }: PfRowProps) {
+}) {
   const width = pfBarWidth(value);
   const barColor = pfBarColor(value);
   const textColor = pfTextColor(value);
@@ -75,18 +87,14 @@ function PfRow({ label, sublabel, value }: PfRowProps) {
         </div>
       </div>
 
-      {/* Bar track */}
       <div className="relative h-2 rounded-full bg-pe-surface-2 overflow-hidden">
-        {/* Centre marker at 50% */}
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-pe-border/20" />
-        {/* Fill bar */}
         <div
           className={`absolute top-0 bottom-0 rounded-full transition-all duration-500 ${barColor}`}
           style={{ width: `${width}%` }}
         />
       </div>
 
-      {/* Scale labels */}
       <div className="flex justify-between text-[9px] text-pe-text-faint">
         <span>70 Pitcher</span>
         <span>100 Neutral</span>
@@ -96,23 +104,16 @@ function PfRow({ label, sublabel, value }: PfRowProps) {
   );
 }
 
-// ── Summary Badge Grid ────────────────────────────────────────────────────────
-
-interface BadgeProps {
-  label: string;
-  value: number | null;
-}
-
-function PfBadge({ label, value }: BadgeProps) {
+function PfBadge({ label, value }: { label: string; value: number | null }) {
   const textColor = pfTextColor(value);
   const bg =
     value == null
       ? "bg-zinc-800/40"
       : value > 103
-      ? "bg-emerald-500/10 border border-emerald-500/20"
-      : value < 97
-      ? "bg-red-500/10 border border-red-500/20"
-      : "bg-pe-surface-2 border border-pe-border/10";
+        ? "bg-emerald-500/10 border border-emerald-500/20"
+        : value < 97
+          ? "bg-red-500/10 border border-red-500/20"
+          : "bg-pe-surface-2 border border-pe-border/10";
 
   return (
     <div className={`rounded-xl px-4 py-3 flex flex-col gap-0.5 ${bg}`}>
@@ -125,46 +126,13 @@ function PfBadge({ label, value }: BadgeProps) {
   );
 }
 
-// ── Legend ────────────────────────────────────────────────────────────────────
-
-function Legend() {
-  return (
-    <div className="flex flex-wrap items-center gap-4 text-xs text-pe-text-faint">
-      <span className="font-semibold text-pe-text-muted">Park Factors:</span>
-      <span className="flex items-center gap-1.5">
-        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500/70" />
-        &gt;103 Hitter-friendly
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span className="inline-block w-2 h-2 rounded-full bg-zinc-500/70" />
-        97–103 Neutral
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span className="inline-block w-2 h-2 rounded-full bg-red-500/70" />
-        &lt;97 Pitcher-friendly
-      </span>
-      <span className="ml-auto text-[10px]">Base 100 = league average</span>
-    </div>
-  );
-}
-
-// ── Props ─────────────────────────────────────────────────────────────────────
-
-interface MlbTeamPageContentProps {
-  team: MlbTeamDetail;
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
-
-export default function MlbTeamPageContent({ team }: MlbTeamPageContentProps) {
-  const code = displayCode(team.teamCode);
+export default function MlbTeamPageContent({ team }: { team: MlbTeamDetail }) {
+  const code = normalizeMlbTeamCode(team.teamCode);
   const pf = team.parkFactor;
 
   return (
     <div className="min-h-screen bg-pe-bg">
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8 md:py-10">
-
-        {/* Back link */}
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 md:py-10">
         <div className="mb-6">
           <Link
             href="/mlb"
@@ -186,35 +154,46 @@ export default function MlbTeamPageContent({ team }: MlbTeamPageContentProps) {
           </Link>
         </div>
 
-        {/* Team header */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-pe-surface-2 border border-pe-border/10 flex items-center justify-center shrink-0">
-            <span className="text-sm font-black text-pe-text-muted tracking-tight">{code}</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold uppercase tracking-widest text-pe-accent bg-pe-accent/10 px-2 py-0.5 rounded-full">
-                MLB
-              </span>
-              {pf && (
-                <span className="text-xs text-pe-text-faint">{pf.season} Season</span>
-              )}
+        <section className="rounded-[2rem] border border-pe-border/10 bg-pe-surface-1 px-5 py-6 md:px-7 md:py-7">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-pe-surface-2 border border-pe-border/10 flex items-center justify-center shrink-0">
+                <span className="text-sm font-black text-pe-text-muted tracking-tight">{code}</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-widest text-pe-accent bg-pe-accent/10 px-2 py-0.5 rounded-full">
+                    MLB
+                  </span>
+                  {pf && (
+                    <span className="text-xs text-pe-text-faint">{pf.season} Season</span>
+                  )}
+                </div>
+                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-pe-text-primary">
+                  {team.teamName}
+                </h1>
+              </div>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-pe-text-primary">
-              {team.teamName}
-            </h1>
-          </div>
-        </div>
 
-        {/* Park factors section */}
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/mlb/slate"
+                className="rounded-full border border-pe-accent/25 bg-pe-accent/12 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-pe-accent-strong"
+              >
+                View MLB Slate
+              </Link>
+              <Link
+                href="/mlb/analytics"
+                className="rounded-full border border-pe-border/14 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-[0.24em] text-pe-text-muted hover:text-pe-text-primary"
+              >
+                MLB Analytics
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {pf ? (
-          <section className="mb-10">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-pe-text-primary">Park Factors</h2>
-              <Legend />
-            </div>
-
-            {/* Summary badges */}
+          <section className="mt-8">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               <PfBadge label="Runs" value={pf.pfRuns} />
               <PfBadge label="Home Runs" value={pf.pfHr} />
@@ -222,7 +201,6 @@ export default function MlbTeamPageContent({ team }: MlbTeamPageContentProps) {
               <PfBadge label="Strikeouts" value={pf.pfK} />
             </div>
 
-            {/* Detailed bars */}
             <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl p-5 md:p-6 flex flex-col gap-6">
               <PfRow
                 label="Runs"
@@ -247,38 +225,64 @@ export default function MlbTeamPageContent({ team }: MlbTeamPageContentProps) {
             </div>
 
             <p className="mt-3 text-[11px] text-pe-text-faint">
-              Park factors index to 100 (league average). Values above 100 favour hitters; below 100 favour pitchers.
-              Data sourced from Baseball Reference.
+              Park factors index to 100. Values above 100 favor hitters; below 100 favor pitchers.
             </p>
           </section>
         ) : (
-          <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl px-5 py-10 text-center mb-10">
+          <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl px-5 py-10 text-center mt-8">
             <p className="text-pe-text-faint text-sm">No park factor data available for this team.</p>
           </div>
         )}
 
-        {/* Season stats placeholder */}
-        <section>
-          <h2 className="text-base font-bold text-pe-text-primary mb-4">Season Stats</h2>
-          <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl px-5 py-8 flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-pe-text-primary mb-1">
-                Game-by-game stats coming soon
-              </p>
-              <p className="text-xs text-pe-text-faint">
-                Player gamelogs and team stats will populate automatically once the 2026 regular
-                season begins. Check back on Opening Day.
-              </p>
+        <section className="mt-8 grid gap-6 xl:grid-cols-2">
+          <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl p-5">
+            <h2 className="text-base font-bold text-pe-text-primary">How to use this park</h2>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-pe-border/8 bg-pe-surface-2/35 px-4 py-3">
+                <p className="text-sm font-semibold text-pe-text-primary">Runs</p>
+                <p className="mt-1 text-sm text-pe-text-muted">
+                  {signalCopy("Runs", pf?.pfRuns ?? null)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-pe-border/8 bg-pe-surface-2/35 px-4 py-3">
+                <p className="text-sm font-semibold text-pe-text-primary">Home Runs</p>
+                <p className="mt-1 text-sm text-pe-text-muted">
+                  {signalCopy("Home Runs", pf?.pfHr ?? null)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-pe-border/8 bg-pe-surface-2/35 px-4 py-3">
+                <p className="text-sm font-semibold text-pe-text-primary">Strikeouts</p>
+                <p className="mt-1 text-sm text-pe-text-muted">
+                  {signalCopy("Strikeouts", pf?.pfK ?? null)}
+                </p>
+              </div>
             </div>
-            <div className="shrink-0">
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-lg">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                Launching ~April 2026
-              </span>
+          </div>
+
+          <div className="bg-pe-surface-1 border border-pe-border/10 rounded-2xl p-5">
+            <h2 className="text-base font-bold text-pe-text-primary">Connected surfaces</h2>
+            <div className="mt-4 space-y-3">
+              <Link
+                href="/mlb/slate"
+                className="block rounded-xl border border-pe-border/8 bg-pe-surface-2/35 px-4 py-4 transition-colors hover:border-pe-border/20"
+              >
+                <p className="text-sm font-semibold text-pe-text-primary">MLB slate</p>
+                <p className="mt-1 text-sm text-pe-text-muted">
+                  Check today&apos;s probable starters and matchup-specific park context.
+                </p>
+              </Link>
+              <Link
+                href="/mlb/analytics"
+                className="block rounded-xl border border-pe-border/8 bg-pe-surface-2/35 px-4 py-4 transition-colors hover:border-pe-border/20"
+              >
+                <p className="text-sm font-semibold text-pe-text-primary">MLB analytics</p>
+                <p className="mt-1 text-sm text-pe-text-muted">
+                  Compare this venue against the rest of the league and inspect market coverage.
+                </p>
+              </Link>
             </div>
           </div>
         </section>
-
       </div>
     </div>
   );
