@@ -4,13 +4,13 @@ import type { PLAYER_STAT_TYPE } from "@/db/schema";
 import {
   getPlayerData,
   getPlayerExists,
+  getPlayerHasGameData,
   getPlayerLastGameStatus,
   getPlayerSplits,
   getPlayerMatchups,
   getPlayerPropLines,
   getPlayerTodaysGame,
   getTeamDefensiveRatings,
-  getPlayersWithGameData,
 } from "@/lib/data";
 import PlayerPageContent from "@/app/components/PlayerPageContent";
 import { PLAYER_STAT_NAMES } from "@/db/schema";
@@ -25,10 +25,7 @@ export async function generateMetadata({
   const canonicalUrl = `https://propedge.bet/player/${encodeURIComponent(playerName)}`;
 
   // noindex players with no game data (e.g. MLB players before season starts)
-  const playersWithData = await getPlayersWithGameData();
-  const hasData = playersWithData.some(
-    (n) => n.toLowerCase() === playerName.toLowerCase()
-  );
+  const hasData = await getPlayerHasGameData(playerName);
 
   return {
     title: `${playerName} — Prop Trends & Stats`,

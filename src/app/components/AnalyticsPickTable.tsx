@@ -18,6 +18,18 @@ const MARKET_TO_STAT: Record<string, string> = {
   PA: "pa",
   RA: "ra",
   SB: "sb",
+  MLB_HITS: "hits",
+  MLB_TB: "tb",
+  MLB_HR: "hr",
+  MLB_RBI: "rbi",
+  MLB_RUNS: "runs",
+  MLB_WALKS: "walks",
+  MLB_SB: "sb",
+  MLB_P_SO: "so",
+  MLB_P_ER: "er",
+  MLB_P_OUTS: "outs",
+  MLB_P_HITS: "hits_allowed",
+  MLB_P_WALKS: "walks_allowed",
 };
 
 const STAT_COLORS: Record<string, string> = {
@@ -28,6 +40,33 @@ const STAT_COLORS: Record<string, string> = {
   BLK: "bg-[#967524]/12 text-[#d8b956] border-[#967524]/26",
   FG3: "bg-[#d2aa43]/12 text-[#f1d77e] border-[#d2aa43]/26",
   PRA: "bg-[#eccd73]/12 text-[#fff0b4] border-[#eccd73]/26",
+  MLB_HITS: "bg-emerald-500/12 text-emerald-300 border-emerald-500/26",
+  MLB_TB: "bg-emerald-500/12 text-emerald-300 border-emerald-500/26",
+  MLB_HR: "bg-emerald-500/12 text-emerald-300 border-emerald-500/26",
+  MLB_RBI: "bg-emerald-500/12 text-emerald-300 border-emerald-500/26",
+  MLB_RUNS: "bg-emerald-500/12 text-emerald-300 border-emerald-500/26",
+  MLB_WALKS: "bg-emerald-500/12 text-emerald-300 border-emerald-500/26",
+  MLB_SB: "bg-emerald-500/12 text-emerald-300 border-emerald-500/26",
+  MLB_P_SO: "bg-sky-500/12 text-sky-300 border-sky-500/26",
+  MLB_P_ER: "bg-sky-500/12 text-sky-300 border-sky-500/26",
+  MLB_P_OUTS: "bg-sky-500/12 text-sky-300 border-sky-500/26",
+  MLB_P_HITS: "bg-sky-500/12 text-sky-300 border-sky-500/26",
+  MLB_P_WALKS: "bg-sky-500/12 text-sky-300 border-sky-500/26",
+};
+
+const MARKET_LABELS: Record<string, string> = {
+  MLB_HITS: "HITS",
+  MLB_TB: "TB",
+  MLB_HR: "HR",
+  MLB_RBI: "RBI",
+  MLB_RUNS: "RUNS",
+  MLB_WALKS: "BB",
+  MLB_SB: "SB",
+  MLB_P_SO: "P-SO",
+  MLB_P_ER: "P-ER",
+  MLB_P_OUTS: "P-OUTS",
+  MLB_P_HITS: "P-H",
+  MLB_P_WALKS: "P-BB",
 };
 
 const MOBILE_COLLAPSED = 5;
@@ -68,6 +107,10 @@ function formatPropDate(propDate?: string | null): string {
 
 function getStatColor(code: string) {
   return STAT_COLORS[code] ?? "bg-zinc-500/15 text-zinc-400 border-zinc-500/30";
+}
+
+function getMarketLabel(code: string) {
+  return MARKET_LABELS[code] ?? code;
 }
 
 function getCountValue(pick: PickRow, side: PickSide): number {
@@ -166,7 +209,7 @@ export default function AnalyticsPickTable({
                     <span
                       className={`inline-flex rounded border px-2 py-0.5 text-[10px] font-bold ${getStatColor(pick.marketCode)}`}
                     >
-                      {pick.marketCode}
+                      {getMarketLabel(pick.marketCode)}
                     </span>
                   </td>
                   <td className="px-3 py-4 text-right font-mono text-base text-pe-text-secondary md:py-3 md:text-sm">

@@ -5,6 +5,8 @@ import {
   getMlbParkFactors,
   getMlbSlateProps,
   getMlbSupportedMarkets,
+  getMlbTopPicks,
+  getMlbUnderPicks,
 } from "@/lib/data";
 import { getMlbStarterGames } from "@/lib/mlbStarters";
 import MlbAnalyticsPageContent from "@/app/components/MlbAnalyticsPageContent";
@@ -49,15 +51,25 @@ export default async function MlbAnalyticsPage() {
     propDate: null,
     props: [],
   };
+  let topPicks: Awaited<ReturnType<typeof getMlbTopPicks>> = {
+    picks: [],
+    propDate: null,
+  };
+  let underPicks: Awaited<ReturnType<typeof getMlbUnderPicks>> = {
+    picks: [],
+    propDate: null,
+  };
   let lastUpdated: string | null = null;
 
   try {
-    [parkFactors, supportedMarkets, coverage, starterGames, slateProps, lastUpdated] = await Promise.all([
+    [parkFactors, supportedMarkets, coverage, starterGames, slateProps, topPicks, underPicks, lastUpdated] = await Promise.all([
       getMlbParkFactors(),
       getMlbSupportedMarkets(),
       getMlbDataCoverage(),
       getMlbStarterGames(),
       getMlbSlateProps(24),
+      getMlbTopPicks(25),
+      getMlbUnderPicks(25),
       getLastDataUpdate(),
     ]);
   } catch (error) {
@@ -72,6 +84,9 @@ export default async function MlbAnalyticsPage() {
       starterGames={starterGames}
       slateProps={slateProps}
       lastUpdated={lastUpdated}
+      topPicks={topPicks.picks}
+      underPicks={underPicks.picks}
+      propDate={topPicks.propDate ?? underPicks.propDate ?? slateProps.propDate}
     />
   );
 }

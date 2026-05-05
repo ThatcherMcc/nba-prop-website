@@ -4,10 +4,14 @@ import type {
   MlbParkFactor,
   MlbSlatePropsResult,
   MlbSupportedMarket,
+  TopPick,
+  UnderPick,
 } from "@/lib/data";
 import type { MlbStarterGame } from "@/lib/mlbStarters";
 import { normalizeMlbTeamCode } from "@/lib/leagues";
 import MlbStartersToday from "@/app/components/MlbStartersToday";
+import TopPicks from "./TopPicks";
+import UnderPicks from "./UnderPicks";
 
 function pfClass(value: number | null): string {
   if (value == null) return "bg-zinc-500/15 text-zinc-400 border-zinc-500/20";
@@ -314,6 +318,9 @@ export default function MlbAnalyticsPageContent({
   starterGames,
   slateProps,
   lastUpdated,
+  topPicks,
+  underPicks,
+  propDate,
 }: {
   parkFactors: MlbParkFactor[];
   supportedMarkets: MlbSupportedMarket[];
@@ -321,6 +328,9 @@ export default function MlbAnalyticsPageContent({
   starterGames: MlbStarterGame[];
   slateProps: MlbSlatePropsResult;
   lastUpdated: string | null;
+  topPicks: TopPick[];
+  underPicks: UnderPick[];
+  propDate: string | null;
 }) {
   const hitterFriendly = [...parkFactors]
     .sort((a, b) => (b.pfRuns ?? 0) - (a.pfRuns ?? 0))
@@ -331,6 +341,8 @@ export default function MlbAnalyticsPageContent({
 
   return (
     <>
+      <TopPicks picks={topPicks} propDate={propDate} />
+      <UnderPicks picks={underPicks} propDate={propDate} />
       <a
         href="https://prizepicks.onelink.me/FjtC/e9fwt4jw"
         target="_blank"

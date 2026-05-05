@@ -122,10 +122,9 @@ export default function PlayerEdgeFinder({ data, stat, opponentRating, opponentN
         : "text-red-400 bg-red-500/10 border-red-500/20";
 
   return (
-    <div className="space-y-6">
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-pe-surface-2/50 rounded-xl px-4 py-3 text-center">
+    <div className="space-y-6 overflow-hidden">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="bg-pe-surface-2/50 rounded-xl px-4 py-3 text-center min-w-0">
           <div className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
             Season Avg
           </div>
@@ -133,15 +132,30 @@ export default function PlayerEdgeFinder({ data, stat, opponentRating, opponentN
             {analysis.avg.toFixed(1)}
           </div>
         </div>
-        <div className={`rounded-xl px-4 py-3 text-center border ${consistencyColor}`}>
+        <div className={`rounded-xl px-4 py-3 text-center border min-w-0 ${consistencyColor}`}>
           <div className="text-[10px] font-bold uppercase tracking-widest opacity-70">
             Consistency
           </div>
           <div className="text-lg font-bold mt-1">{consistencyLabel}</div>
         </div>
+        <div className="bg-pe-surface-2/50 rounded-xl px-4 py-3 text-center min-w-0">
+          <div className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
+            Range
+          </div>
+          <div className="text-lg font-black text-pe-text-primary mt-1">
+            {analysis.min.toFixed(1)} - {analysis.max.toFixed(1)}
+          </div>
+        </div>
+        <div className="bg-pe-surface-2/50 rounded-xl px-4 py-3 text-center min-w-0">
+          <div className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest">
+            Sample
+          </div>
+          <div className="text-2xl font-black text-pe-text-primary mt-1">
+            {analysis.total}
+          </div>
+        </div>
       </div>
 
-      {/* Streak callout */}
       {analysis.streakCount >= 2 && (
         <div
           className={`px-4 py-3 rounded-xl border text-sm font-medium ${
@@ -157,7 +171,6 @@ export default function PlayerEdgeFinder({ data, stat, opponentRating, opponentN
         </div>
       )}
 
-      {/* Opponent weakness callout */}
       {opponentRating && (() => {
         const def = STAT_TO_DEF[stat];
         if (!def) return null;
@@ -202,12 +215,11 @@ export default function PlayerEdgeFinder({ data, stat, opponentRating, opponentN
         );
       })()}
 
-      {/* Line-by-line hit rate table */}
       <div>
         <h4 className="text-[10px] font-bold text-pe-text-faint uppercase tracking-widest mb-3">
           Hit Rate by Line — {STAT_DISPLAY[stat] ?? stat.toUpperCase()}
         </h4>
-        <div className="space-y-1">
+        <div className="space-y-2">
           {analysis.lineAnalysis.map(({ line, hitRate, overAll, total, overRecent5, recent5Count }) => {
             const isSweet =
               analysis.sweetSpot && line === analysis.sweetSpot.line;
@@ -221,29 +233,43 @@ export default function PlayerEdgeFinder({ data, stat, opponentRating, opponentN
             return (
               <div
                 key={line}
-                className={`relative flex items-center gap-3 py-1.5 px-3 rounded-lg transition-colors ${
-                  isSweet ? "bg-pe-accent/10 border border-pe-accent/20" : "border border-transparent hover:bg-pe-surface-2/10"
+                className={`rounded-xl border px-3 py-3 transition-colors ${
+                  isSweet ? "bg-pe-accent/10 border-pe-accent/20" : "border-pe-border/5 hover:bg-pe-surface-2/10"
                 }`}
               >
-                {isSweet && (
-                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 bg-pe-accent text-[8px] font-black text-pe-text-primary px-1 py-0.5 rounded leading-none">
-                    EDGE
-                  </span>
-                )}
-                <div className="w-12 text-right text-sm font-mono text-pe-text-secondary shrink-0">
-                  {line % 1 === 0 ? `${line}.0` : line}
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-mono text-pe-text-secondary shrink-0">
+                      {line % 1 === 0 ? `${line}.0` : line}
+                    </span>
+                    {isSweet && (
+                      <span className="bg-pe-accent text-[8px] font-black text-pe-text-primary px-1.5 py-0.5 rounded leading-none uppercase tracking-[0.12em]">
+                        Edge
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right text-xs text-pe-text-faint shrink-0">
+                    L5: {overRecent5}/{recent5Count}
+                  </div>
                 </div>
-                <div className="flex-1 h-5 bg-pe-surface-2 rounded-full overflow-hidden relative">
+
+                <div className="h-5 bg-pe-surface-2 rounded-full overflow-hidden relative">
                   <div
                     className={`h-full ${barColor} rounded-full transition-all duration-300`}
                     style={{ width: `${barWidth}%` }}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-pe-text-primary mix-blend-difference">
+                  <div className="absolute inset-0 flex items-center justify-center px-2 text-[10px] font-bold text-pe-text-primary mix-blend-difference">
                     {hitRate.toFixed(0)}% ({overAll}/{total})
                   </div>
                 </div>
-                <div className="w-16 text-right text-xs text-pe-text-faint shrink-0">
-                  L5: {overRecent5}/{recent5Count}
+
+                <div className="mt-2 flex items-center justify-between text-[11px]">
+                  <span className="text-pe-text-faint">Over hit rate</span>
+                  <span className={`font-mono font-bold ${
+                    hitRate >= 60 ? "text-emerald-400" : hitRate >= 50 ? "text-amber-400" : "text-red-400"
+                  }`}>
+                    {hitRate.toFixed(1)}%
+                  </span>
                 </div>
               </div>
             );

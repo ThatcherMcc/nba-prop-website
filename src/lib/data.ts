@@ -51,6 +51,25 @@ export const getPlayersWithGameData = unstable_cache(
   { tags: ["player-data"] }
 );
 
+export const getPlayerHasGameData = unstable_cache(
+  async (playerName: string): Promise<boolean> => {
+    try {
+      const rows = await db
+        .select({ playerId: players.playerId })
+        .from(players)
+        .innerJoin(playerGameStats, eq(players.playerId, playerGameStats.playerId))
+        .where(eq(sql`lower(${players.playerName})`, playerName.toLowerCase()))
+        .limit(1);
+      return rows.length > 0;
+    } catch (error) {
+      console.error("Database Error (getPlayerHasGameData):", error);
+      return false;
+    }
+  },
+  ["getPlayerHasGameData"],
+  { tags: ["player-data"] }
+);
+
 /** True if a player with this name exists in `players` (case-insensitive). Used for 404 on invalid /player/[name]. */
 export const getPlayerExists = unstable_cache(
   async (playerName: string): Promise<boolean> => {
@@ -950,6 +969,489 @@ export const getUnderPicks = unstable_cache(
   },
   ["getUnderPicks"],
   { tags: ["player-data"] }
+);
+
+export const getMlbTopPicks = unstable_cache(
+  async (limit = 25): Promise<PicksResult<TopPick>> => {
+    type Row = {
+      player_name: string;
+      market_code: string;
+      market_name: string;
+      book_line: string | number;
+      opponent_team_code: string | null;
+      games_checked: number;
+      over_count: number;
+      hit_rate: string | number;
+      prop_date: string | null;
+    };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        WITH prop_date AS (
+          SELECT COALESCE(
+            (
+              SELECT g.game_date
+              FROM player_props pp
+              JOIN games g ON g.game_id = pp.game_id
+              JOIN prop_markets pm ON pm.market_id = pp.market_id
+              WHERE pm.market_code LIKE 'MLB_%'
+                AND g.game_date >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+              ORDER BY g.game_date ASC
+              LIMIT 1
+            ),
+            (
+              SELECT MAX(g.game_date)
+              FROM player_props pp
+              JOIN games g ON g.game_id = pp.game_id
+              JOIN prop_markets pm ON pm.market_id = pp.market_id
+              WHERE pm.market_code LIKE 'MLB_%'
+            )
+          ) AS target_date
+        ),
+        todays_props AS (
+          SELECT
+            pp.player_id,
+            pm.market_code,
+            pm.market_name,
+            pp.book_line,
+            CASE
+              WHEN latest_team.team_code = ht.team_code THEN at.team_code
+              ELSE ht.team_code
+            END AS opponent_team_code
+          FROM player_props pp
+          JOIN games g ON g.game_id = pp.game_id
+          JOIN prop_markets pm ON pm.market_id = pp.market_id
+          JOIN teams ht ON ht.team_id = g.home_team_id
+          JOIN teams at ON at.team_id = g.away_team_id
+          LEFT JOIN LATERAL (
+            SELECT t.team_code
+            FROM (
+              SELECT bgs.team_id, g2.game_date, bgs.gamelog_id
+              FROM mlb_batter_game_stats bgs
+              JOIN games g2 ON g2.game_id = bgs.game_id
+              WHERE bgs.player_id = pp.player_id
+
+              UNION ALL
+
+              SELECT pgs.team_id, g3.game_date, pgs.gamelog_id
+              FROM mlb_pitcher_game_stats pgs
+              JOIN games g3 ON g3.game_id = pgs.game_id
+              WHERE pgs.player_id = pp.player_id
+            ) latest_team_rows
+            JOIN teams t ON t.team_id = latest_team_rows.team_id
+            ORDER BY latest_team_rows.game_date DESC, latest_team_rows.gamelog_id DESC
+            LIMIT 1
+          ) latest_team ON true
+          WHERE g.game_date = (SELECT target_date FROM prop_date)
+            AND pp.book_line IS NOT NULL
+            AND pm.market_code LIKE 'MLB_%'
+            AND latest_team.team_code IS NOT NULL
+        ),
+        batter_props AS (
+          SELECT * FROM todays_props
+          WHERE market_code IN ('MLB_HITS', 'MLB_TB', 'MLB_HR', 'MLB_RBI', 'MLB_RUNS', 'MLB_WALKS', 'MLB_SB')
+        ),
+        pitcher_props AS (
+          SELECT * FROM todays_props
+          WHERE market_code IN ('MLB_P_SO', 'MLB_P_ER', 'MLB_P_OUTS', 'MLB_P_HITS', 'MLB_P_WALKS')
+        ),
+        ranked_batter_games AS (
+          SELECT
+            bgs.player_id,
+            bgs.hits,
+            bgs.total_bases,
+            bgs.home_runs,
+            bgs.rbi,
+            bgs.runs,
+            bgs.walks,
+            bgs.stolen_bases,
+            ROW_NUMBER() OVER (PARTITION BY bgs.player_id ORDER BY g.game_date DESC) AS rn
+          FROM mlb_batter_game_stats bgs
+          JOIN games g ON g.game_id = bgs.game_id
+          WHERE bgs.player_id IN (SELECT DISTINCT player_id FROM batter_props)
+        ),
+        last_10_batter AS (
+          SELECT * FROM ranked_batter_games WHERE rn <= 10
+        ),
+        ranked_pitcher_games AS (
+          SELECT
+            pgs.player_id,
+            pgs.strikeouts,
+            pgs.earned_runs,
+            pgs.outs_recorded,
+            pgs.hits_allowed,
+            pgs.walks_allowed,
+            ROW_NUMBER() OVER (PARTITION BY pgs.player_id ORDER BY g.game_date DESC) AS rn
+          FROM mlb_pitcher_game_stats pgs
+          JOIN games g ON g.game_id = pgs.game_id
+          WHERE pgs.player_id IN (SELECT DISTINCT player_id FROM pitcher_props)
+        ),
+        last_10_pitcher AS (
+          SELECT * FROM ranked_pitcher_games WHERE rn <= 10
+        ),
+        batter_hit_rates AS (
+          SELECT
+            bp.player_id,
+            bp.market_code,
+            bp.market_name,
+            bp.book_line,
+            bp.opponent_team_code,
+            COUNT(*)::int AS games_checked,
+            COUNT(*) FILTER (
+              WHERE CASE bp.market_code
+                WHEN 'MLB_HITS' THEN l.hits
+                WHEN 'MLB_TB' THEN l.total_bases
+                WHEN 'MLB_HR' THEN l.home_runs
+                WHEN 'MLB_RBI' THEN l.rbi
+                WHEN 'MLB_RUNS' THEN l.runs
+                WHEN 'MLB_WALKS' THEN l.walks
+                WHEN 'MLB_SB' THEN l.stolen_bases
+              END > bp.book_line
+            )::int AS over_count,
+            AVG(
+              CASE bp.market_code
+                WHEN 'MLB_HITS' THEN l.hits
+                WHEN 'MLB_TB' THEN l.total_bases
+                WHEN 'MLB_HR' THEN l.home_runs
+                WHEN 'MLB_RBI' THEN l.rbi
+                WHEN 'MLB_RUNS' THEN l.runs
+                WHEN 'MLB_WALKS' THEN l.walks
+                WHEN 'MLB_SB' THEN l.stolen_bases
+              END
+            ) AS avg_last10
+          FROM batter_props bp
+          JOIN last_10_batter l ON l.player_id = bp.player_id
+          GROUP BY bp.player_id, bp.market_code, bp.market_name, bp.book_line, bp.opponent_team_code
+          HAVING COUNT(*) >= 5
+        ),
+        pitcher_hit_rates AS (
+          SELECT
+            pp.player_id,
+            pp.market_code,
+            pp.market_name,
+            pp.book_line,
+            pp.opponent_team_code,
+            COUNT(*)::int AS games_checked,
+            COUNT(*) FILTER (
+              WHERE CASE pp.market_code
+                WHEN 'MLB_P_SO' THEN l.strikeouts
+                WHEN 'MLB_P_ER' THEN l.earned_runs
+                WHEN 'MLB_P_OUTS' THEN l.outs_recorded
+                WHEN 'MLB_P_HITS' THEN l.hits_allowed
+                WHEN 'MLB_P_WALKS' THEN l.walks_allowed
+              END > pp.book_line
+            )::int AS over_count,
+            AVG(
+              CASE pp.market_code
+                WHEN 'MLB_P_SO' THEN l.strikeouts
+                WHEN 'MLB_P_ER' THEN l.earned_runs
+                WHEN 'MLB_P_OUTS' THEN l.outs_recorded
+                WHEN 'MLB_P_HITS' THEN l.hits_allowed
+                WHEN 'MLB_P_WALKS' THEN l.walks_allowed
+              END
+            ) AS avg_last10
+          FROM pitcher_props pp
+          JOIN last_10_pitcher l ON l.player_id = pp.player_id
+          GROUP BY pp.player_id, pp.market_code, pp.market_name, pp.book_line, pp.opponent_team_code
+          HAVING COUNT(*) >= 5
+        ),
+        all_hit_rates AS (
+          SELECT * FROM batter_hit_rates
+          UNION ALL
+          SELECT * FROM pitcher_hit_rates
+        ),
+        ranked_picks AS (
+          SELECT
+            p.player_name,
+            h.player_id,
+            h.market_code,
+            h.market_name,
+            h.book_line::text AS book_line,
+            h.opponent_team_code,
+            h.games_checked,
+            h.over_count,
+            ROUND((h.over_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
+            h.avg_last10,
+            ROW_NUMBER() OVER (
+              PARTITION BY h.player_id
+              ORDER BY (h.over_count::numeric / h.games_checked) DESC, ABS(h.avg_last10 - h.book_line) DESC
+            ) AS player_rn
+          FROM all_hit_rates h
+          JOIN players p ON p.player_id = h.player_id
+          WHERE h.over_count::numeric / h.games_checked >= 0.6
+            AND h.book_line >= 0.5
+        )
+        SELECT
+          player_name,
+          market_code,
+          market_name,
+          book_line,
+          opponent_team_code,
+          games_checked,
+          over_count,
+          hit_rate,
+          (SELECT target_date::text FROM prop_date) AS prop_date
+        FROM ranked_picks
+        WHERE player_rn <= 2
+        ORDER BY hit_rate DESC, book_line::numeric DESC
+        LIMIT ${limit}
+      `);
+
+      const rows: Row[] =
+        "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+      return {
+        picks: rows.map((r) => ({
+          playerName: r.player_name,
+          marketCode: r.market_code,
+          marketName: r.market_name,
+          bookLine: Number(r.book_line),
+          opponentTeamCode: r.opponent_team_code,
+          gamesChecked: Number(r.games_checked),
+          overCount: Number(r.over_count),
+          hitRate: Number(r.hit_rate),
+          playingToday: true,
+        })),
+        propDate: rows[0]?.prop_date ?? null,
+      };
+    } catch (error) {
+      console.error("Database Error (getMlbTopPicks):", error);
+      return { picks: [], propDate: null };
+    }
+  },
+  ["getMlbTopPicks"],
+  { tags: ["mlb-data"] }
+);
+
+export const getMlbUnderPicks = unstable_cache(
+  async (limit = 25): Promise<PicksResult<UnderPick>> => {
+    type Row = {
+      player_name: string;
+      market_code: string;
+      market_name: string;
+      book_line: string | number;
+      opponent_team_code: string | null;
+      games_checked: number;
+      under_count: number;
+      hit_rate: string | number;
+      prop_date: string | null;
+    };
+
+    try {
+      const result = await db.execute<Row>(sql`
+        WITH prop_date AS (
+          SELECT COALESCE(
+            (
+              SELECT g.game_date
+              FROM player_props pp
+              JOIN games g ON g.game_id = pp.game_id
+              JOIN prop_markets pm ON pm.market_id = pp.market_id
+              WHERE pm.market_code LIKE 'MLB_%'
+                AND g.game_date >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date
+              ORDER BY g.game_date ASC
+              LIMIT 1
+            ),
+            (
+              SELECT MAX(g.game_date)
+              FROM player_props pp
+              JOIN games g ON g.game_id = pp.game_id
+              JOIN prop_markets pm ON pm.market_id = pp.market_id
+              WHERE pm.market_code LIKE 'MLB_%'
+            )
+          ) AS target_date
+        ),
+        todays_props AS (
+          SELECT
+            pp.player_id,
+            pm.market_code,
+            pm.market_name,
+            pp.book_line,
+            CASE
+              WHEN latest_team.team_code = ht.team_code THEN at.team_code
+              ELSE ht.team_code
+            END AS opponent_team_code
+          FROM player_props pp
+          JOIN games g ON g.game_id = pp.game_id
+          JOIN prop_markets pm ON pm.market_id = pp.market_id
+          JOIN teams ht ON ht.team_id = g.home_team_id
+          JOIN teams at ON at.team_id = g.away_team_id
+          LEFT JOIN LATERAL (
+            SELECT t.team_code
+            FROM (
+              SELECT bgs.team_id, g2.game_date, bgs.gamelog_id
+              FROM mlb_batter_game_stats bgs
+              JOIN games g2 ON g2.game_id = bgs.game_id
+              WHERE bgs.player_id = pp.player_id
+
+              UNION ALL
+
+              SELECT pgs.team_id, g3.game_date, pgs.gamelog_id
+              FROM mlb_pitcher_game_stats pgs
+              JOIN games g3 ON g3.game_id = pgs.game_id
+              WHERE pgs.player_id = pp.player_id
+            ) latest_team_rows
+            JOIN teams t ON t.team_id = latest_team_rows.team_id
+            ORDER BY latest_team_rows.game_date DESC, latest_team_rows.gamelog_id DESC
+            LIMIT 1
+          ) latest_team ON true
+          WHERE g.game_date = (SELECT target_date FROM prop_date)
+            AND pp.book_line IS NOT NULL
+            AND pm.market_code LIKE 'MLB_%'
+            AND latest_team.team_code IS NOT NULL
+        ),
+        batter_props AS (
+          SELECT * FROM todays_props
+          WHERE market_code IN ('MLB_HITS', 'MLB_TB', 'MLB_HR', 'MLB_RBI', 'MLB_RUNS', 'MLB_WALKS', 'MLB_SB')
+        ),
+        pitcher_props AS (
+          SELECT * FROM todays_props
+          WHERE market_code IN ('MLB_P_SO', 'MLB_P_ER', 'MLB_P_OUTS', 'MLB_P_HITS', 'MLB_P_WALKS')
+        ),
+        ranked_batter_games AS (
+          SELECT
+            bgs.player_id,
+            bgs.hits,
+            bgs.total_bases,
+            bgs.home_runs,
+            bgs.rbi,
+            bgs.runs,
+            bgs.walks,
+            bgs.stolen_bases,
+            ROW_NUMBER() OVER (PARTITION BY bgs.player_id ORDER BY g.game_date DESC) AS rn
+          FROM mlb_batter_game_stats bgs
+          JOIN games g ON g.game_id = bgs.game_id
+          WHERE bgs.player_id IN (SELECT DISTINCT player_id FROM batter_props)
+        ),
+        last_10_batter AS (
+          SELECT * FROM ranked_batter_games WHERE rn <= 10
+        ),
+        ranked_pitcher_games AS (
+          SELECT
+            pgs.player_id,
+            pgs.strikeouts,
+            pgs.earned_runs,
+            pgs.outs_recorded,
+            pgs.hits_allowed,
+            pgs.walks_allowed,
+            ROW_NUMBER() OVER (PARTITION BY pgs.player_id ORDER BY g.game_date DESC) AS rn
+          FROM mlb_pitcher_game_stats pgs
+          JOIN games g ON g.game_id = pgs.game_id
+          WHERE pgs.player_id IN (SELECT DISTINCT player_id FROM pitcher_props)
+        ),
+        last_10_pitcher AS (
+          SELECT * FROM ranked_pitcher_games WHERE rn <= 10
+        ),
+        batter_hit_rates AS (
+          SELECT
+            bp.player_id,
+            bp.market_code,
+            bp.market_name,
+            bp.book_line,
+            bp.opponent_team_code,
+            COUNT(*)::int AS games_checked,
+            COUNT(*) FILTER (
+              WHERE CASE bp.market_code
+                WHEN 'MLB_HITS' THEN l.hits
+                WHEN 'MLB_TB' THEN l.total_bases
+                WHEN 'MLB_HR' THEN l.home_runs
+                WHEN 'MLB_RBI' THEN l.rbi
+                WHEN 'MLB_RUNS' THEN l.runs
+                WHEN 'MLB_WALKS' THEN l.walks
+                WHEN 'MLB_SB' THEN l.stolen_bases
+              END < bp.book_line
+            )::int AS under_count
+          FROM batter_props bp
+          JOIN last_10_batter l ON l.player_id = bp.player_id
+          GROUP BY bp.player_id, bp.market_code, bp.market_name, bp.book_line, bp.opponent_team_code
+          HAVING COUNT(*) >= 5
+        ),
+        pitcher_hit_rates AS (
+          SELECT
+            pp.player_id,
+            pp.market_code,
+            pp.market_name,
+            pp.book_line,
+            pp.opponent_team_code,
+            COUNT(*)::int AS games_checked,
+            COUNT(*) FILTER (
+              WHERE CASE pp.market_code
+                WHEN 'MLB_P_SO' THEN l.strikeouts
+                WHEN 'MLB_P_ER' THEN l.earned_runs
+                WHEN 'MLB_P_OUTS' THEN l.outs_recorded
+                WHEN 'MLB_P_HITS' THEN l.hits_allowed
+                WHEN 'MLB_P_WALKS' THEN l.walks_allowed
+              END < pp.book_line
+            )::int AS under_count
+          FROM pitcher_props pp
+          JOIN last_10_pitcher l ON l.player_id = pp.player_id
+          GROUP BY pp.player_id, pp.market_code, pp.market_name, pp.book_line, pp.opponent_team_code
+          HAVING COUNT(*) >= 5
+        ),
+        all_hit_rates AS (
+          SELECT * FROM batter_hit_rates
+          UNION ALL
+          SELECT * FROM pitcher_hit_rates
+        ),
+        ranked_picks AS (
+          SELECT
+            p.player_name,
+            h.player_id,
+            h.market_code,
+            h.market_name,
+            h.book_line::text AS book_line,
+            h.opponent_team_code,
+            h.games_checked,
+            h.under_count,
+            ROUND((h.under_count::numeric / h.games_checked) * 100, 0) AS hit_rate,
+            ROW_NUMBER() OVER (
+              PARTITION BY h.player_id
+              ORDER BY (h.under_count::numeric / h.games_checked) DESC, h.book_line DESC
+            ) AS player_rn
+          FROM all_hit_rates h
+          JOIN players p ON p.player_id = h.player_id
+          WHERE h.under_count::numeric / h.games_checked >= 0.6
+            AND h.book_line >= 0.5
+        )
+        SELECT
+          player_name,
+          market_code,
+          market_name,
+          book_line,
+          opponent_team_code,
+          games_checked,
+          under_count,
+          hit_rate,
+          (SELECT target_date::text FROM prop_date) AS prop_date
+        FROM ranked_picks
+        WHERE player_rn <= 2
+        ORDER BY hit_rate DESC, book_line::numeric DESC
+        LIMIT ${limit}
+      `);
+
+      const rows: Row[] =
+        "rows" in result && Array.isArray(result.rows) ? result.rows : [];
+
+      return {
+        picks: rows.map((r) => ({
+          playerName: r.player_name,
+          marketCode: r.market_code,
+          marketName: r.market_name,
+          bookLine: Number(r.book_line),
+          opponentTeamCode: r.opponent_team_code,
+          gamesChecked: Number(r.games_checked),
+          underCount: Number(r.under_count),
+          hitRate: Number(r.hit_rate),
+          playingToday: true,
+        })),
+        propDate: rows[0]?.prop_date ?? null,
+      };
+    } catch (error) {
+      console.error("Database Error (getMlbUnderPicks):", error);
+      return { picks: [], propDate: null };
+    }
+  },
+  ["getMlbUnderPicks"],
+  { tags: ["mlb-data"] }
 );
 
 // --- Backtest: check how yesterday's picks actually performed ---
