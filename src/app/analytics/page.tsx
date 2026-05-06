@@ -11,6 +11,9 @@ import {
 } from "@/lib/data";
 import HomepageContent from "@/app/components/HomepageContent";
 
+// Keep analytics request-driven instead of pre-rendering a large DB workload at build time.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Analytics | PropEdge",
   description:

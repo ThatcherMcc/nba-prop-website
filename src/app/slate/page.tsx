@@ -8,6 +8,9 @@ import {
 } from "@/lib/data";
 import SlatePageContent from "@/app/components/SlatePageContent";
 
+// This route reads the live slate and should not block deploys on static generation timeouts.
+export const dynamic = "force-dynamic";
+
 const BASE_URL = "https://propedge.bet";
 
 export async function generateMetadata(): Promise<Metadata> {

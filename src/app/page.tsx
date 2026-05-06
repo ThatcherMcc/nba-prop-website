@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { getLastDataUpdate, getTopPicks } from "@/lib/data";
 
+// This page depends on live warehouse queries and can exceed static build timeouts on Vercel.
+export const dynamic = "force-dynamic";
+
 function formatTimestamp(value: string | null) {
   if (!value) return "Awaiting latest sync";
 

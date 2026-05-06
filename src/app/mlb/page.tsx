@@ -8,6 +8,9 @@ import {
 import { getMlbStarterGames } from "@/lib/mlbStarters";
 import MlbPageContent from "@/app/components/MlbPageContent";
 
+// MLB home also depends on live data and should render on demand.
+export const dynamic = "force-dynamic";
+
 const BASE_URL = "https://propedge.bet";
 
 export async function generateMetadata(): Promise<Metadata> {

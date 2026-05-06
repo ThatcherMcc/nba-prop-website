@@ -8,6 +8,9 @@ import {
 import { getMlbStarterGames } from "@/lib/mlbStarters";
 import MlbSlatePageContent from "@/app/components/MlbSlatePageContent";
 
+// This page is fed by live slate data and should not be statically generated during builds.
+export const dynamic = "force-dynamic";
+
 const BASE_URL = "https://propedge.bet";
 
 export async function generateMetadata(): Promise<Metadata> {

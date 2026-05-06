@@ -11,6 +11,9 @@ import {
 import { getMlbStarterGames } from "@/lib/mlbStarters";
 import MlbAnalyticsPageContent from "@/app/components/MlbAnalyticsPageContent";
 
+// Avoid Vercel build-time timeouts from the MLB analytics query set.
+export const dynamic = "force-dynamic";
+
 const BASE_URL = "https://propedge.bet";
 
 export const metadata: Metadata = {
