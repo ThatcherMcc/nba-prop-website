@@ -10,12 +10,14 @@ import type {
 } from "@/lib/data";
 import type { MlbStarterGame } from "@/lib/mlbStarters";
 import { normalizeMlbTeamCode } from "@/lib/leagues";
+import { formatRelativeTimeShort } from "./homepage-shared";
 
 interface MlbSlatePageContentProps {
   starterGames: MlbStarterGame[];
   parkFactors: MlbParkFactor[];
   supportedMarkets: MlbSupportedMarket[];
-  slateProps: MlbSlatePropsResult;
+  propDate: MlbSlatePropsResult["propDate"];
+  props: MlbSlateProp[];
   lastUpdated: string | null;
 }
 
@@ -52,16 +54,6 @@ function formatSlateDate(propDate: string | null): string {
     day: "numeric",
     year: "numeric",
   });
-}
-
-function formatRelativeTimeShort(isoString: string | null | undefined): string {
-  if (!isoString) return "Updating...";
-  const diff = Date.now() - new Date(isoString).getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  if (minutes < 60) return `${Math.max(minutes, 0)}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
 }
 
 function formatGameTime(time: string): string {
@@ -246,6 +238,15 @@ function TeamColumn({
         )}
       </div>
 
+      <div className="flex items-center gap-x-2.5 px-3 py-0.5 border-b border-pe-border/5">
+        <span className="text-[10px] font-bold text-pe-text-faint uppercase tracking-wider w-[120px] sm:w-[140px] shrink-0">
+          Player
+        </span>
+        <span className="ml-auto text-[10px] font-bold text-pe-text-faint uppercase tracking-wider">
+          Markets
+        </span>
+      </div>
+
       {players.length > 0 ? (
         players.map((player) => (
           <PlayerRow
@@ -360,15 +361,19 @@ export default function MlbSlatePageContent({
   starterGames,
   parkFactors,
   supportedMarkets,
-  slateProps,
+  propDate,
+  props,
   lastUpdated,
 }: MlbSlatePageContentProps) {
-  const gameGroups = buildGameGroups(starterGames, slateProps.props, parkFactors);
+  const gameGroups = buildGameGroups(starterGames, props, parkFactors);
   const hasGames = gameGroups.length > 0;
   const [allOpen, setAllOpen] = useState<boolean | null>(null);
   const marketTypes = new Map(
     supportedMarkets.map((market) => [market.marketCode, market.playerType] as const)
   );
+  const playerCount = new Set(
+    props.map((prop) => `${prop.playerName}-${prop.playerTeam ?? "unknown"}`)
+  ).size;
 
   return (
     <div className="w-full">
@@ -378,7 +383,7 @@ export default function MlbSlatePageContent({
             Slate
           </h1>
           <p className="text-xs text-pe-text-faint mt-0.5">
-            {formatSlateDate(slateProps.propDate)}
+            {formatSlateDate(propDate)}
           </p>
           <p className="text-[10px] text-pe-text-faint mt-1">
             All picks are for informational and entertainment purposes only. Not gambling advice.
@@ -399,7 +404,11 @@ export default function MlbSlatePageContent({
         <span className="text-pe-text-muted font-bold">{gameGroups.length}</span> games
         <span className="text-pe-border/20 select-none hidden sm:inline">&middot;</span>
         <span className="hidden sm:inline">
-          <span className="text-pe-text-muted font-bold">{slateProps.props.length}</span> prop rows
+          <span className="text-pe-text-muted font-bold">{playerCount}</span> players
+        </span>
+        <span className="text-pe-border/20 select-none">&middot;</span>
+        <span>
+          <span className="text-pe-text-muted font-bold">{props.length}</span> prop rows
         </span>
         <span className="text-pe-border/20 select-none">&middot;</span>
         <span>

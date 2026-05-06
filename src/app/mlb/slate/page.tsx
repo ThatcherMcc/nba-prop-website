@@ -10,23 +10,25 @@ import MlbSlatePageContent from "@/app/components/MlbSlatePageContent";
 
 const BASE_URL = "https://propedge.bet";
 
-export const metadata: Metadata = {
-  title: "MLB Slate | PropEdge",
-  description:
-    "Today's MLB slate with probable starters, park-factor context, and MLB prop markets when line rows are available.",
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  return {
     title: "MLB Slate | PropEdge",
     description:
       "Today's MLB slate with probable starters, park-factor context, and MLB prop markets when line rows are available.",
-    url: `${BASE_URL}/mlb/slate`,
-  },
-  twitter: {
-    card: "summary",
-    title: "MLB Slate | PropEdge",
-    description:
-      "Today's MLB slate with probable starters, park-factor context, and MLB prop markets when line rows are available.",
-  },
-};
+    openGraph: {
+      title: "MLB Slate | PropEdge",
+      description:
+        "Today's MLB slate with probable starters, park-factor context, and MLB prop markets when line rows are available.",
+      url: `${BASE_URL}/mlb/slate`,
+    },
+    twitter: {
+      card: "summary",
+      title: "MLB Slate | PropEdge",
+      description:
+        "Today's MLB slate with probable starters, park-factor context, and MLB prop markets when line rows are available.",
+    },
+  };
+}
 
 export default async function MlbSlatePage() {
   let starterGames: Awaited<ReturnType<typeof getMlbStarterGames>> = [];
@@ -55,7 +57,8 @@ export default async function MlbSlatePage() {
       starterGames={starterGames}
       parkFactors={parkFactors}
       supportedMarkets={supportedMarkets}
-      slateProps={slateProps}
+      propDate={slateProps.propDate}
+      props={slateProps.props}
       lastUpdated={lastUpdated}
     />
   );
