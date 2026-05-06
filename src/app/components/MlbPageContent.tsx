@@ -6,6 +6,14 @@ import type {
 } from "@/lib/data";
 import type { MlbStarterGame } from "@/lib/mlbStarters";
 
+interface MlbPageContentProps {
+  parkFactors: MlbParkFactor[];
+  coverage: MlbDataCoverage;
+  starterGames: MlbStarterGame[];
+  supportedMarkets: MlbSupportedMarket[];
+  lastUpdated: string | null;
+}
+
 function formatTimestamp(value: string | null) {
   if (!value) return "Awaiting latest sync";
 
@@ -30,13 +38,7 @@ export default function MlbPageContent({
   starterGames,
   supportedMarkets,
   lastUpdated,
-}: {
-  parkFactors: MlbParkFactor[];
-  coverage: MlbDataCoverage;
-  starterGames: MlbStarterGame[];
-  supportedMarkets: MlbSupportedMarket[];
-  lastUpdated: string | null;
-}) {
+}: MlbPageContentProps) {
   const hitterFriendlyCount = parkFactors.filter((park) => (park.pfRuns ?? 100) > 103).length;
   const pitcherFriendlyCount = parkFactors.filter((park) => (park.pfRuns ?? 100) < 97).length;
   const neutralParkCount = Math.max(parkFactors.length - hitterFriendlyCount - pitcherFriendlyCount, 0);
@@ -48,6 +50,18 @@ export default function MlbPageContent({
   const maxBucket = Math.max(...parkBreakdown.map((item) => item.rate), 1);
   const featuredStarter = starterGames[0] ?? null;
   const featuredPark = parkFactors[0] ?? null;
+  const heroStatusTiles = [
+    {
+      label: "Markets ready",
+      value: `${supportedMarkets.length}`,
+      detail: `${coverage.teamCount} clubs in coverage`,
+    },
+    {
+      label: "Last sync",
+      value: formatTimestamp(lastUpdated),
+      detail: "Warehouse refresh",
+    },
+  ];
   const featureRows = [
     {
       href: "/mlb/slate",
@@ -223,22 +237,22 @@ export default function MlbPageContent({
                 )}
 
                 <div className="mt-3 grid gap-2.5 sm:grid-cols-2 md:mt-4 md:gap-3">
-                  <div className="rounded-[1rem] border border-white/8 bg-[rgba(255,255,255,0.02)] px-3.5 py-3 md:rounded-[1.15rem] md:px-4 md:py-3.5">
-                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-pe-text-faint md:text-[0.64rem] md:tracking-[0.24em]">
-                      Markets ready
-                    </p>
-                    <p className="mt-1.5 text-lg font-semibold text-pe-text-primary md:mt-2 md:text-xl">
-                      {supportedMarkets.length}
-                    </p>
-                  </div>
-                  <div className="rounded-[1rem] border border-white/8 bg-[rgba(255,255,255,0.02)] px-3.5 py-3 md:rounded-[1.15rem] md:px-4 md:py-3.5">
-                    <p className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-pe-text-faint md:text-[0.64rem] md:tracking-[0.24em]">
-                      Teams loaded
-                    </p>
-                    <p className="mt-1.5 text-[0.84rem] leading-5 text-pe-text-primary md:mt-2 md:text-sm md:leading-6">
-                      {coverage.teamCount} clubs
-                    </p>
-                  </div>
+                  {heroStatusTiles.map((tile) => (
+                    <div
+                      key={tile.label}
+                      className="rounded-[1rem] border border-white/8 bg-[rgba(255,255,255,0.02)] px-3.5 py-3 md:rounded-[1.15rem] md:px-4 md:py-3.5"
+                    >
+                      <p className="font-mono text-[0.6rem] uppercase tracking-[0.22em] text-pe-text-faint md:text-[0.64rem] md:tracking-[0.24em]">
+                        {tile.label}
+                      </p>
+                      <p className="mt-1.5 text-[0.84rem] leading-5 text-pe-text-primary md:mt-2 md:text-sm md:leading-6">
+                        {tile.value}
+                      </p>
+                      <p className="mt-1 text-[0.62rem] uppercase tracking-[0.18em] text-pe-text-faint md:text-[0.66rem] md:tracking-[0.2em]">
+                        {tile.detail}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
